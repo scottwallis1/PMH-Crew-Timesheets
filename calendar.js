@@ -5,16 +5,14 @@
   const TOKEN_EXP_KEY = "pm_google_access_exp_v1";
   const EVENTS_KEY = "pm_calendar_events_v1";
   const SYNCED_AT_KEY = "pm_calendar_synced_at_v1";
+  const STRUCTURE_KEYWORDS = ["marquee", "tent", "gazebo", "pagoda"];
 
   let tokenClient = null;
   let accessToken = "";
   let tokenExpiresAt = 0;
   let events = [];
   let syncedAt = 0;
-  let statusMessage = "";
   let bound = false;
-  let mode = "week"; // week | day
-  let focusDate = startOfDay(new Date());
   let selectedEventId = "";
 
   function config() {
@@ -54,13 +52,6 @@
     return d;
   }
 
-  function startOfWeek(date) {
-    const d = startOfDay(date);
-    const day = d.getDay(); // 0 Sun … 6 Sat
-    const mondayOffset = day === 0 ? -6 : 1 - day;
-    return addDays(d, mondayOffset);
-  }
-
   function sameDay(a, b) {
     return (
       a.getFullYear() === b.getFullYear() &&
@@ -80,7 +71,6 @@
 
     if (allDay) {
       start = startOfDay(new Date(`${startRaw}T00:00:00`));
-      // Google all-day end is exclusive
       end = endRaw
         ? startOfDay(new Date(`${endRaw}T00:00:00`))
         : addDays(start, 1);
@@ -90,74 +80,6 @@
     }
 
     return { start, end, allDay };
-  }
-
-  function eventOccursOnDay(event, day) {
-    const bounds = eventBounds(event);
-    if (!bounds) return false;
-    const dayStart = startOfDay(day);
-    const dayEnd = addDays(dayStart, 1);
-    return bounds.start < dayEnd && bounds.end > dayStart;
-  }
-
-  function eventsForDay(day) {
-    return events
-      .filter((event) => eventOccursOnDay(event, day))
-      .sort((a, b) => {
-        const ba = eventBounds(a);
-        const bb = eventBounds(b);
-        if (!ba || !bb) return 0;
-        if (ba.allDay !== bb.allDay) return ba.allDay ? -1 : 1;
-        return ba.start - bb.start;
-      });
-  }
-
-  function formatDayHeading(date) {
-    return date.toLocaleDateString("en-GB", {
-      weekday: "short",
-      day: "numeric",
-      month: "short"
-    });
-  }
-
-  function formatWeekLabel(weekStart) {
-    const weekEnd = addDays(weekStart, 6);
-    const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
-    const startLabel = weekStart.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: sameMonth ? undefined : "short"
-    });
-    const endLabel = weekEnd.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric"
-    });
-    return `${startLabel} – ${endLabel}`;
-  }
-
-  function formatTimeRange(event) {
-    const bounds = eventBounds(event);
-    if (!bounds) return "";
-    if (bounds.allDay) return "All day";
-    const start = bounds.start.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-    const end = bounds.end.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-    return `${start}–${end}`;
-  }
-
-  function formatSyncedAt(ts) {
-    if (!ts) return "";
-    return new Date(ts).toLocaleString("en-GB", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
   }
 
   function plainText(value) {
@@ -175,7 +97,7 @@
       .trim();
   }
 
-  function truncateText(value, max = 90) {
+  function truncateText(value, max = 120) {
     const text = plainText(value);
     if (text.length <= max) return text;
     return `${text.slice(0, max - 1).trim()}…`;
@@ -211,6 +133,75 @@
     if (status === "tentative") return "Tentative";
     if (event.transparency === "transparent") return "Free / unavailable";
     return "Confirmed";
+  }
+
+  function isStructureJob(event) {
+    const haystack = `${event.summary || ""} ${plainText(event.description || "")}`.toLowerCase();
+    return STRUCTURE_KEYWORDS.some((word) => haystack.includes(word));
+  }
+
+  function eventToneClass(event) {
+    return isStructureJob(event) ? "tone-structure" : "tone-other";
+  }
+
+  function formatSyncedAt(ts) {
+    if (!ts) return "";
+    return new Date(ts).toLocaleString("en-GB", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  function formatDayHeading(date) {
+    const today = startOfDay(new Date());
+    const tomorrow = addDays(today, 1);
+    const label = date.toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+    if (sameDay(date, today)) return `Today · ${label}`;
+    if (sameDay(date, tomorrow)) return `Tomorrow · ${label}`;
+    return label;
+  }
+
+  function formatWhen(event) {
+    const bounds = eventBounds(event);
+    if (!bounds) return "No time";
+    if (bounds.allDay) return "All day";
+    const start = bounds.start.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    const end = bounds.end.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    return `${start}–${end}`;
+  }
+
+  function formatFullWhen(event) {
+    const bounds = eventBounds(event);
+    if (!bounds) return "No time";
+    const day = bounds.start.toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short"
+    });
+    if (bounds.allDay) return `${day} · All day`;
+    return `${day} · ${formatWhen(event)}`;
+  }
+
+  function sortedUpcomingEvents() {
+    const now = Date.now();
+    return events
+      .map((event) => ({ event, bounds: eventBounds(event) }))
+      .filter((row) => row.bounds && row.bounds.end.getTime() >= now - 6 * 60 * 60 * 1000)
+      .sort((a, b) => a.bounds.start - b.bounds.start)
+      .map((row) => row.event);
   }
 
   function normalizeEvent(raw) {
@@ -294,7 +285,6 @@
   }
 
   function setStatus(message) {
-    statusMessage = message;
     const node = el("calendarStatus");
     if (node) node.textContent = message;
   }
@@ -324,45 +314,28 @@
     }
   }
 
-  function renderToolbar() {
-    const label = el("calendarRangeLabel");
-    const weekBtn = el("calendarModeWeek");
-    const dayBtn = el("calendarModeDay");
-    if (weekBtn) weekBtn.classList.toggle("active", mode === "week");
-    if (dayBtn) dayBtn.classList.toggle("active", mode === "day");
-
-    if (!label) return;
-    if (mode === "week") {
-      label.textContent = `Week ${formatWeekLabel(startOfWeek(focusDate))}`;
-    } else {
-      label.textContent = focusDate.toLocaleDateString("en-GB", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
-    }
-  }
-
-  function renderEventBlock(event, { compact = false } = {}) {
+  function renderEventBlock(event) {
     const title = escapeHtml(event.summary || "(No title)");
-    const when = escapeHtml(formatTimeRange(event));
+    const when = escapeHtml(formatWhen(event));
     const location = event.location
       ? `<div class="entry-meta">${escapeHtml(event.location)}</div>`
       : "";
-    const preview =
-      !compact && event.description
-        ? `<div class="entry-meta calendar-desc-preview">${escapeHtml(truncateText(event.description, 140))}</div>`
-        : "";
+    const preview = event.description
+      ? `<div class="entry-meta calendar-desc-preview">${escapeHtml(truncateText(event.description, 140))}</div>`
+      : "";
     const selected = selectedEventId && event.id === selectedEventId ? " is-selected" : "";
+    const tone = eventToneClass(event);
+    const badge = isStructureJob(event) ? "Structure" : "Other";
+
     return `
-      <article class="calendar-event${compact ? " calendar-event-compact" : ""}${selected}" data-event-id="${escapeHtml(event.id)}">
-        <div>
+      <article class="calendar-event ${tone}${selected}" data-event-id="${escapeHtml(event.id)}">
+        <div class="calendar-event-top">
           <strong>${title}</strong>
-          <div class="entry-meta">${when}</div>
-          ${compact ? "" : location}
-          ${preview}
+          <span class="calendar-tone-badge">${badge}</span>
         </div>
+        <div class="entry-meta">${when}</div>
+        ${location}
+        ${preview}
       </article>
     `;
   }
@@ -384,6 +357,7 @@
     const organizer = event.organizer?.displayName || event.organizer?.email || "";
     const status = statusLabel(event);
     const cancelled = String(event.status || "").toLowerCase() === "cancelled";
+    const tone = eventToneClass(event);
 
     panel.classList.remove("hidden");
     panel.innerHTML = `
@@ -391,13 +365,17 @@
         <h3>Booking details</h3>
         <button type="button" id="calendarDetailClose" class="change-user-link">Close</button>
       </div>
-      <article class="calendar-detail-body${cancelled ? " is-cancelled" : ""}">
+      <article class="calendar-detail-body ${tone}${cancelled ? " is-cancelled" : ""}">
         <strong class="calendar-detail-title">${escapeHtml(event.summary || "(No title)")}</strong>
-        <div class="entry-meta">${escapeHtml(formatTimeRange(event))}</div>
+        <div class="entry-meta">${escapeHtml(formatFullWhen(event))}</div>
         <dl class="calendar-detail-list">
           <div>
             <dt>Status</dt>
             <dd>${escapeHtml(status)}</dd>
+          </div>
+          <div>
+            <dt>Type</dt>
+            <dd>${isStructureJob(event) ? "Marquee / tent / gazebo / pagoda" : "Other booking"}</dd>
           </div>
           ${
             event.location
@@ -442,108 +420,40 @@
     });
   }
 
-  function renderWeekView() {
+  function renderRollingList() {
     const board = el("calendarBoard");
     if (!board) return;
 
-    const weekStart = startOfWeek(focusDate);
-    const today = startOfDay(new Date());
-    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
-    board.innerHTML = `
-      <div class="calendar-week">
-        ${days
-          .map((day) => {
-            const dayEvents = eventsForDay(day);
-            const isToday = sameDay(day, today);
-            const isFocus = sameDay(day, focusDate);
-            return `
-              <section class="calendar-day-col${isToday ? " is-today" : ""}${isFocus ? " is-focus" : ""}">
-                <button type="button" class="calendar-day-header" data-jump-day="${day.toISOString()}">
-                  <span>${escapeHtml(formatDayHeading(day))}</span>
-                  <span class="calendar-day-count">${dayEvents.length}</span>
-                </button>
-                <div class="calendar-day-events">
-                  ${
-                    dayEvents.length
-                      ? dayEvents.map((event) => renderEventBlock(event, { compact: true })).join("")
-                      : '<p class="muted calendar-empty-day">No events</p>'
-                  }
-                </div>
-              </section>
-            `;
-          })
-          .join("")}
-      </div>
-    `;
-  }
-
-  function renderDayView() {
-    const board = el("calendarBoard");
-    if (!board) return;
-
-    const dayEvents = eventsForDay(focusDate);
-    const allDay = dayEvents.filter((e) => eventBounds(e)?.allDay);
-    const timed = dayEvents.filter((e) => !eventBounds(e)?.allDay);
-
-    board.innerHTML = `
-      <div class="calendar-day-detail">
-        ${
-          allDay.length
-            ? `<div class="calendar-all-day">
-                <h4>All day</h4>
-                ${allDay.map((event) => renderEventBlock(event)).join("")}
-              </div>`
-            : ""
-        }
-        ${
-          !dayEvents.length
-            ? '<p class="muted">Nothing scheduled for this day in the saved calendar.</p>'
-            : `<div class="calendar-timeline">
+    const list = sortedUpcomingEvents();
+    if (!list.length) {
+      board.innerHTML = `
+        <p class="muted">
           ${
-            timed.length
-              ? timed
-                  .map((event) => {
-                    const bounds = eventBounds(event);
-                    const startHour = bounds.start.getHours() + bounds.start.getMinutes() / 60;
-                    const endHour = Math.max(
-                      startHour + 0.5,
-                      bounds.end.getHours() + bounds.end.getMinutes() / 60
-                    );
-                    const top = ((startHour - 6) / 16) * 100;
-                    const height = ((endHour - startHour) / 16) * 100;
-                    const clampedTop = Math.max(0, Math.min(92, top));
-                    const clampedHeight = Math.max(4, Math.min(100 - clampedTop, height));
-                    const selected =
-                      selectedEventId && event.id === selectedEventId ? " is-selected" : "";
-                    return `
-                      <article class="calendar-timed-event${selected}" style="top:${clampedTop}%;height:${clampedHeight}%;" data-event-id="${escapeHtml(event.id)}">
-                        <strong>${escapeHtml(event.summary || "(No title)")}</strong>
-                        <div class="entry-meta">${escapeHtml(formatTimeRange(event))}</div>
-                        ${
-                          event.location
-                            ? `<div class="entry-meta">${escapeHtml(event.location)}</div>`
-                            : ""
-                        }
-                      </article>
-                    `;
-                  })
-                  .join("")
-              : '<p class="muted calendar-timeline-empty">No timed events this day.</p>'
+            isConnected()
+              ? "No upcoming bookings in the synced range yet. Try Refresh after adding jobs in Google Calendar."
+              : "Connect Google once to pull the schedule into this list."
           }
-          ${Array.from({ length: 17 }, (_, i) => {
-            const hour = 6 + i;
-            const label = `${String(hour).padStart(2, "0")}:00`;
-            return `<div class="calendar-hour-row"><span>${label}</span></div>`;
-          }).join("")}
-        </div>
-        <div class="calendar-day-list">
-          <h4>Bookings today</h4>
-          ${dayEvents.map((event) => renderEventBlock(event)).join("")}
-        </div>`
-        }
-      </div>
-    `;
+        </p>
+      `;
+      return;
+    }
+
+    let lastDayKey = "";
+    const parts = [];
+
+    list.forEach((event) => {
+      const bounds = eventBounds(event);
+      if (!bounds) return;
+      const day = startOfDay(bounds.start);
+      const dayKey = day.toISOString().slice(0, 10);
+      if (dayKey !== lastDayKey) {
+        lastDayKey = dayKey;
+        parts.push(`<h3 class="calendar-day-label">${escapeHtml(formatDayHeading(day))}</h3>`);
+      }
+      parts.push(renderEventBlock(event));
+    });
+
+    board.innerHTML = `<div class="calendar-rolling">${parts.join("")}</div>`;
   }
 
   function renderBoard() {
@@ -571,8 +481,7 @@
       return;
     }
 
-    if (mode === "week") renderWeekView();
-    else renderDayView();
+    renderRollingList();
     renderDetailPanel();
   }
 
@@ -585,7 +494,6 @@
     const connected = isConnected();
     connectBtn.disabled = !isConfigured();
     connectBtn.textContent = "Connect Google Calendar";
-    // Only show Connect when not signed in — Refresh Sync covers updates while connected.
     connectBtn.classList.toggle("hidden", connected);
     if (disconnectBtn) disconnectBtn.classList.toggle("hidden", !connected);
     if (refreshBtn) {
@@ -598,7 +506,6 @@
   function render() {
     renderSetupPanel();
     updateConnectButton();
-    renderToolbar();
     renderBoard();
   }
 
@@ -607,8 +514,8 @@
     setStatus("Syncing calendar…");
 
     const calendarId = encodeURIComponent(config().calendarId || "primary");
-    const timeMin = addDays(startOfDay(new Date()), -14).toISOString();
-    const timeMax = addDays(startOfDay(new Date()), 60).toISOString();
+    const timeMin = addDays(startOfDay(new Date()), -1).toISOString();
+    const timeMax = addDays(startOfDay(new Date()), 90).toISOString();
     const params = new URLSearchParams({
       maxResults: "250",
       singleEvents: "true",
@@ -711,44 +618,14 @@
     }
   }
 
-  function shiftRange(direction) {
-    const step = mode === "week" ? 7 : 1;
-    focusDate = addDays(focusDate, direction * step);
-    renderToolbar();
-    renderBoard();
-  }
-
-  function goToday() {
-    focusDate = startOfDay(new Date());
-    renderToolbar();
-    renderBoard();
-  }
-
-  function setMode(next) {
-    mode = next === "day" ? "day" : "week";
-    renderToolbar();
-    renderBoard();
-  }
-
   function onBoardClick(event) {
     const booking = event.target.closest("[data-event-id]");
-    if (booking) {
-      const id = booking.getAttribute("data-event-id");
-      if (!id) return;
-      selectedEventId = selectedEventId === id ? "" : id;
-      renderBoard();
-      el("calendarDetail")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      return;
-    }
-
-    const jump = event.target.closest("[data-jump-day]");
-    if (!jump) return;
-    const iso = jump.getAttribute("data-jump-day");
-    if (!iso) return;
-    focusDate = startOfDay(new Date(iso));
-    mode = "day";
-    selectedEventId = "";
-    render();
+    if (!booking) return;
+    const id = booking.getAttribute("data-event-id");
+    if (!id) return;
+    selectedEventId = selectedEventId === id ? "" : id;
+    renderBoard();
+    el("calendarDetail")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function bind() {
@@ -759,11 +636,6 @@
     el("calendarConnectButton")?.addEventListener("click", connect);
     el("calendarDisconnectButton")?.addEventListener("click", disconnect);
     el("calendarRefreshButton")?.addEventListener("click", refresh);
-    el("calendarPrev")?.addEventListener("click", () => shiftRange(-1));
-    el("calendarNext")?.addEventListener("click", () => shiftRange(1));
-    el("calendarToday")?.addEventListener("click", goToday);
-    el("calendarModeWeek")?.addEventListener("click", () => setMode("week"));
-    el("calendarModeDay")?.addEventListener("click", () => setMode("day"));
     el("calendarBoard")?.addEventListener("click", onBoardClick);
     render();
   }

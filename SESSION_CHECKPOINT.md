@@ -21,15 +21,16 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.2.2`**
+Asset cache bust: **`?v=1.3.0`**
 
 ## What’s working
 
 - Crew hours app: Summary / All Jobs / Crew (localStorage hours)
 - **Calendar** tab:
   - Google OAuth connect (Client ID in `google-config.js`)
-  - **Week** / **Day** boards
-  - Tap booking → details (description, location, attendees, status, links)
+  - One **rolling list** of upcoming bookings (no week/day boards)
+  - Colour coding: dark green if title/description mentions marquee/tent/gazebo/pagoda; purple otherwise
+  - Tap booking → details
   - Events cached in `localStorage` after sync
   - **Connect** only when signed out; **Refresh Sync** while connected
 - Preview tested: Google sign-in opens (no `origin_mismatch`) when JS origin is registered
