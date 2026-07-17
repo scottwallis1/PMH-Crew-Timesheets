@@ -63,19 +63,21 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 4. Add Hours → select a calendar booking / job
 5. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
 
-## Product notes — private profiles (discussion)
+## Product notes — private profiles (decided)
 
-**Today:** “login” is pick a name; all hours live in one browser `localStorage`. Anyone on that phone can switch user and see everyone’s Summary.
+**Agreed path (least resistance):** per-profile **PIN** so crew can’t open someone else’s Profile on any phone.
 
-**Recommended direction (simple → real privacy):**
+- Each person still uses their own phone.
+- Login list can show all names, but opening a profile requires that person’s PIN.
+- Locks **Profile** (renamed from Summary) and **Add Hours** for that user.
+- No cloud accounts yet — PIN stored on-device (hashed) until shared backend exists.
 
-1. **Own phone first (lightest):** each crew member installs/opens the app on *their* phone and only uses their own profile. Privacy is mostly “my device.” Still no password. Fine for casual use; weak if phones are shared.
-2. **Local PIN per profile (medium):** each profile has a PIN/password stored only on that device (hashed). Locks Profile / Add Hours for that user. Good for a shared yard tablet. Does **not** sync across phones and is not strong security.
-3. **Real accounts + cloud (proper privacy):** each person creates a profile (email/password or Google Sign-In) and hours are stored on a backend (Firebase/Supabase) scoped to that user. This is what you need if Profile must stay private across devices and people.
+**Action next update:**
+1. Rename Summary → Profile
+2. Add set/enter PIN flow per profile
+3. Block switch-into another user’s Profile without their PIN
 
-Scott’s lean: give them the app → create profile + password → private Profile page. That maps to **(3)** once shared storage exists; until then **(2)** can bridge on a single device.
-
-Open decisions for next session: PIN vs full password; who can see All Jobs / Crew (everyone vs managers only); whether calendar stays shared/read-only for all.
+Open later: whether All Jobs / Crew stay visible to everyone; calendar stays shared/read-only.
 
 ## Key files
 
