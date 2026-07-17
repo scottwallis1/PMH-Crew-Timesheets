@@ -147,17 +147,37 @@
     else switchButton.style.removeProperty("display");
   }
 
+  const BRAND = {
+    marquees: {
+      title: "Peterhead Marquees",
+      subtitle: "Team Manager",
+      logo: "assets/peterhead-marquees-logo.jpg?v=1.9.5",
+      alt: "Peterhead Marquees"
+    },
+    eventHire: {
+      title: "Peterhead Event Hire",
+      subtitle: "Team Manager",
+      logo: "assets/peterhead-event-hire-logo.png?v=1.9.5",
+      alt: "Peterhead Event Hire"
+    }
+  };
+
   function updateBrandTheme() {
     const user = getCurrentUser();
     const eventHire = isEventHire(user);
     document.querySelector(".app")?.classList.toggle("theme-event-hire", eventHire);
 
-    const title = document.querySelector(".site-header h1");
-    const subtitle = document.querySelector(".site-header p");
-    const logo = document.querySelector(".site-header img");
-    if (title) title.textContent = eventHire ? "Peterhead Event Hire" : "Peterhead Marquees";
-    if (subtitle) subtitle.textContent = "Team Manager";
-    if (logo) logo.alt = eventHire ? "Peterhead Event Hire" : "Peterhead Marquees";
+    const brand = eventHire ? BRAND.eventHire : BRAND.marquees;
+    const title = el("brandTitle") || document.querySelector(".site-header h1");
+    const subtitle = el("brandSubtitle") || document.querySelector(".site-header p");
+    const logo = el("brandLogo") || document.querySelector(".site-header img");
+    if (title) title.textContent = brand.title;
+    if (subtitle) subtitle.textContent = brand.subtitle;
+    if (logo) {
+      const nextSrc = brand.logo;
+      if (logo.getAttribute("src") !== nextSrc) logo.src = nextSrc;
+      logo.alt = brand.alt;
+    }
 
     const summaryView = el("summaryView");
     if (summaryView) summaryView.classList.toggle("profile-theme-event", eventHire);
@@ -649,6 +669,8 @@
     el("summaryUserName").textContent = user.name;
     el("summaryRole").textContent = user.role;
     renderRobot(el("summaryRobot"), user);
+    el("summaryRobot")?.classList.toggle("avatar-owner", user.id === "scott");
+    el("summaryRobot")?.classList.toggle("avatar-event-hire", isEventHire(user));
     updateBrandTheme();
 
     updateSwitchProfileVisibility();
@@ -1320,7 +1342,7 @@
     el("crewLeaderboard").innerHTML = leaderboard.map((user, index) => `
       <div class="leaderboard-row ${user.active ? "" : "retired"}">
         <div class="rank">${index + 1}</div>
-        <div class="robot-avatar robot-avatar-md ${isEventHire(user) ? "avatar-event-hire" : ""} ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
+        <div class="robot-avatar robot-avatar-md ${user.id === "scott" ? "avatar-owner" : ""} ${isEventHire(user) ? "avatar-event-hire" : ""} ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
         <div class="leaderboard-copy">
           <strong>${escapeHtml(user.name)}${user.role === "Owner" || user.role === "Event Hire" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
           <div class="muted">${user.active ? "All-time total" : "Retired · history kept"}</div>
