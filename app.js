@@ -277,7 +277,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.5.1`;
+    return `${path}?v=1.6.0`;
   }
 
   function renderRobot(target, user) {
@@ -301,7 +301,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.5.1`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.6.0`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -453,6 +453,10 @@
     });
   }
 
+  const BASE_POSTCODE = "AB42 1UA";
+  const geoCache = {};
+  let mileageRequestId = 0;
+
   function extractJobNumber(text) {
     const raw = String(text || "");
     const hashMatch = raw.match(/#(\d{3,5})\b/);
@@ -465,6 +469,123 @@
     return candidates.find((code) => code.length === 3) || candidates[0] || "";
   }
 
+  function extractUkPostcode(text) {
+    const raw = String(text || "").toUpperCase().replace(/\s+/g, " ");
+    const match = raw.match(/\b([A-Z]{1,2}\d[A-Z\d]?)\s*(\d[A-Z]{2})\b/);
+    if (!match) return "";
+    return `${match[1]} ${match[2]}`;
+  }
+
+  function normalizePostcodeKey(postcode) {
+    return String(postcode || "").toUpperCase().replace(/\s+/g, "");
+  }
+
+  function haversineMiles(lat1, lon1, lat2, lon2) {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const earthRadiusMiles = 3958.7613;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * earthRadiusMiles * Math.asin(Math.sqrt(a));
+  }
+
+  async function lookupPostcode(postcode) {
+    const key = normalizePostcodeKey(postcode);
+    if (!key) return null;
+    if (geoCache[key]) return geoCache[key];
+    const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(key)}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data.status !== 200 || !data.result) return null;
+    const coords = {
+      postcode: data.result.postcode,
+      latitude: data.result.latitude,
+      longitude: data.result.longitude
+    };
+    geoCache[key] = coords;
+    return coords;
+  }
+
+  function setMileageHint(message) {
+    const hint = el("mileageHint");
+    if (hint) hint.textContent = message;
+  }
+
+  function postcodeForJob(jobCode) {
+    const code = String(jobCode || "");
+    if (!code || code === "STORE") return "";
+    const calendarEvents = window.PMHCalendar?.getEvents?.() || [];
+    for (const event of calendarEvents) {
+      const title = event.summary || "";
+      const description = String(event.description || "").replace(/<[^>]+>/g, " ");
+      const location = event.location || "";
+      const eventCode = extractJobNumber(`${title} ${description}`);
+      if (eventCode !== code) continue;
+      const fromLocation = extractUkPostcode(location);
+      if (fromLocation) return fromLocation;
+      const fromDescription = extractUkPostcode(description);
+      if (fromDescription) return fromDescription;
+      const fromTitle = extractUkPostcode(title);
+      if (fromTitle) return fromTitle;
+    }
+    return "";
+  }
+
+  async function applyAutoMileage(jobCode) {
+    const requestId = ++mileageRequestId;
+    const code = String(jobCode || "").toUpperCase();
+
+    if (!code) {
+      el("mileage").value = "";
+      setMileageHint("Round trip from AB42 1UA is filled when a job postcode is found.");
+      return;
+    }
+
+    if (code === "STORE") {
+      el("mileage").value = "0";
+      setMileageHint("STORE — no site travel (0 miles).");
+      return;
+    }
+
+    const jobPostcode = postcodeForJob(code);
+    if (!jobPostcode) {
+      el("mileage").value = "";
+      setMileageHint(`No postcode found on calendar for #${code}. Enter mileage manually.`);
+      return;
+    }
+
+    setMileageHint(`Calculating round trip AB42 1UA ↔ ${jobPostcode}…`);
+    try {
+      const [base, destination] = await Promise.all([
+        lookupPostcode(BASE_POSTCODE),
+        lookupPostcode(jobPostcode)
+      ]);
+      if (requestId !== mileageRequestId) return;
+      if (!base || !destination) {
+        el("mileage").value = "";
+        setMileageHint(`Could not look up ${jobPostcode}. Enter mileage manually.`);
+        return;
+      }
+      const oneWay = haversineMiles(
+        base.latitude,
+        base.longitude,
+        destination.latitude,
+        destination.longitude
+      );
+      const roundTrip = Math.round(oneWay * 2);
+      el("mileage").value = String(roundTrip);
+      setMileageHint(
+        `Auto ${roundTrip} miles round trip: ${base.postcode} ↔ ${destination.postcode} (you can edit).`
+      );
+    } catch {
+      if (requestId !== mileageRequestId) return;
+      el("mileage").value = "";
+      setMileageHint("Mileage lookup failed. Enter miles manually.");
+    }
+  }
+
   function collectJobOptions() {
     const byCode = new Map();
 
@@ -472,13 +593,20 @@
     calendarEvents.forEach((event) => {
       const title = event.summary || "";
       const description = String(event.description || "").replace(/<[^>]+>/g, " ");
+      const location = event.location || "";
       const code = extractJobNumber(`${title} ${description}`);
       if (!code) return;
+      const postcode =
+        extractUkPostcode(location) ||
+        extractUkPostcode(description) ||
+        extractUkPostcode(title) ||
+        "";
       const label = title.trim()
-        ? `#${code} · ${title.trim()}`
+        ? (postcode ? `#${code} · ${title.trim()} · ${postcode}` : `#${code} · ${title.trim()}`)
         : `#${code}`;
-      if (!byCode.has(code) || (title && !String(byCode.get(code).label).includes("·"))) {
-        byCode.set(code, { value: code, label, source: "calendar" });
+      const existing = byCode.get(code);
+      if (!existing || (postcode && !existing.postcode) || (title && !String(existing.label).includes("·"))) {
+        byCode.set(code, { value: code, label, source: "calendar", postcode });
       }
     });
 
@@ -487,7 +615,7 @@
       if (!code || code === "STORE") return;
       if (!/^\d{3,5}$/.test(code)) return;
       if (!byCode.has(code)) {
-        byCode.set(code, { value: code, label: `#${code}`, source: "entries" });
+        byCode.set(code, { value: code, label: `#${code}`, source: "entries", postcode: "" });
       }
     });
 
@@ -527,6 +655,7 @@
     el("finishTime").value = "17:00";
     el("mileage").value = "";
     el("notes").value = "";
+    setMileageHint("Round trip from AB42 1UA is filled when a job postcode is found.");
     calculateHours();
   }
 
@@ -541,6 +670,7 @@
     el("finishTime").value = entry.finish;
     el("mileage").value = entry.mileage || "";
     el("notes").value = entry.notes || "";
+    setMileageHint("Saved mileage shown. Change job to recalculate from AB42 1UA.");
     calculateHours();
     showView("addHoursView");
   }
@@ -810,6 +940,10 @@
     el("cancelFormButton").addEventListener("click", () => {
       resetEntryForm();
       showView("summaryView");
+    });
+
+    el("jobNumber").addEventListener("change", () => {
+      applyAutoMileage(el("jobNumber").value);
     });
 
     el("startTime").addEventListener("change", calculateHours);

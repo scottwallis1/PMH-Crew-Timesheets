@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.5.3">
+  <link rel="stylesheet" href="styles.css?v=1.6.0">
 </head>
 <body>
   <div class="app">
@@ -147,8 +147,9 @@
             </div>
           </div>
 
-          <label for="mileage">Mileage <span class="optional">(optional)</span></label>
+          <label for="mileage">Mileage</label>
           <input id="mileage" type="number" min="0" step="1" placeholder="Miles">
+          <p id="mileageHint" class="muted job-select-hint">Round trip from AB42 1UA is filled when a job postcode is found.</p>
 
           <label for="notes">Notes <span class="optional">(optional)</span></label>
           <textarea id="notes" placeholder="Optional notes"></textarea>
@@ -224,8 +225,8 @@
 
         <div class="card jobs-card calendar-board-card">
           <div class="calendar-legend" aria-hidden="true">
-            <span class="legend-chip tone-structure">Marquee / tent / gazebo / pagoda</span>
-            <span class="legend-chip tone-other">Other jobs</span>
+            <span class="legend-chip tone-structure">PMH</span>
+            <span class="legend-chip tone-other">PEV</span>
           </div>
           <div id="calendarBoard" class="calendar-board"></div>
           <div id="calendarDetail" class="calendar-detail hidden" aria-live="polite"></div>
@@ -234,9 +235,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.5.3"></script>
+  <script src="google-config.js?v=1.6.0"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.5.3"></script>
-  <script src="app.js?v=1.5.3"></script>
+  <script src="calendar.js?v=1.6.0"></script>
+  <script src="app.js?v=1.6.0"></script>
 </body>
 </html>
