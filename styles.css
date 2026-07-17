@@ -242,60 +242,60 @@ main { padding: 10px 12px; }
 /* Full Event Hire shell — no marquee green while Karen’s profile is active. */
 body:has(.app.theme-event-hire) {
   background:
-    radial-gradient(ellipse at top, rgba(184, 144, 224, 0.12), transparent 42%),
-    linear-gradient(180deg, #100818, #0a0610 80%);
+    radial-gradient(ellipse at top, rgba(196, 160, 230, 0.18), transparent 46%),
+    linear-gradient(180deg, #1a1028, #120a1c 80%);
 }
 
 .app.theme-event-hire {
-  background: linear-gradient(180deg, var(--event-purple-700), var(--event-purple-950));
-  box-shadow: 0 0 40px rgba(20, 8, 30, 0.5);
+  background: linear-gradient(180deg, var(--event-purple-700), var(--event-purple-900));
+  box-shadow: 0 0 40px rgba(40, 18, 64, 0.4);
 }
 
 .app.theme-event-hire .site-header {
-  background: linear-gradient(180deg, #4a2670, var(--event-purple-800));
-  border-bottom-color: #b890e0;
+  background: linear-gradient(180deg, #6a3a96, var(--event-purple-800));
+  border-bottom-color: #c9a6e8;
 }
 
 .app.theme-event-hire .site-header img {
-  border-color: rgba(184, 144, 224, 0.55);
+  border-color: rgba(196, 160, 230, 0.6);
 }
 
 .app.theme-event-hire .site-header p {
-  color: #d7b8f0;
+  color: #e8d4fa;
 }
 
 .app.theme-event-hire .top-nav {
-  background: linear-gradient(180deg, #3b1f57, #1a0f2e);
-  border-color: rgba(184, 144, 224, 0.45);
+  background: linear-gradient(180deg, #53307a, #2f1848);
+  border-color: rgba(196, 160, 230, 0.5);
 }
 
 .app.theme-event-hire .top-nav button {
-  color: #e8ddf5;
-  background: rgba(0, 0, 0, 0.22);
+  color: #f0e6fb;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .app.theme-event-hire .top-nav button.active {
-  color: #241033;
-  background: linear-gradient(180deg, #e2c8f7, #c9a6e8);
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 4px 12px rgba(150, 110, 210, 0.35);
+  color: #2a1540;
+  background: linear-gradient(180deg, #f0e4ff, #d7b8f0);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(160, 120, 220, 0.35);
 }
 
 .app.theme-event-hire .card {
-  background: linear-gradient(180deg, var(--event-purple-800), var(--event-purple-900));
-  border-color: rgba(184, 144, 224, 0.28);
+  background: linear-gradient(180deg, #4a2a72, var(--event-purple-800));
+  border-color: rgba(196, 160, 230, 0.32);
 }
 
 .app.theme-event-hire input,
 .app.theme-event-hire select,
 .app.theme-event-hire textarea {
-  background: var(--event-purple-950);
-  border-color: rgba(184, 144, 224, 0.3);
+  background: var(--event-purple-900);
+  border-color: rgba(196, 160, 230, 0.35);
 }
 
 .app.theme-event-hire .stat-card {
-  background: var(--event-purple-950);
-  border-color: rgba(184, 144, 224, 0.28);
+  background: var(--event-purple-900);
+  border-color: rgba(196, 160, 230, 0.32);
 }
 
 .app.theme-event-hire .stat-card strong,
@@ -350,9 +350,9 @@ body:has(.app.theme-event-hire) {
 
 /* Crew page: no marquee green ranks/hours while Event Hire is active. */
 .app.theme-event-hire .rank {
-  color: #f0e4ff;
-  background: var(--event-purple-950);
-  border-color: rgba(184, 144, 224, 0.45);
+  color: #f5ecff;
+  background: var(--event-purple-900);
+  border-color: rgba(196, 160, 230, 0.5);
 }
 
 .app.theme-event-hire .leaderboard-hours {
