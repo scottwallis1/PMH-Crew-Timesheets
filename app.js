@@ -145,41 +145,52 @@
     target.innerHTML = `
       <svg class="terminator-svg" viewBox="0 0 64 64" aria-hidden="true">
         <defs>
-          <linearGradient id="metal-${uidSvg}" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
-            <stop offset="35%" stop-color="${palette.metal}"/>
-            <stop offset="70%" stop-color="${palette.accent}"/>
+          <linearGradient id="metal-${uidSvg}" x1="0.15" y1="0" x2="0.9" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="28%" stop-color="${palette.metal}"/>
+            <stop offset="62%" stop-color="${palette.accent}"/>
+            <stop offset="100%" stop-color="${palette.dark}"/>
+          </linearGradient>
+          <linearGradient id="jaw-${uidSvg}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${palette.metal}"/>
             <stop offset="100%" stop-color="${palette.dark}"/>
           </linearGradient>
           <radialGradient id="eye-${uidSvg}" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#fff5f0"/>
-            <stop offset="35%" stop-color="${palette.glow}"/>
-            <stop offset="100%" stop-color="${palette.dark}"/>
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="25%" stop-color="${palette.glow}"/>
+            <stop offset="100%" stop-color="#2a0500"/>
           </radialGradient>
-          <filter id="glow-${uidSvg}" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1.4" result="blur"/>
+          <filter id="glow-${uidSvg}" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="1.8" result="blur"/>
             <feMerge>
               <feMergeNode in="blur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
         </defs>
-        <circle cx="32" cy="32" r="30" fill="#0a1012"/>
-        <ellipse cx="32" cy="14" rx="10" ry="4" fill="url(#metal-${uidSvg})" stroke="${palette.dark}" stroke-width="1"/>
-        <path d="M18 18 L46 18 L50 28 L46 50 L34 56 L30 56 L18 50 L14 28 Z"
-              fill="url(#metal-${uidSvg})" stroke="${palette.dark}" stroke-width="1.2"/>
-        <path d="M22 24 H42 V40 Q32 46 22 40 Z" fill="${palette.dark}" opacity="0.92"/>
-        <path d="M24 26 H40 V29 H24 Z" fill="${palette.accent}" opacity="0.55"/>
-        <circle cx="26.5" cy="33" r="3.4" fill="url(#eye-${uidSvg})" filter="url(#glow-${uidSvg})"/>
-        <circle cx="37.5" cy="33" r="3.4" fill="url(#eye-${uidSvg})" filter="url(#glow-${uidSvg})"/>
-        <circle cx="26.5" cy="33" r="1.1" fill="#fff"/>
-        <circle cx="37.5" cy="33" r="1.1" fill="#fff"/>
-        <path d="M25 42 H39" stroke="${palette.metal}" stroke-width="2" stroke-linecap="round"/>
-        <path d="M27 45 H37" stroke="${palette.accent}" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M20 30 L14 26" stroke="${palette.metal}" stroke-width="2" stroke-linecap="round"/>
-        <path d="M44 30 L50 26" stroke="${palette.metal}" stroke-width="2" stroke-linecap="round"/>
-        <path d="M28 18 V12" stroke="${palette.accent}" stroke-width="1.5"/>
-        <path d="M36 18 V12" stroke="${palette.accent}" stroke-width="1.5"/>
+        <circle cx="32" cy="32" r="31" fill="#050708"/>
+        <path d="M16 28 C16 14 48 14 48 28 L46 22 C42 12 22 12 18 22 Z"
+              fill="url(#metal-${uidSvg})" stroke="${palette.dark}" stroke-width="1"/>
+        <path d="M15 27 C15 18 49 18 49 27 L51 34 C51 48 42 56 32 56 C22 56 13 48 13 34 Z"
+              fill="url(#metal-${uidSvg})" stroke="${palette.dark}" stroke-width="1.1"/>
+        <path d="M18 28 H46 L44 33 H20 Z" fill="${palette.dark}" opacity="0.95"/>
+        <path d="M20 29 H44" stroke="${palette.metal}" stroke-width="1" opacity="0.55"/>
+        <ellipse cx="24" cy="35" rx="6.2" ry="5.2" fill="#0b0d0f"/>
+        <ellipse cx="40" cy="35" rx="6.2" ry="5.2" fill="#0b0d0f"/>
+        <circle cx="24" cy="35" r="3.6" fill="url(#eye-${uidSvg})" filter="url(#glow-${uidSvg})"/>
+        <circle cx="40" cy="35" r="3.6" fill="url(#eye-${uidSvg})" filter="url(#glow-${uidSvg})"/>
+        <circle cx="24" cy="35" r="1.2" fill="#fff8f0"/>
+        <circle cx="40" cy="35" r="1.2" fill="#fff8f0"/>
+        <path d="M30 38 L32 44 L34 38 Z" fill="${palette.dark}"/>
+        <path d="M17 40 L21 46 L17 48 Z" fill="${palette.accent}" opacity="0.7"/>
+        <path d="M47 40 L43 46 L47 48 Z" fill="${palette.accent}" opacity="0.7"/>
+        <path d="M20 46 H44 L42 53 H22 Z" fill="url(#jaw-${uidSvg})" stroke="${palette.dark}" stroke-width="0.8"/>
+        <path d="M23 47 V51 M27 47 V51 M31 47 V51 M35 47 V51 M39 47 V51"
+              stroke="${palette.dark}" stroke-width="1.3"/>
+        <path d="M14 30 L9 24" stroke="${palette.metal}" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M50 30 L55 24" stroke="${palette.metal}" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="9" cy="24" r="2" fill="${palette.accent}"/>
+        <circle cx="55" cy="24" r="2" fill="${palette.accent}"/>
       </svg>
     `;
   }
