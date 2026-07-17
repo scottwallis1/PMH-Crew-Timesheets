@@ -15,6 +15,7 @@
   let bound = false;
   let mode = "week"; // week | day
   let focusDate = startOfDay(new Date());
+  let selectedEventId = "";
 
   function config() {
     return window.PMH_GOOGLE_CONFIG || { clientId: "", calendarId: "primary", scopes: "" };
@@ -159,6 +160,90 @@
     });
   }
 
+  function plainText(value) {
+    return String(value ?? "")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  function truncateText(value, max = 90) {
+    const text = plainText(value);
+    if (text.length <= max) return text;
+    return `${text.slice(0, max - 1).trim()}…`;
+  }
+
+  function findEvent(id) {
+    return events.find((event) => event.id === id) || null;
+  }
+
+  function conferenceLink(event) {
+    const entryPoints = event.conferenceData?.entryPoints;
+    if (Array.isArray(entryPoints)) {
+      const video = entryPoints.find((p) => p.entryPointType === "video" && p.uri);
+      if (video?.uri) return video.uri;
+      const first = entryPoints.find((p) => p.uri);
+      if (first?.uri) return first.uri;
+    }
+    if (event.hangoutLink) return event.hangoutLink;
+    return "";
+  }
+
+  function attendeeNames(event) {
+    if (!Array.isArray(event.attendees) || !event.attendees.length) return [];
+    return event.attendees
+      .filter((person) => !person.resource)
+      .map((person) => person.displayName || person.email || "")
+      .filter(Boolean);
+  }
+
+  function statusLabel(event) {
+    const status = String(event.status || "").toLowerCase();
+    if (status === "cancelled") return "Cancelled";
+    if (status === "tentative") return "Tentative";
+    if (event.transparency === "transparent") return "Free / unavailable";
+    return "Confirmed";
+  }
+
+  function normalizeEvent(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    return {
+      id: raw.id || "",
+      summary: raw.summary || "",
+      description: raw.description || "",
+      location: raw.location || "",
+      status: raw.status || "",
+      transparency: raw.transparency || "",
+      htmlLink: raw.htmlLink || "",
+      hangoutLink: raw.hangoutLink || "",
+      conferenceData: raw.conferenceData || null,
+      organizer: raw.organizer
+        ? {
+            displayName: raw.organizer.displayName || "",
+            email: raw.organizer.email || ""
+          }
+        : null,
+      attendees: Array.isArray(raw.attendees)
+        ? raw.attendees.map((person) => ({
+            displayName: person.displayName || "",
+            email: person.email || "",
+            resource: Boolean(person.resource),
+            responseStatus: person.responseStatus || ""
+          }))
+        : [],
+      start: raw.start || {},
+      end: raw.end || {}
+    };
+  }
+
   function loadStoredToken() {
     try {
       accessToken = sessionStorage.getItem(TOKEN_KEY) || "";
@@ -188,8 +273,10 @@
   function loadCachedEvents() {
     try {
       const raw = localStorage.getItem(EVENTS_KEY);
-      events = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(events)) events = [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      events = (Array.isArray(parsed) ? parsed : [])
+        .map(normalizeEvent)
+        .filter((event) => event && event.id);
       syncedAt = Number(localStorage.getItem(SYNCED_AT_KEY) || 0);
     } catch {
       events = [];
@@ -263,15 +350,96 @@
     const location = event.location
       ? `<div class="entry-meta">${escapeHtml(event.location)}</div>`
       : "";
+    const preview =
+      !compact && event.description
+        ? `<div class="entry-meta calendar-desc-preview">${escapeHtml(truncateText(event.description, 140))}</div>`
+        : "";
+    const selected = selectedEventId && event.id === selectedEventId ? " is-selected" : "";
     return `
-      <article class="calendar-event${compact ? " calendar-event-compact" : ""}">
+      <article class="calendar-event${compact ? " calendar-event-compact" : ""}${selected}" data-event-id="${escapeHtml(event.id)}">
         <div>
           <strong>${title}</strong>
           <div class="entry-meta">${when}</div>
           ${compact ? "" : location}
+          ${preview}
         </div>
       </article>
     `;
+  }
+
+  function renderDetailPanel() {
+    const panel = el("calendarDetail");
+    if (!panel) return;
+
+    const event = selectedEventId ? findEvent(selectedEventId) : null;
+    if (!event) {
+      panel.classList.add("hidden");
+      panel.innerHTML = "";
+      return;
+    }
+
+    const description = plainText(event.description);
+    const people = attendeeNames(event);
+    const meet = conferenceLink(event);
+    const organizer = event.organizer?.displayName || event.organizer?.email || "";
+    const status = statusLabel(event);
+    const cancelled = String(event.status || "").toLowerCase() === "cancelled";
+
+    panel.classList.remove("hidden");
+    panel.innerHTML = `
+      <div class="calendar-detail-header">
+        <h3>Booking details</h3>
+        <button type="button" id="calendarDetailClose" class="change-user-link">Close</button>
+      </div>
+      <article class="calendar-detail-body${cancelled ? " is-cancelled" : ""}">
+        <strong class="calendar-detail-title">${escapeHtml(event.summary || "(No title)")}</strong>
+        <div class="entry-meta">${escapeHtml(formatTimeRange(event))}</div>
+        <dl class="calendar-detail-list">
+          <div>
+            <dt>Status</dt>
+            <dd>${escapeHtml(status)}</dd>
+          </div>
+          ${
+            event.location
+              ? `<div><dt>Location</dt><dd>${escapeHtml(event.location)}</dd></div>`
+              : ""
+          }
+          ${
+            organizer
+              ? `<div><dt>Organiser</dt><dd>${escapeHtml(organizer)}</dd></div>`
+              : ""
+          }
+          ${
+            people.length
+              ? `<div><dt>Attendees</dt><dd>${escapeHtml(people.join(", "))}</dd></div>`
+              : ""
+          }
+          ${
+            description
+              ? `<div class="calendar-detail-notes"><dt>Details</dt><dd>${escapeHtml(description).replaceAll("\n", "<br>")}</dd></div>`
+              : `<div class="calendar-detail-notes"><dt>Details</dt><dd class="muted">No extra notes on this booking.</dd></div>`
+          }
+        </dl>
+        <div class="calendar-detail-actions">
+          ${
+            meet
+              ? `<a class="button subtle" href="${escapeHtml(meet)}" target="_blank" rel="noopener noreferrer">Open meeting link</a>`
+              : ""
+          }
+          ${
+            event.htmlLink
+              ? `<a class="button subtle" href="${escapeHtml(event.htmlLink)}" target="_blank" rel="noopener noreferrer">Open in Google Calendar</a>`
+              : ""
+          }
+        </div>
+      </article>
+    `;
+
+    el("calendarDetailClose")?.addEventListener("click", () => {
+      selectedEventId = "";
+      renderBoard();
+      renderDetailPanel();
+    });
   }
 
   function renderWeekView() {
@@ -346,8 +514,10 @@
                     const height = ((endHour - startHour) / 16) * 100;
                     const clampedTop = Math.max(0, Math.min(92, top));
                     const clampedHeight = Math.max(4, Math.min(100 - clampedTop, height));
+                    const selected =
+                      selectedEventId && event.id === selectedEventId ? " is-selected" : "";
                     return `
-                      <article class="calendar-timed-event" style="top:${clampedTop}%;height:${clampedHeight}%;">
+                      <article class="calendar-timed-event${selected}" style="top:${clampedTop}%;height:${clampedHeight}%;" data-event-id="${escapeHtml(event.id)}">
                         <strong>${escapeHtml(event.summary || "(No title)")}</strong>
                         <div class="entry-meta">${escapeHtml(formatTimeRange(event))}</div>
                         ${
@@ -366,6 +536,10 @@
             const label = `${String(hour).padStart(2, "0")}:00`;
             return `<div class="calendar-hour-row"><span>${label}</span></div>`;
           }).join("")}
+        </div>
+        <div class="calendar-day-list">
+          <h4>Bookings today</h4>
+          ${dayEvents.map((event) => renderEventBlock(event)).join("")}
         </div>`
         }
       </div>
@@ -378,6 +552,7 @@
 
     if (!isConfigured() && !events.length) {
       board.innerHTML = '<p class="muted">Calendar connect is waiting on your Google Client ID.</p>';
+      renderDetailPanel();
       return;
     }
 
@@ -391,11 +566,14 @@
           }
         </p>
       `;
+      selectedEventId = "";
+      renderDetailPanel();
       return;
     }
 
     if (mode === "week") renderWeekView();
     else renderDayView();
+    renderDetailPanel();
   }
 
   function updateConnectButton() {
@@ -443,10 +621,13 @@
     }
 
     const data = await response.json();
-    events = Array.isArray(data.items) ? data.items : [];
+    events = (Array.isArray(data.items) ? data.items : [])
+      .map(normalizeEvent)
+      .filter((event) => event && event.id);
     syncedAt = Date.now();
     persistEvents();
-    setStatus(`Synced ${events.length} event${events.length === 1 ? "" : "s"} · ${formatSyncedAt(syncedAt)}`);
+    if (selectedEventId && !findEvent(selectedEventId)) selectedEventId = "";
+    setStatus(`Synced ${events.length} booking${events.length === 1 ? "" : "s"} · ${formatSyncedAt(syncedAt)}`);
     renderBoard();
   }
 
@@ -539,12 +720,23 @@
   }
 
   function onBoardClick(event) {
+    const booking = event.target.closest("[data-event-id]");
+    if (booking) {
+      const id = booking.getAttribute("data-event-id");
+      if (!id) return;
+      selectedEventId = selectedEventId === id ? "" : id;
+      renderBoard();
+      el("calendarDetail")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return;
+    }
+
     const jump = event.target.closest("[data-jump-day]");
     if (!jump) return;
     const iso = jump.getAttribute("data-jump-day");
     if (!iso) return;
     focusDate = startOfDay(new Date(iso));
     mode = "day";
+    selectedEventId = "";
     render();
   }
 

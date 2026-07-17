@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.2.0">
+  <link rel="stylesheet" href="styles.css?v=1.2.1">
 </head>
 <body>
   <div class="app">
@@ -186,7 +186,7 @@
       <section id="calendarView" class="view">
         <div class="card compact-top-card">
           <h2>Calendar</h2>
-          <p class="muted">Google Calendar is the source of truth. Sync once, then browse the in-app week and day schedule here.</p>
+          <p class="muted">Google Calendar is the source of truth. Sync once, then browse week/day bookings — tap an event for full booking details.</p>
           <p id="calendarStatus" class="calendar-status">Checking setup…</p>
 
           <div id="calendarSetup" class="calendar-setup">
@@ -223,14 +223,15 @@
             </div>
           </div>
           <div id="calendarBoard" class="calendar-board"></div>
+          <div id="calendarDetail" class="calendar-detail hidden" aria-live="polite"></div>
         </div>
       </section>
     </main>
   </div>
 
-  <script src="google-config.js?v=1.2.0"></script>
+  <script src="google-config.js?v=1.2.1"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.2.0"></script>
-  <script src="app.js?v=1.2.0"></script>
+  <script src="calendar.js?v=1.2.1"></script>
+  <script src="app.js?v=1.2.1"></script>
 </body>
 </html>
