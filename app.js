@@ -2,9 +2,9 @@
   "use strict";
 
   const STORAGE = {
-    users: "pm_users_v3",
-    entries: "pm_entries_v3",
-    currentUser: "pm_current_user_v3"
+    users: "pm_users_v4",
+    entries: "pm_entries_v4",
+    currentUser: "pm_current_user_v4"
   };
 
   const memoryStorage = {};
@@ -26,7 +26,7 @@
   }
 
   const defaultUsers = [
-    { id: "scott", name: "Scott", active: true, role: "Boss", seedHours: 1000000, robot: 0 },
+    { id: "scott", name: "Scott", active: true, role: "Team member", seedHours: 1000000, robot: 0 },
     { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 4862.5, robot: 1 },
     { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 4315, robot: 2 },
     { id: "jerald", name: "Jerald", active: true, role: "Team member", seedHours: 3988.5, robot: 3 },
@@ -40,49 +40,70 @@
   const defaultEntries = [
     { id: "e1", userId: "scott", date: "2026-07-17", job: "789", start: "08:00", finish: "17:00", hours: 9, mileage: 24, notes: "Commercial marquee install", cancelled: false },
     { id: "e2", userId: "scott", date: "2026-07-15", job: "456", start: "08:30", finish: "18:00", hours: 9.5, mileage: 18, notes: "Gala setup", cancelled: false },
-    { id: "e3", userId: "scott", date: "2026-07-12", job: "STORE", start: "09:00", finish: "13:00", hours: 4, mileage: 12, notes: "Loaded flooring", cancelled: true },
+    { id: "e3", userId: "scott", date: "2026-07-14", job: "STORE", start: "09:00", finish: "13:00", hours: 4, mileage: 12, notes: "Loaded flooring", cancelled: false },
+    { id: "e7", userId: "scott", date: "2026-07-12", job: "321", start: "08:00", finish: "12:00", hours: 4, mileage: 8, notes: "Weather delay", cancelled: true },
     { id: "e4", userId: "ronnie", date: "2026-07-17", job: "789", start: "08:30", finish: "17:00", hours: 8.5, mileage: 18, notes: "", cancelled: false },
     { id: "e5", userId: "jason", date: "2026-07-17", job: "789", start: "09:00", finish: "16:00", hours: 7, mileage: 0, notes: "", cancelled: false },
     { id: "e6", userId: "kadek", date: "2026-07-15", job: "456", start: "08:30", finish: "17:00", hours: 8.5, mileage: 12, notes: "", cancelled: false }
   ];
 
+  // 80s Terminator endoskeleton variants — unique chrome + eye glow per crew member
   const robotPalettes = [
-    ["#7f8f8c", "#2a3331", "#ff2d20"],
-    ["#385f59", "#111d1a", "#00f0ff"],
-    ["#d29a3e", "#5f4214", "#ff4328"],
-    ["#3f4a50", "#12191c", "#ff1d1d"],
-    ["#bfc9c6", "#46524f", "#6dffea"],
-    ["#2d7a68", "#17352e", "#8cff00"],
-    ["#e5ecea", "#65706d", "#ff7a00"],
-    ["#a96d43", "#3d2416", "#ff263b"],
-    ["#465c73", "#151e29", "#39a7ff"],
-    ["#764c8f", "#271732", "#ff31d2"],
-    ["#8da7b0", "#27444d", "#ffd400"],
-    ["#a76060", "#3d1d1d", "#ff6b35"]
+    { metal: "#c5ccd1", dark: "#2b3238", glow: "#ff1a00", accent: "#8a939b" },
+    { metal: "#9aa7b0", dark: "#1c242a", glow: "#ff3b1f", accent: "#6d7a84" },
+    { metal: "#d4b483", dark: "#3a2a14", glow: "#ff4d00", accent: "#8f7040" },
+    { metal: "#8f9aa3", dark: "#151b20", glow: "#ff0022", accent: "#5c6770" },
+    { metal: "#dde3e8", dark: "#3a4349", glow: "#00e5ff", accent: "#9aa6af" },
+    { metal: "#6f8f82", dark: "#15241f", glow: "#7CFF00", accent: "#3f5c50" },
+    { metal: "#e8ebe9", dark: "#4a5250", glow: "#ff8a00", accent: "#9ea5a2" },
+    { metal: "#b07a52", dark: "#2c180e", glow: "#ff2438", accent: "#7a4d30" },
+    { metal: "#7f92a8", dark: "#141c28", glow: "#39a7ff", accent: "#4d6075" },
+    { metal: "#9a7aad", dark: "#241530", glow: "#ff31d2", accent: "#634b72" },
+    { metal: "#a8b8be", dark: "#24343a", glow: "#ffd400", accent: "#6f8289" },
+    { metal: "#b07070", dark: "#301818", glow: "#ff6b35", accent: "#7a4040" }
   ];
 
-  let users = load(STORAGE.users, defaultUsers);
-  let entries = load(STORAGE.entries, defaultEntries);
+  let users = load(STORAGE.users, null);
+  let entries = load(STORAGE.entries, null);
   let currentUserId = storageGet(STORAGE.currentUser) || "";
 
-  // Always seed the demo crew if storage is missing, empty or invalid.
+  // Migrate from v3 storage if present, otherwise seed defaults.
   if (!Array.isArray(users) || users.length === 0) {
-    users = JSON.parse(JSON.stringify(defaultUsers));
+    const legacyUsers = load("pm_users_v3", null);
+    users = Array.isArray(legacyUsers) && legacyUsers.length
+      ? legacyUsers
+      : JSON.parse(JSON.stringify(defaultUsers));
     storageSet(STORAGE.users, JSON.stringify(users));
   }
   if (!Array.isArray(entries)) {
-    entries = JSON.parse(JSON.stringify(defaultEntries));
+    const legacyEntries = load("pm_entries_v3", null);
+    entries = Array.isArray(legacyEntries)
+      ? legacyEntries
+      : JSON.parse(JSON.stringify(defaultEntries));
     storageSet(STORAGE.entries, JSON.stringify(entries));
   }
+  if (!currentUserId) {
+    currentUserId = storageGet("pm_current_user_v3") || "";
+    if (currentUserId) storageSet(STORAGE.currentUser, currentUserId);
+  }
+
+  // Keep crew roles flat — no Boss tag.
+  users = users.map((user, index) => ({
+    ...user,
+    role: "Team member",
+    robot: Number.isInteger(user.robot) ? user.robot : index % robotPalettes.length
+  }));
+  storageSet(STORAGE.users, JSON.stringify(users));
 
   const el = (id) => document.getElementById(id);
 
   function load(key, fallback) {
     try {
       const value = storageGet(key);
-      return value ? JSON.parse(value) : JSON.parse(JSON.stringify(fallback));
+      if (!value) return fallback === null ? null : JSON.parse(JSON.stringify(fallback));
+      return JSON.parse(value);
     } catch {
-      return JSON.parse(JSON.stringify(fallback));
+      return fallback === null ? null : JSON.parse(JSON.stringify(fallback));
     }
   }
 
@@ -104,16 +125,63 @@
       .replaceAll("'", "&#039;");
   }
 
+  function formatHours(value) {
+    const hours = Number(value) || 0;
+    const hasFraction = Math.abs(hours % 1) > 0.001;
+    return hours.toLocaleString("en-GB", {
+      minimumFractionDigits: hasFraction ? 1 : 0,
+      maximumFractionDigits: hasFraction ? 1 : 0
+    });
+  }
+
   function getCurrentUser() {
     return users.find((user) => user.id === currentUserId);
   }
 
   function renderRobot(target, robotIndex) {
     const palette = robotPalettes[robotIndex % robotPalettes.length];
-    target.style.setProperty("--robot-a", palette[0]);
-    target.style.setProperty("--robot-b", palette[1]);
-    target.style.setProperty("--robot-glow", palette[2]);
-    target.innerHTML = '<span class="head"></span><span class="face"></span><span class="eyes"></span><span class="jaw"></span>';
+    const uidSvg = `r${robotIndex}_${Math.random().toString(36).slice(2, 8)}`;
+    target.style.setProperty("--robot-glow", palette.glow);
+    target.innerHTML = `
+      <svg class="terminator-svg" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="metal-${uidSvg}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
+            <stop offset="35%" stop-color="${palette.metal}"/>
+            <stop offset="70%" stop-color="${palette.accent}"/>
+            <stop offset="100%" stop-color="${palette.dark}"/>
+          </linearGradient>
+          <radialGradient id="eye-${uidSvg}" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fff5f0"/>
+            <stop offset="35%" stop-color="${palette.glow}"/>
+            <stop offset="100%" stop-color="${palette.dark}"/>
+          </radialGradient>
+          <filter id="glow-${uidSvg}" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.4" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <circle cx="32" cy="32" r="30" fill="#0a1012"/>
+        <ellipse cx="32" cy="14" rx="10" ry="4" fill="url(#metal-${uidSvg})" stroke="${palette.dark}" stroke-width="1"/>
+        <path d="M18 18 L46 18 L50 28 L46 50 L34 56 L30 56 L18 50 L14 28 Z"
+              fill="url(#metal-${uidSvg})" stroke="${palette.dark}" stroke-width="1.2"/>
+        <path d="M22 24 H42 V40 Q32 46 22 40 Z" fill="${palette.dark}" opacity="0.92"/>
+        <path d="M24 26 H40 V29 H24 Z" fill="${palette.accent}" opacity="0.55"/>
+        <circle cx="26.5" cy="33" r="3.4" fill="url(#eye-${uidSvg})" filter="url(#glow-${uidSvg})"/>
+        <circle cx="37.5" cy="33" r="3.4" fill="url(#eye-${uidSvg})" filter="url(#glow-${uidSvg})"/>
+        <circle cx="26.5" cy="33" r="1.1" fill="#fff"/>
+        <circle cx="37.5" cy="33" r="1.1" fill="#fff"/>
+        <path d="M25 42 H39" stroke="${palette.metal}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M27 45 H37" stroke="${palette.accent}" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M20 30 L14 26" stroke="${palette.metal}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M44 30 L50 26" stroke="${palette.metal}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M28 18 V12" stroke="${palette.accent}" stroke-width="1.5"/>
+        <path d="M36 18 V12" stroke="${palette.accent}" stroke-width="1.5"/>
+      </svg>
+    `;
   }
 
   function populateTimes() {
@@ -136,7 +204,7 @@
     let minutes = (finishHour * 60 + finishMinute) - (startHour * 60 + startMinute);
     if (minutes < 0) minutes += 24 * 60;
     const hours = minutes / 60;
-    el("calculatedHours").textContent = hours.toFixed(1);
+    el("calculatedHours").textContent = formatHours(hours);
     return hours;
   }
 
@@ -202,35 +270,36 @@
     const hours = activeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
     const mileage = activeEntries.reduce((sum, entry) => sum + Number(entry.mileage || 0), 0);
 
-    el("monthlyHours").textContent = hours.toFixed(1);
+    el("monthlyHours").textContent = formatHours(hours);
     el("monthlyMileage").textContent = `${mileage.toFixed(0)} miles`;
     el("monthlyJobsHeading").textContent = `${monthLabel(month)} Jobs`;
 
     el("myEntries").innerHTML = userEntries.length
       ? userEntries.map((entry) => {
           const label = entry.job === "STORE" ? "STORE" : `#${entry.job}`;
+          const typeClass = entry.job === "STORE" ? "store" : "job";
           if (entry.cancelled) {
-            return `<article class="entry cancelled">
+            return `<article class="entry ${typeClass} cancelled">
               <div class="entry-head">
                 <div>
                   <strong>${label}<span class="status">Cancelled</span></strong>
                   <div class="entry-meta">${formatDate(entry.date)} · ${entry.start}–${entry.finish}</div>
                   ${entry.notes ? `<div class="entry-notes">${escapeHtml(entry.notes)}</div>` : ""}
                 </div>
-                <strong><s>${Number(entry.hours).toFixed(1)} hrs</s></strong>
+                <strong class="entry-hours"><s>${formatHours(entry.hours)} hrs</s></strong>
               </div>
               <div class="entry-meta"><s>Mileage: ${Number(entry.mileage || 0).toFixed(0)} miles</s></div>
               <div class="entry-meta">Excluded from totals</div>
             </article>`;
           }
-          return `<article class="entry">
+          return `<article class="entry ${typeClass}">
             <div class="entry-head">
               <div>
                 <strong>${label}</strong>
                 <div class="entry-meta">${formatDate(entry.date)} · ${entry.start}–${entry.finish}</div>
                 ${entry.notes ? `<div class="entry-notes">${escapeHtml(entry.notes)}</div>` : ""}
               </div>
-              <strong>${Number(entry.hours).toFixed(1)} hrs</strong>
+              <strong class="entry-hours">${formatHours(entry.hours)} hrs</strong>
             </div>
             <div class="entry-meta">Mileage: ${Number(entry.mileage || 0).toFixed(0)} miles</div>
             <div class="entry-actions">
@@ -358,16 +427,17 @@
           const activeEntries = job.entries.filter((entry) => !entry.cancelled);
           const totalHours = activeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
           const label = job.job === "STORE" ? "STORE" : `#${job.job}`;
-          return `<article class="job-card">
+          const typeClass = job.job === "STORE" ? "store" : "job";
+          return `<article class="job-card ${typeClass}">
             <div class="job-header">
               <div><h3>${label}</h3><div class="muted">${formatDate(job.date)}</div></div>
-              <strong>${totalHours.toFixed(1)} hrs</strong>
+              <strong>${formatHours(totalHours)} hrs</strong>
             </div>
             ${job.entries.map((entry) => {
               const user = users.find((item) => item.id === entry.userId);
-              return `<div class="job-person ${entry.cancelled ? "muted" : ""}">
+              return `<div class="job-person ${entry.cancelled ? "cancelled" : ""}">
                 <span>${escapeHtml(user?.name || "Unknown")}${entry.cancelled ? " — Cancelled" : ""}</span>
-                <strong>${entry.cancelled ? "0.0 hrs · 0 miles" : `${Number(entry.hours).toFixed(1)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles`}</strong>
+                <strong>${entry.cancelled ? "0 hrs · 0 miles" : `${formatHours(entry.hours)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles`}</strong>
               </div>`;
             }).join("")}
           </article>`;
@@ -389,15 +459,20 @@
     el("crewLeaderboard").innerHTML = leaderboard.map((user, index) => `
       <div class="leaderboard-row">
         <div class="rank">${index + 1}</div>
+        <div class="robot-avatar robot-avatar-sm" data-robot="${user.robot}"></div>
         <div class="leaderboard-copy">
-          <strong>${escapeHtml(user.name)}${user.role === "Boss" ? '<span class="boss-badge">Boss</span>' : ""}</strong>
+          <strong>${escapeHtml(user.name)}</strong>
           <div class="muted">All-time total</div>
         </div>
-        <div class="leaderboard-hours">${user.allTimeHours.toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} hrs</div>
+        <div class="leaderboard-hours">${formatHours(user.allTimeHours)} <span>hrs</span></div>
       </div>
     `).join("");
 
-    const retireable = users.filter((user) => user.active && user.role !== "Boss");
+    document.querySelectorAll("#crewLeaderboard .robot-avatar").forEach((avatar) => {
+      renderRobot(avatar, Number(avatar.dataset.robot) || 0);
+    });
+
+    const retireable = users.filter((user) => user.active && user.id !== "scott");
     el("retireUserSelect").innerHTML = retireable.map((user) => `<option value="${user.id}">${escapeHtml(user.name)}</option>`).join("");
   }
 
