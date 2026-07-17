@@ -14,6 +14,7 @@
   let syncedAt = 0;
   let bound = false;
   let selectedEventId = "";
+  let calendarFilter = "all"; // all | pmh | pev
 
   function config() {
     return window.PMH_GOOGLE_CONFIG || { clientId: "", calendarId: "primary", scopes: "" };
@@ -433,18 +434,58 @@
     });
   }
 
+  function eventMatchesFilter(event) {
+    if (calendarFilter === "all") return true;
+    const isPmh = isStructureJob(event);
+    if (calendarFilter === "pmh") return isPmh;
+    if (calendarFilter === "pev") return !isPmh;
+    return true;
+  }
+
+  function updateFilterControls() {
+    document.querySelectorAll("[data-calendar-filter]").forEach((chip) => {
+      const active = chip.dataset.calendarFilter === calendarFilter;
+      chip.classList.toggle("is-active", active);
+      chip.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    const hint = el("calendarFilterHint");
+    if (!hint) return;
+    if (calendarFilter === "pmh") hint.textContent = "Showing PMH bookings only. Tap All to clear.";
+    else if (calendarFilter === "pev") hint.textContent = "Showing PEV bookings only. Tap All to clear.";
+    else hint.textContent = "Showing all bookings. Tap PMH or PEV to filter.";
+  }
+
+  function setCalendarFilter(nextFilter) {
+    const wanted = String(nextFilter || "all").toLowerCase();
+    calendarFilter = ["all", "pmh", "pev"].includes(wanted) ? wanted : "all";
+    // Clear detail if the open booking no longer matches the filter.
+    if (selectedEventId) {
+      const open = findEvent(selectedEventId);
+      if (!open || !eventMatchesFilter(open)) selectedEventId = "";
+    }
+    updateFilterControls();
+    renderBoard();
+  }
+
   function renderRollingList() {
     const board = el("calendarBoard");
     if (!board) return;
 
-    const list = sortedUpcomingEvents();
+    const list = sortedUpcomingEvents().filter(eventMatchesFilter);
     if (!list.length) {
+      const emptyFilter =
+        calendarFilter === "pmh"
+          ? "No PMH bookings in the synced range."
+          : calendarFilter === "pev"
+            ? "No PEV bookings in the synced range."
+            : "";
       board.innerHTML = `
         <p class="muted">
           ${
-            isConnected()
+            emptyFilter ||
+            (isConnected()
               ? "No upcoming bookings in the synced range yet. Try Refresh after adding jobs in Google Calendar."
-              : "Connect Google once to pull the schedule into this list."
+              : "Connect Google once to pull the schedule into this list.")
           }
         </p>
       `;
@@ -519,6 +560,7 @@
   function render() {
     renderSetupPanel();
     updateConnectButton();
+    updateFilterControls();
     renderBoard();
   }
 
@@ -650,6 +692,9 @@
     el("calendarDisconnectButton")?.addEventListener("click", disconnect);
     el("calendarRefreshButton")?.addEventListener("click", refresh);
     el("calendarBoard")?.addEventListener("click", onBoardClick);
+    document.querySelectorAll("[data-calendar-filter]").forEach((chip) => {
+      chip.addEventListener("click", () => setCalendarFilter(chip.dataset.calendarFilter));
+    });
     render();
   }
 

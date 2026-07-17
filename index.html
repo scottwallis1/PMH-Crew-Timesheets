@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.9.8">
+  <link rel="stylesheet" href="styles.css?v=1.9.9">
 </head>
 <body>
   <div class="app">
@@ -265,10 +265,12 @@
         </div>
 
         <div class="card jobs-card calendar-board-card">
-          <div class="calendar-legend" aria-hidden="true">
-            <span class="legend-chip tone-structure">PMH</span>
-            <span class="legend-chip tone-other">PEV</span>
+          <div class="calendar-legend" role="group" aria-label="Filter calendar by booking type">
+            <button type="button" id="calendarFilterAll" class="legend-chip filter-all is-active" data-calendar-filter="all">All</button>
+            <button type="button" id="calendarFilterPmh" class="legend-chip tone-structure" data-calendar-filter="pmh">PMH</button>
+            <button type="button" id="calendarFilterPev" class="legend-chip tone-other" data-calendar-filter="pev">PEV</button>
           </div>
+          <p id="calendarFilterHint" class="muted job-select-hint">Showing all bookings. Tap PMH or PEV to filter.</p>
           <div id="calendarBoard" class="calendar-board"></div>
           <div id="calendarDetail" class="calendar-detail hidden" aria-live="polite"></div>
         </div>
@@ -276,9 +278,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.9.7"></script>
+  <script src="google-config.js?v=1.9.9"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.9.7"></script>
-  <script src="app.js?v=1.9.7"></script>
+  <script src="calendar.js?v=1.9.9"></script>
+  <script src="app.js?v=1.9.9"></script>
 </body>
 </html>
