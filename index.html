@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.4.0">
+  <link rel="stylesheet" href="styles.css?v=1.5.0">
 </head>
 <body>
   <div class="app">
@@ -129,11 +129,12 @@
           <label for="entryDate">Date</label>
           <input id="entryDate" type="date">
 
-          <label for="jobNumber">Job label</label>
-          <div class="job-row">
-            <input id="jobNumber" type="text" maxlength="5" inputmode="numeric" placeholder="e.g. 123">
-            <button id="storeButton" class="button subtle">STORE</button>
-          </div>
+          <label for="jobNumber">Job</label>
+          <select id="jobNumber">
+            <option value="">Select a job…</option>
+            <option value="STORE">STORE</option>
+          </select>
+          <p class="muted job-select-hint">Choose an existing job number from the calendar / logged jobs, or STORE.</p>
 
           <div class="two-column">
             <div>
@@ -232,9 +233,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.4.0"></script>
+  <script src="google-config.js?v=1.5.0"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.4.0"></script>
-  <script src="app.js?v=1.4.0"></script>
+  <script src="calendar.js?v=1.5.0"></script>
+  <script src="app.js?v=1.5.0"></script>
 </body>
 </html>

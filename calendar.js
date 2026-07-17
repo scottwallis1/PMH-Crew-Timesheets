@@ -653,6 +653,7 @@
     show,
     render,
     isConfigured,
-    isConnected
+    isConnected,
+    getEvents: () => events.slice()
   };
 })();

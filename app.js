@@ -450,11 +450,76 @@
     });
   }
 
+  function extractJobNumber(text) {
+    const raw = String(text || "");
+    const hashMatch = raw.match(/#(\d{3,5})\b/);
+    if (hashMatch?.[1]) return hashMatch[1];
+    const jobMatch = raw.match(/\bjob\s*#?\s*(\d{3,5})\b/i);
+    if (jobMatch?.[1]) return jobMatch[1];
+    const candidates = [...raw.matchAll(/\b(\d{3,5})\b/g)]
+      .map((match) => match[1])
+      .filter((code) => !/^(19|20)\d{2}$/.test(code));
+    return candidates.find((code) => code.length === 3) || candidates[0] || "";
+  }
+
+  function collectJobOptions() {
+    const byCode = new Map();
+
+    const calendarEvents = window.PMHCalendar?.getEvents?.() || [];
+    calendarEvents.forEach((event) => {
+      const title = event.summary || "";
+      const description = String(event.description || "").replace(/<[^>]+>/g, " ");
+      const code = extractJobNumber(`${title} ${description}`);
+      if (!code) return;
+      const label = title.trim()
+        ? `#${code} · ${title.trim()}`
+        : `#${code}`;
+      if (!byCode.has(code) || (title && !String(byCode.get(code).label).includes("·"))) {
+        byCode.set(code, { value: code, label, source: "calendar" });
+      }
+    });
+
+    entries.forEach((entry) => {
+      const code = String(entry.job || "").toUpperCase();
+      if (!code || code === "STORE") return;
+      if (!/^\d{3,5}$/.test(code)) return;
+      if (!byCode.has(code)) {
+        byCode.set(code, { value: code, label: `#${code}`, source: "entries" });
+      }
+    });
+
+    return [...byCode.values()].sort((a, b) => Number(a.value) - Number(b.value));
+  }
+
+  function populateJobSelect(selected = "") {
+    const select = el("jobNumber");
+    if (!select) return;
+    const wanted = String(selected || "").toUpperCase();
+    const jobs = collectJobOptions();
+
+    const options = [
+      '<option value="">Select a job…</option>',
+      '<option value="STORE">STORE</option>',
+      ...jobs.map((job) => `<option value="${escapeHtml(job.value)}">${escapeHtml(job.label)}</option>`)
+    ];
+
+    if (wanted && wanted !== "STORE" && !jobs.some((job) => job.value === wanted)) {
+      options.push(`<option value="${escapeHtml(wanted)}">#${escapeHtml(wanted)}</option>`);
+    }
+
+    select.innerHTML = options.join("");
+    if (wanted && [...select.options].some((opt) => opt.value === wanted)) {
+      select.value = wanted;
+    } else {
+      select.value = "";
+    }
+  }
+
   function resetEntryForm() {
     el("editingEntryId").value = "";
     el("entryFormTitle").textContent = "Add Hours";
     el("entryDate").value = new Date().toISOString().slice(0, 10);
-    el("jobNumber").value = "";
+    populateJobSelect("");
     el("startTime").value = "08:00";
     el("finishTime").value = "17:00";
     el("mileage").value = "";
@@ -468,7 +533,7 @@
     el("editingEntryId").value = entry.id;
     el("entryFormTitle").textContent = "Edit Entry";
     el("entryDate").value = entry.date;
-    el("jobNumber").value = entry.job;
+    populateJobSelect(entry.job);
     el("startTime").value = entry.start;
     el("finishTime").value = entry.finish;
     el("mileage").value = entry.mileage || "";
@@ -488,8 +553,8 @@
 
   function saveEntry() {
     const jobValue = el("jobNumber").value.trim().toUpperCase();
-    if (!(jobValue === "STORE" || /^\d{3}$/.test(jobValue))) {
-      alert("Enter exactly three digits or choose STORE.");
+    if (!(jobValue === "STORE" || /^\d{3,5}$/.test(jobValue))) {
+      alert("Select a job number from the list, or STORE.");
       return;
     }
 
@@ -730,22 +795,13 @@
 
     el("openAddHoursButton").addEventListener("click", () => {
       resetEntryForm();
+      populateJobSelect("");
       showView("addHoursView");
     });
 
     el("cancelFormButton").addEventListener("click", () => {
       resetEntryForm();
       showView("summaryView");
-    });
-
-    el("storeButton").addEventListener("click", () => {
-      el("jobNumber").value = "STORE";
-    });
-
-    el("jobNumber").addEventListener("input", () => {
-      if (el("jobNumber").value.toUpperCase() !== "STORE") {
-        el("jobNumber").value = el("jobNumber").value.replace(/\D/g, "").slice(0, 3);
-      }
     });
 
     el("startTime").addEventListener("change", calculateHours);
