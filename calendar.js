@@ -325,7 +325,7 @@
       : "";
     const selected = selectedEventId && event.id === selectedEventId ? " is-selected" : "";
     const tone = eventToneClass(event);
-    const badge = isStructureJob(event) ? "Structure" : "Other";
+    const badge = isStructureJob(event) ? "PMH" : "PEV";
 
     return `
       <article class="calendar-event ${tone}${selected}" data-event-id="${escapeHtml(event.id)}">

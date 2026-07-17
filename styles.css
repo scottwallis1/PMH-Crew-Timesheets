@@ -757,11 +757,12 @@ textarea {
 .legend-chip {
   display: inline-flex;
   align-items: center;
-  padding: 6px 10px;
+  padding: 8px 14px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   font-family: var(--font-display);
+  letter-spacing: 0.04em;
 }
 
 .legend-chip.tone-structure,
@@ -926,7 +927,8 @@ textarea {
     grid-template-columns: 1fr 1fr;
   }
 
-  .site-header h1 { font-size: 19px; }
+  .site-header h1 { font-size: 24px; }
+  .site-header p { font-size: 15px; }
   .user-name { font-size: 30px; }
   .leaderboard-hours { font-size: 24px; min-width: 6.5rem; }
   .robot-avatar { width: 96px; height: 96px; flex-basis: 96px; }
