@@ -48,24 +48,24 @@ button { cursor: pointer; }
 .site-header {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 8px 14px;
+  gap: 14px;
+  padding: 10px 14px;
   background: linear-gradient(180deg, #00483d, var(--green-800));
   border-bottom: 2px solid var(--gold);
 }
 
 .site-header img {
-  width: 56px;
-  height: 56px;
+  width: 70px;
+  height: 70px;
   object-fit: cover;
-  border-radius: 9px;
+  border-radius: 11px;
   border: 1px solid rgba(239, 183, 93, 0.5);
 }
 
 .site-header h1 {
   margin: 0 0 2px;
   font-family: var(--font-display);
-  font-size: 21px;
+  font-size: 26px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -74,9 +74,9 @@ button { cursor: pointer; }
   margin: 0;
   color: var(--gold);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
