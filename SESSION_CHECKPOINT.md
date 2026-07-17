@@ -80,6 +80,8 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 
 Open later: whether Owner-only covers All Jobs + Crew + retire/add users, while standard users only see Profile + Calendar + Add Hours.
 
+**Out of scope for now:** phone push notification reminders for job allocation — dropped.
+
 **Demo now:** someone Connects Google on a device → events cache locally on that browser.
 
 **Real app:** calendar appears automatically for every profile. Users do **not** each do Connect Google.
