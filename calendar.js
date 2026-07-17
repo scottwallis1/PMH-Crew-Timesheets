@@ -140,6 +140,17 @@
     return STRUCTURE_KEYWORDS.some((word) => haystack.includes(word));
   }
 
+  function isNineMetreJob(event) {
+    const haystack = `${event.summary || ""} ${plainText(event.description || "")} ${event.location || ""}`;
+    // Match 9m / 9 m / 9-metre / 9 metre / 9.0m etc in booking text.
+    return /\b9(?:\.0+)?\s*-?\s*m(?:etre|eter)?s?\b/i.test(haystack);
+  }
+
+  function forwardPlanningNoticeHtml(event) {
+    if (!isNineMetreJob(event)) return "";
+    return `<div class="forward-planning-notice" role="status">FORWARD PLANNING REQUIRED</div>`;
+  }
+
   function eventToneClass(event) {
     return isStructureJob(event) ? "tone-structure" : "tone-other";
   }
@@ -328,7 +339,7 @@
     const badge = isStructureJob(event) ? "PMH" : "PEV";
 
     return `
-      <article class="calendar-event ${tone}${selected}" data-event-id="${escapeHtml(event.id)}">
+      <article class="calendar-event ${tone}${selected}${isNineMetreJob(event) ? " needs-forward-planning" : ""}" data-event-id="${escapeHtml(event.id)}">
         <div class="calendar-event-top">
           <strong>${title}</strong>
           <span class="calendar-tone-badge">${badge}</span>
@@ -336,6 +347,7 @@
         <div class="entry-meta">${when}</div>
         ${location}
         ${preview}
+        ${forwardPlanningNoticeHtml(event)}
       </article>
     `;
   }
@@ -410,6 +422,7 @@
               : ""
           }
         </div>
+        ${forwardPlanningNoticeHtml(event)}
       </article>
     `;
 

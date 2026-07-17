@@ -875,6 +875,26 @@ textarea {
   white-space: pre-wrap;
 }
 
+.forward-planning-notice {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 38, 38, 0.55);
+  background: rgba(127, 29, 29, 0.35);
+  color: #ff3b3b;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.calendar-event.needs-forward-planning {
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
 .calendar-detail {
   margin-top: 14px;
   padding-top: 14px;
