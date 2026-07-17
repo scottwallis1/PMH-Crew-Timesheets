@@ -348,6 +348,47 @@ body:has(.app.theme-event-hire) {
   color: #cbb6e0;
 }
 
+/* Crew page: no marquee green ranks/hours while Event Hire is active. */
+.app.theme-event-hire .rank {
+  color: #f0e4ff;
+  background: var(--event-purple-950);
+  border-color: rgba(184, 144, 224, 0.45);
+}
+
+.app.theme-event-hire .leaderboard-hours {
+  color: #e2c8f7;
+}
+
+.app.theme-event-hire .leaderboard-hours span {
+  color: #cbb6e0;
+}
+
+.app.theme-event-hire .management-panel summary {
+  color: #e2c8f7;
+}
+
+.app.theme-event-hire .leaderboard-row.retired .leaderboard-hours,
+.app.theme-event-hire .leaderboard-row.retired .leaderboard-copy strong {
+  color: #9b8aad;
+}
+
+/* Calendar: PMH green that sits alongside Event Hire purple. */
+.app.theme-event-hire .legend-chip.tone-structure,
+.app.theme-event-hire .calendar-event.tone-structure,
+.app.theme-event-hire .calendar-detail-body.tone-structure {
+  background: #1f4d3d;
+  border-color: rgba(140, 210, 170, 0.42);
+  color: #eafff4;
+}
+
+.app.theme-event-hire .calendar-day-label {
+  color: #e2c8f7;
+}
+
+.app.theme-event-hire .calendar-status {
+  color: #cbb6e0;
+}
+
 .robot-photo {
   display: block;
   width: 100%;
