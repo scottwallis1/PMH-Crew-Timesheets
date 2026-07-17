@@ -582,10 +582,17 @@
     const refreshBtn = el("calendarRefreshButton");
     if (!connectBtn) return;
 
+    const connected = isConnected();
     connectBtn.disabled = !isConfigured();
-    connectBtn.textContent = isConnected() ? "Reconnect Google" : "Connect Google Calendar";
-    if (disconnectBtn) disconnectBtn.classList.toggle("hidden", !isConnected());
-    if (refreshBtn) refreshBtn.disabled = !isConnected();
+    connectBtn.textContent = "Connect Google Calendar";
+    // Only show Connect when not signed in — Refresh Sync covers updates while connected.
+    connectBtn.classList.toggle("hidden", connected);
+    if (disconnectBtn) disconnectBtn.classList.toggle("hidden", !connected);
+    if (refreshBtn) {
+      refreshBtn.classList.toggle("hidden", !isConfigured());
+      refreshBtn.disabled = !connected;
+      refreshBtn.textContent = "Refresh Sync";
+    }
   }
 
   function render() {
