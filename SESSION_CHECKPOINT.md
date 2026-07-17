@@ -57,9 +57,9 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 
 ## Next session priorities
 
-1. **Rename Summary → Profile** (nav label + headings) — action noted by Scott
-2. Shared storage so all crew phones see the same synced calendar (no per-phone Google login)
-3. Private profiles / hours (see privacy notes below)
+1. **Rename Summary → Profile** (nav label + headings)
+2. **Per-profile PIN** — can’t open someone else’s Profile without their PIN (agreed least-resistance privacy)
+3. Shared storage so all crew phones see the same synced calendar (no per-phone Google login)
 4. Add Hours → select a calendar booking / job
 5. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
 
