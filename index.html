@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
   <div class="app">
@@ -19,6 +19,21 @@
         <p>Crew Hours</p>
       </div>
     </header>
+
+    <nav id="topNav" class="top-nav hidden">
+      <button data-view="summaryView" class="active">
+        <span class="nav-icon" aria-hidden="true">⌂</span>
+        <span>Summary</span>
+      </button>
+      <button data-view="allJobsView">
+        <span class="nav-icon" aria-hidden="true">▤</span>
+        <span>All Jobs</span>
+      </button>
+      <button data-view="crewView">
+        <span class="nav-icon" aria-hidden="true">●●</span>
+        <span>Crew</span>
+      </button>
+    </nav>
 
     <main>
       <section id="loginView" class="view active">
@@ -49,15 +64,15 @@
 
       <section id="summaryView" class="view">
         <div class="card summary-card">
-          <button id="changeUserButton" class="icon-button" aria-label="Change user" title="Change user">
-            <span aria-hidden="true">↻</span>
-          </button>
-
           <div class="profile-row">
             <div id="summaryRobot" class="robot-avatar"></div>
             <div class="profile-copy">
               <h2 id="summaryUserName" class="user-name"></h2>
               <p id="summaryRole">Team member</p>
+              <button id="changeUserButton" class="change-user-link" type="button">
+                <span class="change-user-icon" aria-hidden="true">↻</span>
+                Change user
+              </button>
             </div>
           </div>
 
@@ -141,15 +156,15 @@
       <section id="crewView" class="view">
         <div class="card compact-top-card">
           <h2>Crew</h2>
-          <p class="muted">Ranked by total all-time hours</p>
+          <p class="muted">Ranked by total all-time hours. Retired crew stay listed with a tombstone.</p>
           <div id="crewLeaderboard"></div>
 
           <details class="management-panel">
             <summary>Retire User</summary>
-            <label for="retireUserSelect">Select user</label>
+            <label for="retireUserSelect">Select active user</label>
             <select id="retireUserSelect"></select>
             <button id="retireUserButton" class="button danger">Retire Selected User</button>
-            <p class="muted">Historical entries remain in reports and exports.</p>
+            <p class="muted">They stay on the crew list greyed out and can be reinstated later. Historical entries remain.</p>
           </details>
         </div>
 
@@ -159,23 +174,8 @@
         </div>
       </section>
     </main>
-
-    <nav id="bottomNav" class="bottom-nav hidden">
-      <button data-view="summaryView" class="active">
-        <span class="nav-icon" aria-hidden="true">⌂</span>
-        <span>Summary</span>
-      </button>
-      <button data-view="allJobsView">
-        <span class="nav-icon" aria-hidden="true">▤</span>
-        <span>All Jobs</span>
-      </button>
-      <button data-view="crewView">
-        <span class="nav-icon" aria-hidden="true">●●</span>
-        <span>Crew</span>
-      </button>
-    </nav>
   </div>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

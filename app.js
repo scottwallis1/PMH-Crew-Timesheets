@@ -149,6 +149,25 @@
   }
 
   function renderRobot(target, user) {
+    if (user && user.active === false) {
+      const stoneId = `stone_${Math.random().toString(36).slice(2, 8)}`;
+      target.innerHTML = `
+        <svg class="tombstone-svg" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="${stoneId}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#9aa3a8"/>
+              <stop offset="55%" stop-color="#6d757a"/>
+              <stop offset="100%" stop-color="#3f464a"/>
+            </linearGradient>
+          </defs>
+          <rect x="8" y="50" width="48" height="8" rx="2" fill="#4a5256"/>
+          <path d="M18 50 V28 C18 16 46 16 46 28 V50 Z" fill="url(#${stoneId})" stroke="#2f3538" stroke-width="1.5"/>
+          <path d="M26 34 H38 M28 40 H36" stroke="#2f3538" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="32" cy="26" r="2.2" fill="#2f3538"/>
+        </svg>
+      `;
+      return;
+    }
     const src = typeof user === "string" ? (avatarFiles[user] || avatarFiles.scott) : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -201,10 +220,10 @@
 
   function showView(viewId) {
     document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === viewId));
-    document.querySelectorAll("#bottomNav button").forEach((button) => {
+    document.querySelectorAll("#topNav button").forEach((button) => {
       button.classList.toggle("active", button.dataset.view === viewId);
     });
-    el("bottomNav").classList.toggle("hidden", viewId === "loginView");
+    el("topNav").classList.toggle("hidden", viewId === "loginView" || viewId === "addHoursView");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -417,43 +436,51 @@
 
   function renderCrew() {
     const leaderboard = users
-      .filter((user) => user.active)
       .map((user) => {
         const recordedHours = entries
           .filter((entry) => entry.userId === user.id && !entry.cancelled)
           .reduce((sum, entry) => sum + Number(entry.hours), 0);
         return { ...user, allTimeHours: Number(user.seedHours || 0) + recordedHours };
       })
-      .sort((a, b) => b.allTimeHours - a.allTimeHours);
+      .sort((a, b) => {
+        if (a.active !== b.active) return a.active ? -1 : 1;
+        return b.allTimeHours - a.allTimeHours;
+      });
 
     el("crewLeaderboard").innerHTML = leaderboard.map((user, index) => `
-      <div class="leaderboard-row">
+      <div class="leaderboard-row ${user.active ? "" : "retired"}">
         <div class="rank">${index + 1}</div>
-        <div class="robot-avatar robot-avatar-md" data-avatar="${escapeHtml(user.avatar || user.id)}"></div>
+        <div class="robot-avatar robot-avatar-md ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
         <div class="leaderboard-copy">
-          <strong>${escapeHtml(user.name)}</strong>
-          <div class="muted">All-time total</div>
+          <strong>${escapeHtml(user.name)}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
+          <div class="muted">${user.active ? "All-time total" : "Retired · history kept"}</div>
+          ${user.active ? "" : `<button type="button" class="button subtle reinstate-user" data-id="${escapeHtml(user.id)}">Reinstate</button>`}
         </div>
         <div class="leaderboard-hours">${formatHours(user.allTimeHours)}<span>hrs</span></div>
       </div>
     `).join("");
 
     document.querySelectorAll("#crewLeaderboard .robot-avatar").forEach((avatar) => {
-      const key = avatar.dataset.avatar;
-      const user = users.find((item) => item.avatar === key || item.id === key) || { avatar: key, name: key };
-      renderRobot(avatar, user);
+      const user = users.find((item) => item.id === avatar.dataset.userId);
+      if (user) renderRobot(avatar, user);
+    });
+
+    document.querySelectorAll(".reinstate-user").forEach((button) => {
+      button.addEventListener("click", () => reinstateUser(button.dataset.id));
     });
 
     const retireable = users.filter((user) => user.active && user.id !== "scott");
-    el("retireUserSelect").innerHTML = retireable.map((user) => `<option value="${user.id}">${escapeHtml(user.name)}</option>`).join("");
+    el("retireUserSelect").innerHTML = retireable.length
+      ? retireable.map((user) => `<option value="${user.id}">${escapeHtml(user.name)}</option>`).join("")
+      : '<option value="" disabled selected>No active users to retire</option>';
   }
 
   function renderAll() {
     renderLogin();
-    if (currentUserId) {
+    renderCrew();
+    if (currentUserId && users.some((user) => user.id === currentUserId && user.active)) {
       renderSummary();
       renderAllJobs();
-      renderCrew();
     }
   }
 
@@ -490,13 +517,25 @@
   function retireUser() {
     const userId = el("retireUserSelect").value;
     const user = users.find((item) => item.id === userId);
-    if (!user) return;
-    if (!confirm(`Retire ${user.name}? Their historical data will remain.`)) return;
+    if (!user || !user.active) return;
+    if (!confirm(`Retire ${user.name}? They will stay on the crew list greyed out with a tombstone, and can be reinstated later.`)) return;
     user.active = false;
     if (currentUserId === user.id) {
-      currentUserId = "scott";
-      storageSet(STORAGE.currentUser, currentUserId);
+      currentUserId = "";
+      storageSet(STORAGE.currentUser, "");
+      saveAll();
+      renderAll();
+      showView("loginView");
+      return;
     }
+    saveAll();
+    renderAll();
+  }
+
+  function reinstateUser(userId) {
+    const user = users.find((item) => item.id === userId);
+    if (!user || user.active) return;
+    user.active = true;
     saveAll();
     renderAll();
   }
@@ -504,22 +543,26 @@
   function initialize() {
     populateTimes();
     resetEntryForm();
+    // Always start on the select-team-member screen each load.
+    currentUserId = "";
+    storageSet(STORAGE.currentUser, "");
     renderAll();
-
-    if (currentUserId && users.some((user) => user.id === currentUserId && user.active)) {
-      showView("summaryView");
-    } else {
-      showView("loginView");
-    }
+    showView("loginView");
 
     el("continueButton").addEventListener("click", () => {
       currentUserId = el("loginUser").value;
+      if (!currentUserId) return;
       storageSet(STORAGE.currentUser, currentUserId);
       renderAll();
       showView("summaryView");
     });
 
-    el("changeUserButton").addEventListener("click", () => showView("loginView"));
+    el("changeUserButton").addEventListener("click", () => {
+      currentUserId = "";
+      storageSet(STORAGE.currentUser, "");
+      renderLogin();
+      showView("loginView");
+    });
     el("addUserButton").addEventListener("click", addUser);
     el("retireUserButton").addEventListener("click", retireUser);
 
@@ -551,7 +594,7 @@
     el("jobSearch").addEventListener("input", renderAllJobs);
     el("exportPdfButton").addEventListener("click", () => window.print());
 
-    document.querySelectorAll("#bottomNav button").forEach((button) => {
+    document.querySelectorAll("#topNav button").forEach((button) => {
       button.addEventListener("click", () => {
         const viewId = button.dataset.view;
         if (viewId === "summaryView") renderSummary();

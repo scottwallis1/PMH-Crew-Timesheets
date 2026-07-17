@@ -36,7 +36,7 @@ button { cursor: pointer; }
   max-width: 760px;
   min-height: 100vh;
   margin: 0 auto;
-  padding-bottom: 82px;
+  padding-bottom: 24px;
   background: linear-gradient(180deg, var(--green-800), var(--green-900));
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
 }
@@ -96,8 +96,115 @@ main { padding: 10px 12px; }
 }
 
 .summary-card {
-  padding-top: 13px;
+  padding-top: 16px;
   padding-bottom: 13px;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-copy { flex: 1; min-width: 0; }
+
+.user-name {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.profile-copy p {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.change-user-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  color: var(--gold);
+  background: transparent;
+  border: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.change-user-link:hover,
+.change-user-link:focus-visible {
+  color: var(--gold-soft);
+  text-decoration: underline;
+}
+
+.change-user-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(239, 183, 93, 0.45);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+}
+
+.robot-avatar {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  flex: 0 0 108px;
+  overflow: hidden;
+  border: 3px solid var(--gold);
+  border-radius: 50%;
+  background: #050708;
+  box-shadow:
+    0 0 0 4px rgba(239, 183, 93, 0.14),
+    0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.robot-avatar-md {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-width: 2px;
+  box-shadow:
+    0 0 0 3px rgba(239, 183, 93, 0.12),
+    0 4px 10px rgba(0, 0, 0, 0.28);
+}
+
+.robot-avatar-sm {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-width: 2px;
+}
+
+.robot-avatar.tombstone {
+  border-color: rgba(160, 170, 165, 0.55);
+  background: #2a3134;
+  box-shadow: none;
+  filter: grayscale(0.35);
+}
+
+.robot-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.tombstone-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 8%;
 }
 
 .jobs-card {
@@ -186,90 +293,6 @@ textarea {
 }
 
 .hidden { display: none !important; }
-
-.profile-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-right: 40px;
-}
-
-.profile-copy { flex: 1; }
-
-.user-name {
-  margin: 0 0 4px;
-  font-family: var(--font-display);
-  font-size: 34px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.profile-copy p {
-  margin: 0;
-  color: var(--muted);
-}
-
-.icon-button {
-  position: absolute;
-  top: 11px;
-  right: 11px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  color: var(--gold);
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(239,183,93,.35);
-  border-radius: 50%;
-  font-size: 19px;
-  font-weight: 700;
-}
-
-.robot-avatar {
-  position: relative;
-  width: 84px;
-  height: 84px;
-  flex: 0 0 84px;
-  overflow: hidden;
-  border: 3px solid var(--gold);
-  border-radius: 50%;
-  background: #050708;
-  box-shadow:
-    0 0 0 4px rgba(239, 183, 93, 0.14),
-    0 8px 18px rgba(0, 0, 0, 0.35);
-}
-
-.robot-avatar-md {
-  width: 58px;
-  height: 58px;
-  flex: 0 0 58px;
-  border-width: 2px;
-  box-shadow:
-    0 0 0 3px rgba(239, 183, 93, 0.12),
-    0 4px 10px rgba(0, 0, 0, 0.28);
-}
-
-.robot-avatar-sm {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  border-width: 2px;
-}
-
-.robot-photo {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.terminator-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
 
 .summary-grid,
 .two-column {
@@ -554,33 +577,63 @@ textarea {
   text-transform: uppercase;
 }
 
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  width: min(760px, 100%);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  transform: translateX(-50%);
-  background: #002a23;
-  border-top: 1px solid var(--gold);
+.leaderboard-row.retired {
+  opacity: 0.72;
+  filter: grayscale(0.55);
 }
 
-.bottom-nav button {
+.leaderboard-row.retired .leaderboard-hours,
+.leaderboard-row.retired .leaderboard-copy strong {
+  color: #9aa59f;
+}
+
+.retired-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #c5cec9;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.reinstate-user {
+  width: auto;
+  margin-top: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.top-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #002a23;
+  border-bottom: 1px solid var(--gold);
+}
+
+.top-nav button {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 8px 4px 9px;
+  padding: 9px 4px 10px;
   color: #d9e4e0;
   background: transparent;
   border: 0;
+  border-bottom: 3px solid transparent;
   font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
 }
 
-.bottom-nav button.active { color: var(--gold); }
+.top-nav button.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
 
 .nav-icon {
   min-height: 20px;
@@ -603,15 +656,15 @@ textarea {
   .site-header h1 { font-size: 19px; }
   .user-name { font-size: 30px; }
   .leaderboard-hours { font-size: 24px; min-width: 6.5rem; }
-  .robot-avatar { width: 76px; height: 76px; flex-basis: 76px; }
-  .robot-avatar-md { width: 54px; height: 54px; flex-basis: 54px; }
+  .robot-avatar { width: 96px; height: 96px; flex-basis: 96px; }
+  .robot-avatar-md { width: 64px; height: 64px; flex-basis: 64px; }
 }
 
 @media print {
   body { color: #000; background: #fff; }
 
   .site-header,
-  .bottom-nav,
+  .top-nav,
   #loginView,
   #summaryView,
   #addHoursView,
