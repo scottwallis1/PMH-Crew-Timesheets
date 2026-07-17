@@ -595,15 +595,20 @@
     populateMonthSelect(el("allJobsMonth"), selectedMonth);
     const month = el("allJobsMonth").value;
     const query = el("jobSearch").value.trim().toLowerCase();
+    const userId = currentUserId;
+
+    if (!userId) {
+      el("allJobsList").innerHTML = '<p class="muted">Enter your Profile to see jobs you have logged.</p>';
+      return;
+    }
 
     const grouped = {};
     entries
+      .filter((entry) => entry.userId === userId)
       .filter((entry) => entry.date.startsWith(month))
       .filter((entry) => {
-        const user = users.find((item) => item.id === entry.userId);
-        return !query ||
-          entry.job.toLowerCase().includes(query.replace("#", "")) ||
-          (user?.name || "").toLowerCase().includes(query);
+        if (!query) return true;
+        return entry.job.toLowerCase().includes(query.replace("#", ""));
       })
       .sort((a, b) => b.date.localeCompare(a.date))
       .forEach((entry) => {
@@ -620,6 +625,7 @@
           const cancelledEntries = job.entries.filter((entry) => entry.cancelled);
           const allCancelled = activeEntries.length === 0 && cancelledEntries.length > 0;
           const totalHours = activeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
+          const totalMiles = activeEntries.reduce((sum, entry) => sum + Number(entry.mileage || 0), 0);
           const label = job.job === "STORE" ? "STORE" : `#${job.job}`;
           const typeClass = job.job === "STORE" ? "store" : "job";
           return `<article class="job-card ${typeClass}${allCancelled ? " cancelled" : ""}">
@@ -630,17 +636,16 @@
               </div>
               <strong>${allCancelled ? `<s>${formatHours(job.entries.reduce((sum, entry) => sum + Number(entry.hours), 0))} hrs</s>` : `${formatHours(totalHours)} hrs`}</strong>
             </div>
-            ${job.entries.map((entry) => {
-              const user = users.find((item) => item.id === entry.userId);
-              return `<div class="job-person ${entry.cancelled ? "cancelled" : ""}">
-                <span>${escapeHtml(user?.name || "Unknown")}${entry.cancelled ? " — Cancelled" : ""}</span>
+            ${job.entries.map((entry) => `
+              <div class="job-person ${entry.cancelled ? "cancelled" : ""}">
+                <span>${entry.cancelled ? "Cancelled" : `${entry.start}–${entry.finish}`}${entry.notes ? ` · ${escapeHtml(entry.notes)}` : ""}</span>
                 <strong>${entry.cancelled ? `<s>${formatHours(entry.hours)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles</s>` : `${formatHours(entry.hours)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles`}</strong>
-              </div>`;
-            }).join("")}
-            ${allCancelled ? '<div class="entry-meta">Excluded from totals</div>' : ""}
+              </div>
+            `).join("")}
+            ${!allCancelled ? `<div class="entry-meta">Your total: ${formatHours(totalHours)} hrs · ${totalMiles.toFixed(0)} miles</div>` : '<div class="entry-meta">Excluded from totals</div>'}
           </article>`;
         }).join("")
-      : '<p class="muted">No matching jobs found.</p>';
+      : '<p class="muted">No jobs logged for this month yet. Add hours on a job to see it here.</p>';
   }
 
   function renderCrew() {
