@@ -879,9 +879,9 @@ textarea {
   margin-top: 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(220, 38, 38, 0.55);
-  background: rgba(127, 29, 29, 0.35);
-  color: #ff3b3b;
+  border: 1px solid #6b1212;
+  background: #7a1515;
+  color: #ffffff;
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 800;
