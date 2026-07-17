@@ -375,7 +375,7 @@
           </div>
           <div>
             <dt>Type</dt>
-            <dd>${isStructureJob(event) ? "Marquee / tent / gazebo / pagoda" : "Other booking"}</dd>
+            <dd>${isStructureJob(event) ? "PMH" : "PEV"}</dd>
           </div>
           ${
             event.location
@@ -648,12 +648,87 @@
     }
   }
 
+  function extractJobNumber(text) {
+    const raw = String(text || "");
+    const hashMatch = raw.match(/#(\d{3,5})\b/);
+    if (hashMatch?.[1]) return hashMatch[1];
+    const jobMatch = raw.match(/\bjob\s*#?\s*(\d{3,5})\b/i);
+    if (jobMatch?.[1]) return jobMatch[1];
+    const candidates = [...raw.matchAll(/\b(\d{3,5})\b/g)]
+      .map((match) => match[1])
+      .filter((code) => !/^(19|20)\d{2}$/.test(code));
+    return candidates.find((code) => code.length === 3) || candidates[0] || "";
+  }
+
+  function findEventForJob(jobCode, date = "") {
+    const code = String(jobCode || "");
+    if (!code || code === "STORE") return null;
+    const matches = events.filter((event) => {
+      const blob = `${event.summary || ""} ${plainText(event.description || "")}`;
+      return extractJobNumber(blob) === code;
+    });
+    if (!matches.length) return null;
+    if (!date) return matches[0];
+    const onDay = matches.find((event) => eventOccursOnDay(event, new Date(`${date}T12:00:00`)));
+    return onDay || matches[0];
+  }
+
+  function mergeCrewHoursDescription(existingDescription, hoursBlock) {
+    const marker = "--- Crew hours (completed) ---";
+    const base = String(existingDescription || "");
+    const idx = base.indexOf(marker);
+    const cleaned = (idx >= 0 ? base.slice(0, idx) : base).trimEnd();
+    return `${cleaned}\n\n${hoursBlock}`.trim();
+  }
+
+  async function writeCrewHoursToEvent(eventId, hoursBlock) {
+    if (!isConnected()) {
+      throw new Error("Connect Google Calendar to write hours onto the booking.");
+    }
+    if (!eventId) throw new Error("No matching calendar booking found for this job.");
+
+    const existing = events.find((event) => event.id === eventId);
+    const description = mergeCrewHoursDescription(existing?.description || "", hoursBlock);
+    const calendarId = encodeURIComponent(config().calendarId || "primary");
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${encodeURIComponent(eventId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ description })
+      }
+    );
+
+    if (!response.ok) {
+      const text = await response.text();
+      if (response.status === 401) {
+        storeToken("", 0);
+        throw new Error("Google session expired — connect again, then retry Mark complete.");
+      }
+      throw new Error(`Could not update calendar (${response.status}): ${text.slice(0, 160)}`);
+    }
+
+    const updated = normalizeEvent(await response.json());
+    if (updated) {
+      const index = events.findIndex((event) => event.id === updated.id);
+      if (index >= 0) events[index] = updated;
+      else events.push(updated);
+      persistEvents();
+    }
+    return updated;
+  }
+
   window.PMHCalendar = {
     bind,
     show,
     render,
     isConfigured,
     isConnected,
-    getEvents: () => events.slice()
+    getEvents: () => events.slice(),
+    findEventForJob,
+    writeCrewHoursToEvent
   };
 })();

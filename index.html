@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.6.1">
+  <link rel="stylesheet" href="styles.css?v=1.7.0">
 </head>
 <body>
   <div class="app">
@@ -193,6 +193,23 @@
         </div>
       </section>
 
+      <section id="completeJobView" class="view">
+        <div class="card">
+          <h2 id="completeJobTitle">Complete job</h2>
+          <p id="completeJobSummary" class="muted"></p>
+          <div id="completeJobCrew" class="complete-crew-list"></div>
+
+          <label for="completeJobPhotos">Job photos</label>
+          <p class="muted job-select-hint">Add site photos before marking complete (camera or gallery).</p>
+          <input id="completeJobPhotos" type="file" accept="image/*" capture="environment" multiple>
+          <div id="completeJobPhotoPreview" class="photo-preview-grid"></div>
+          <p id="completeJobStatus" class="muted job-select-hint"></p>
+
+          <button id="confirmCompleteJobButton" class="button primary" type="button">Mark complete & update calendar</button>
+          <button id="cancelCompleteJobButton" class="button subtle" type="button">Cancel</button>
+        </div>
+      </section>
+
       <section id="crewView" class="view">
         <div class="card compact-top-card">
           <h2>Crew</h2>
@@ -250,9 +267,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.6.1"></script>
+  <script src="google-config.js?v=1.7.0"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.6.1"></script>
-  <script src="app.js?v=1.6.1"></script>
+  <script src="calendar.js?v=1.7.0"></script>
+  <script src="app.js?v=1.7.0"></script>
 </body>
 </html>

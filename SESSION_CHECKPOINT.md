@@ -80,22 +80,23 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 
 Open later: whether Owner-only covers All Jobs + Crew + retire/add users, while standard users only see Profile + Calendar + Add Hours.
 
-## Product notes — job complete + photos (discussion)
+## Product notes — job complete + photos (decided)
 
-**Requested**
-1. Photos upload / view / download on a job
-2. When hours are assigned and the job is **complete**, write users + hours into the **Google Calendar** entry
+**Decided**
+1. **Anyone** can mark a job complete (no Owner-only gate)
+2. Write crew hours into the Google Calendar entry **when marked complete**
+3. **Ask for photos** when marking complete (prompt; can continue without)
 
-**Advice**
-- Photos for real multi-phone use need cloud storage; demo-only local photos won’t share well
-- Calendar write-back is a good next demo feature: Mark complete → update event description with crew hours
-- Needs Google Connect (Owner/central account) with write scope (already using `calendar.events`)
-- Decide: who can mark complete; write only on complete vs live updates
+**Shipped in demo (v1.7)**
+- All Jobs → Mark complete → photo picker → confirm
+- Photos stored in device IndexedDB; view/download on completed job cards
+- On complete: PATCH calendar event description with `--- Crew hours (completed) ---` block (all crew on that job+date)
+- STORE cannot be marked complete
+- If Google not connected / no matching event: still completes locally and warns about calendar
 
-**Proposed default (awaiting Scott confirm)**
-- Mark complete available (Owner at minimum)
-- Write crew/hours into calendar only when marked complete
-- Photos deferred until shared storage, unless Scott wants a local demo stub
+**Later**
+- Cloud photo storage for multi-phone sharing
+- Central calendar sync (no per-phone Connect for crew)
 
 **Demo now:** someone Connects Google on a device → events cache locally on that browser.
 

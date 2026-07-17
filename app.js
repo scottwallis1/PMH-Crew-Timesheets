@@ -5,7 +5,8 @@
     users: "pm_users_v6",
     entries: "pm_entries_v6",
     currentUser: "pm_current_user_v6",
-    pins: "pm_pins_v1"
+    pins: "pm_pins_v1",
+    completedJobs: "pm_completed_jobs_v1"
   };
 
   const memoryStorage = {};
@@ -96,6 +97,10 @@
   let currentUserId = storageGet(STORAGE.currentUser) || "";
   let pins = load(STORAGE.pins, {}) || {};
   if (!pins || typeof pins !== "object" || Array.isArray(pins)) pins = {};
+  let completedJobs = load(STORAGE.completedJobs, {}) || {};
+  if (!completedJobs || typeof completedJobs !== "object" || Array.isArray(completedJobs)) completedJobs = {};
+  let pendingComplete = null;
+  let pendingPhotos = [];
 
   // Migrate from earlier storage if present, otherwise seed defaults.
   if (!Array.isArray(users) || users.length === 0) {
@@ -146,6 +151,102 @@
     storageSet(STORAGE.users, JSON.stringify(users));
     storageSet(STORAGE.entries, JSON.stringify(entries));
     storageSet(STORAGE.pins, JSON.stringify(pins));
+    storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
+  }
+
+  function jobKey(date, job) {
+    return `${date}_${String(job || "").toUpperCase()}`;
+  }
+
+  function isJobComplete(date, job) {
+    return Boolean(completedJobs[jobKey(date, job)]);
+  }
+
+  function openPhotoDb() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("pmh_team_manager_photos_v1", 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains("photos")) {
+          const store = db.createObjectStore("photos", { keyPath: "id" });
+          store.createIndex("jobKey", "jobKey", { unique: false });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function savePhotosForJob(jobKeyValue, files) {
+    if (!files.length) return [];
+    const db = await openPhotoDb();
+    const saved = [];
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("photos", "readwrite");
+      const store = tx.objectStore("photos");
+      files.forEach((file, index) => {
+        const record = {
+          id: `${jobKeyValue}_${Date.now()}_${index}`,
+          jobKey: jobKeyValue,
+          name: file.name || `photo_${index + 1}.jpg`,
+          type: file.type || "image/jpeg",
+          blob: file,
+          createdAt: Date.now()
+        };
+        store.put(record);
+        saved.push(record.id);
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+    return saved;
+  }
+
+  async function listPhotosForJob(jobKeyValue) {
+    const db = await openPhotoDb();
+    const photos = await new Promise((resolve, reject) => {
+      const tx = db.transaction("photos", "readonly");
+      const index = tx.objectStore("photos").index("jobKey");
+      const request = index.getAll(jobKeyValue);
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return photos;
+  }
+
+  function crewHoursForJob(date, jobCode) {
+    const code = String(jobCode || "").toUpperCase();
+    const byUser = {};
+    entries
+      .filter((entry) => !entry.cancelled && entry.date === date && String(entry.job).toUpperCase() === code)
+      .forEach((entry) => {
+        if (!byUser[entry.userId]) {
+          byUser[entry.userId] = { userId: entry.userId, hours: 0, mileage: 0 };
+        }
+        byUser[entry.userId].hours += Number(entry.hours) || 0;
+        byUser[entry.userId].mileage += Number(entry.mileage) || 0;
+      });
+    return Object.values(byUser)
+      .map((row) => ({
+        ...row,
+        name: users.find((user) => user.id === row.userId)?.name || "Unknown"
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function buildCalendarHoursBlock(date, jobCode, completedByName) {
+    const crew = crewHoursForJob(date, jobCode);
+    const totalHours = crew.reduce((sum, row) => sum + row.hours, 0);
+    const lines = [
+      "--- Crew hours (completed) ---",
+      `Job #${jobCode} · ${date}`,
+      ...crew.map((row) => `${row.name}: ${formatHours(row.hours)} hrs`),
+      `Total: ${formatHours(totalHours)} hrs`,
+      `Completed by ${completedByName} on ${new Date().toLocaleDateString("en-GB")}`
+    ];
+    return lines.join("\n");
   }
 
   function uid(prefix) {
@@ -348,7 +449,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.6.0`;
+    return `${path}?v=1.6.1`;
   }
 
   function renderRobot(target, user) {
@@ -372,7 +473,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.6.0`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.6.1`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -428,7 +529,10 @@
     document.querySelectorAll("#topNav button").forEach((button) => {
       button.classList.toggle("active", button.dataset.view === viewId);
     });
-    el("topNav").classList.toggle("hidden", viewId === "loginView" || viewId === "addHoursView");
+    el("topNav").classList.toggle(
+      "hidden",
+      viewId === "loginView" || viewId === "addHoursView" || viewId === "completeJobView"
+    );
     if (viewId === "calendarView") {
       window.PMHCalendar?.show?.();
     }
@@ -791,6 +895,152 @@
     showView("summaryView");
   }
 
+  function renderPendingPhotoPreview() {
+    const preview = el("completeJobPhotoPreview");
+    if (!preview) return;
+    if (!pendingPhotos.length) {
+      preview.innerHTML = '<p class="muted">No photos selected yet.</p>';
+      return;
+    }
+    preview.innerHTML = pendingPhotos.map((file, index) => {
+      const url = URL.createObjectURL(file);
+      return `<figure class="photo-thumb">
+        <img src="${url}" alt="Job photo ${index + 1}">
+        <button type="button" class="button subtle remove-pending-photo" data-index="${index}">Remove</button>
+      </figure>`;
+    }).join("");
+    preview.querySelectorAll(".remove-pending-photo").forEach((button) => {
+      button.addEventListener("click", () => {
+        pendingPhotos.splice(Number(button.dataset.index), 1);
+        renderPendingPhotoPreview();
+      });
+    });
+  }
+
+  async function renderJobPhotos(container, date, jobCode) {
+    if (!container) return;
+    const key = jobKey(date, jobCode);
+    try {
+      const photos = await listPhotosForJob(key);
+      if (!photos.length) {
+        container.innerHTML = '<p class="muted">No photos attached.</p>';
+        return;
+      }
+      container.innerHTML = photos.map((photo) => {
+        const url = URL.createObjectURL(photo.blob);
+        return `<figure class="photo-thumb">
+          <img src="${url}" alt="${escapeHtml(photo.name)}">
+          <a class="button subtle" href="${url}" download="${escapeHtml(photo.name)}">Download</a>
+        </figure>`;
+      }).join("");
+    } catch {
+      container.innerHTML = '<p class="muted">Could not load photos on this device.</p>';
+    }
+  }
+
+  function openCompleteJob(date, jobCode) {
+    if (String(jobCode).toUpperCase() === "STORE") {
+      alert("STORE does not use calendar completion.");
+      return;
+    }
+    if (isJobComplete(date, jobCode)) {
+      alert("This job is already marked complete.");
+      return;
+    }
+    const crew = crewHoursForJob(date, jobCode);
+    if (!crew.length) {
+      alert("No active hours found for this job.");
+      return;
+    }
+
+    pendingComplete = { date, job: String(jobCode).toUpperCase() };
+    pendingPhotos = [];
+    el("completeJobTitle").textContent = `Complete #${pendingComplete.job}`;
+    el("completeJobSummary").textContent =
+      `${formatDate(date)} · Add photos, then mark complete to write crew hours onto the Google Calendar booking.`;
+    el("completeJobCrew").innerHTML = crew.map((row) => `
+      <div class="job-person">
+        <span>${escapeHtml(row.name)}</span>
+        <strong>${formatHours(row.hours)} hrs · ${Number(row.mileage || 0).toFixed(0)} miles</strong>
+      </div>
+    `).join("");
+    el("completeJobPhotos").value = "";
+    el("completeJobStatus").textContent = window.PMHCalendar?.isConnected?.()
+      ? "Google connected — calendar will be updated on complete."
+      : "Google not connected — job can still be completed; connect Calendar to write hours onto the booking.";
+    renderPendingPhotoPreview();
+    showView("completeJobView");
+  }
+
+  async function confirmCompleteJob() {
+    if (!pendingComplete || !currentUserId) return;
+    const { date, job } = pendingComplete;
+    const key = jobKey(date, job);
+    const completer = getCurrentUser();
+    const status = el("completeJobStatus");
+    const button = el("confirmCompleteJobButton");
+
+    if (!pendingPhotos.length) {
+      const proceed = window.confirm(
+        "No photos selected. Mark this job complete without photos?"
+      );
+      if (!proceed) {
+        if (status) status.textContent = "Add photos with the picker above, then mark complete.";
+        return;
+      }
+    }
+
+    if (button) button.disabled = true;
+    if (status) status.textContent = "Saving…";
+
+    try {
+      const photoIds = await savePhotosForJob(key, pendingPhotos);
+      const calendarEvent = window.PMHCalendar?.findEventForJob?.(job, date) || null;
+      let calendarUpdated = false;
+      let calendarError = "";
+
+      if (calendarEvent && window.PMHCalendar?.isConnected?.()) {
+        try {
+          const block = buildCalendarHoursBlock(date, job, completer?.name || "Crew");
+          await window.PMHCalendar.writeCrewHoursToEvent(calendarEvent.id, block);
+          calendarUpdated = true;
+        } catch (error) {
+          calendarError = error.message || "Calendar update failed.";
+        }
+      } else if (!calendarEvent) {
+        calendarError = "No matching calendar booking found for this job number.";
+      } else {
+        calendarError = "Connect Google Calendar to push hours onto the booking.";
+      }
+
+      completedJobs[key] = {
+        job,
+        date,
+        completedAt: Date.now(),
+        completedBy: currentUserId,
+        calendarEventId: calendarEvent?.id || "",
+        calendarUpdated,
+        photoCount: photoIds.length
+      };
+      saveAll();
+
+      pendingComplete = null;
+      pendingPhotos = [];
+      renderAll();
+      showView("allJobsView");
+      if (calendarUpdated) {
+        alert("Job marked complete. Crew hours were written to the Google Calendar booking.");
+      } else {
+        alert(`Job marked complete.${calendarError ? ` Calendar note: ${calendarError}` : ""}`);
+      }
+    } catch (error) {
+      if (status) status.textContent = error.message || "Could not complete job.";
+      alert(error.message || "Could not complete job.");
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   function renderAllJobs() {
     const selectedMonth = el("allJobsMonth").value || availableMonths()[0];
     populateMonthSelect(el("allJobsMonth"), selectedMonth);
@@ -829,10 +1079,13 @@
           const totalMiles = activeEntries.reduce((sum, entry) => sum + Number(entry.mileage || 0), 0);
           const label = job.job === "STORE" ? "STORE" : `#${job.job}`;
           const typeClass = job.job === "STORE" ? "store" : "job";
-          return `<article class="job-card ${typeClass}${allCancelled ? " cancelled" : ""}">
+          const complete = isJobComplete(job.date, job.job);
+          const completeMeta = complete ? completedJobs[jobKey(job.date, job.job)] : null;
+          const crew = job.job === "STORE" ? [] : crewHoursForJob(job.date, job.job);
+          return `<article class="job-card ${typeClass}${allCancelled ? " cancelled" : ""}${complete ? " job-complete" : ""}" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">
             <div class="job-header">
               <div>
-                <h3>${label}${allCancelled ? '<span class="status">Cancelled</span>' : ""}</h3>
+                <h3>${label}${allCancelled ? '<span class="status">Cancelled</span>' : ""}${complete ? '<span class="status complete-badge">Complete</span>' : ""}</h3>
                 <div class="muted">${formatDate(job.date)}</div>
               </div>
               <strong>${allCancelled ? `<s>${formatHours(job.entries.reduce((sum, entry) => sum + Number(entry.hours), 0))} hrs</s>` : `${formatHours(totalHours)} hrs`}</strong>
@@ -844,9 +1097,21 @@
               </div>
             `).join("")}
             ${!allCancelled ? `<div class="entry-meta">Your total: ${formatHours(totalHours)} hrs · ${totalMiles.toFixed(0)} miles</div>` : '<div class="entry-meta">Excluded from totals</div>'}
+            ${crew.length > 1 ? `<div class="entry-meta">Crew on this job: ${crew.map((row) => `${escapeHtml(row.name)} ${formatHours(row.hours)}h`).join(" · ")}</div>` : ""}
+            ${complete ? `<div class="entry-meta">Completed${completeMeta?.calendarUpdated ? " · calendar updated" : ""}${completeMeta?.photoCount ? ` · ${completeMeta.photoCount} photo(s)` : ""}</div>
+              <div class="job-photo-gallery" data-photo-job="${escapeHtml(job.job)}" data-photo-date="${escapeHtml(job.date)}"></div>` : ""}
+            ${!allCancelled && !complete && job.job !== "STORE" ? `<button type="button" class="button primary small-action mark-complete-job" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Mark complete</button>` : ""}
           </article>`;
         }).join("")
       : '<p class="muted">No jobs logged for this month yet. Add hours on a job to see it here.</p>';
+
+    document.querySelectorAll(".mark-complete-job").forEach((button) => {
+      button.addEventListener("click", () => openCompleteJob(button.dataset.date, button.dataset.job));
+    });
+
+    document.querySelectorAll(".job-photo-gallery").forEach((gallery) => {
+      renderJobPhotos(gallery, gallery.dataset.photoDate, gallery.dataset.photoJob);
+    });
   }
 
   function renderCrew() {
@@ -1002,6 +1267,17 @@
     el("addUserButton").addEventListener("click", addUser);
     el("retireUserButton").addEventListener("click", retireUser);
 
+    el("changePinButton")?.addEventListener("click", () => {
+      changeProfilePin();
+    });
+    ["currentPin", "newPin", "newPinConfirm"].forEach((id) => {
+      el(id)?.addEventListener("input", (event) => {
+        event.target.value = event.target.value.replace(/\D/g, "").slice(0, 6);
+        el("changePinError")?.classList.add("hidden");
+        el("changePinSuccess")?.classList.add("hidden");
+      });
+    });
+
     el("openAddHoursButton").addEventListener("click", () => {
       resetEntryForm();
       populateJobSelect("");
@@ -1015,6 +1291,21 @@
 
     el("jobNumber").addEventListener("change", () => {
       applyAutoMileage(el("jobNumber").value);
+    });
+
+    el("completeJobPhotos")?.addEventListener("change", (event) => {
+      const files = [...(event.target.files || [])];
+      pendingPhotos = pendingPhotos.concat(files);
+      renderPendingPhotoPreview();
+      event.target.value = "";
+    });
+    el("confirmCompleteJobButton")?.addEventListener("click", () => {
+      confirmCompleteJob();
+    });
+    el("cancelCompleteJobButton")?.addEventListener("click", () => {
+      pendingComplete = null;
+      pendingPhotos = [];
+      showView("allJobsView");
     });
 
     el("startTime").addEventListener("change", calculateHours);

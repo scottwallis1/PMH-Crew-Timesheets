@@ -973,7 +973,54 @@ textarea {
   }
 }
 
+.job-complete {
+  border-color: rgba(239, 183, 93, 0.45);
+}
+
+.complete-badge {
+  margin-left: 8px;
+  color: var(--gold);
+}
+
+.complete-crew-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.photo-preview-grid,
+.job-photo-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+
+.photo-thumb {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.photo-thumb img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(239, 183, 93, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.mark-complete-job {
+  margin-top: 10px;
+}
+
 @media print {
+  #completeJobView,
+  .mark-complete-job {
+    display: none !important;
+  }
+
   body { color: #000; background: #fff; }
 
   .site-header,
