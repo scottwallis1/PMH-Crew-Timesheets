@@ -721,6 +721,129 @@ textarea {
   margin-top: 8px;
 }
 
+.calendar-board-card {
+  padding-top: 14px;
+}
+
+.calendar-toolbar {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.calendar-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid rgba(239, 183, 93, 0.28);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 35, 30, 0.45);
+}
+
+.calendar-mode-toggle button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.calendar-mode-toggle button.active {
+  background: var(--gold);
+  color: var(--green-900);
+}
+
+.calendar-nav-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.calendar-nav-btn {
+  min-width: 44px;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.calendar-range-block {
+  text-align: center;
+}
+
+.calendar-range-block strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text);
+}
+
+.calendar-board {
+  min-height: 120px;
+}
+
+.calendar-week {
+  display: grid;
+  gap: 10px;
+}
+
+.calendar-day-col {
+  border: 1px solid rgba(239, 183, 93, 0.14);
+  border-radius: 12px;
+  background: rgba(0, 35, 30, 0.28);
+  overflow: hidden;
+}
+
+.calendar-day-col.is-today {
+  border-color: rgba(239, 183, 93, 0.45);
+}
+
+.calendar-day-col.is-focus {
+  box-shadow: inset 0 0 0 1px rgba(239, 183, 93, 0.35);
+}
+
+.calendar-day-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: rgba(0, 24, 20, 0.55);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.calendar-day-count {
+  min-width: 1.5rem;
+  height: 1.5rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(239, 183, 93, 0.18);
+  color: var(--gold-soft);
+  font-size: 12px;
+}
+
+.calendar-day-events {
+  padding: 8px 10px 10px;
+}
+
+.calendar-empty-day {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
 .calendar-event {
   margin-top: 10px;
   padding: 12px;
@@ -730,6 +853,95 @@ textarea {
 }
 
 .calendar-event:first-child { margin-top: 0; }
+
+.calendar-event-compact {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.calendar-event-compact strong {
+  font-size: 14px;
+}
+
+.calendar-day-detail {
+  display: grid;
+  gap: 12px;
+}
+
+.calendar-all-day h4 {
+  margin: 0 0 8px;
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 14px;
+}
+
+.calendar-timeline {
+  position: relative;
+  min-height: 520px;
+  border: 1px solid rgba(239, 183, 93, 0.14);
+  border-radius: 12px;
+  background: rgba(0, 35, 30, 0.28);
+  overflow: hidden;
+}
+
+.calendar-hour-row {
+  height: calc(520px / 17);
+  border-bottom: 1px solid rgba(239, 183, 93, 0.08);
+  padding-left: 10px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.calendar-hour-row span {
+  font-size: 11px;
+  color: var(--muted);
+  transform: translateY(-1px);
+}
+
+.calendar-timed-event {
+  position: absolute;
+  left: 58px;
+  right: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 183, 93, 0.35);
+  background: rgba(239, 183, 93, 0.16);
+  color: var(--text);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.calendar-timed-event strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.calendar-timeline-empty {
+  position: absolute;
+  left: 58px;
+  right: 12px;
+  top: 12px;
+  z-index: 1;
+  margin: 0;
+}
+
+@media (min-width: 760px) {
+  .calendar-week {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .calendar-day-events {
+    min-height: 140px;
+  }
+
+  .calendar-day-header {
+    font-size: 12px;
+    padding: 8px;
+  }
+}
 
 @media (max-width: 520px) {
   .summary-grid {

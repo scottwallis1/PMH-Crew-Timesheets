@@ -8,8 +8,8 @@ Mobile-friendly crew timesheet web app for logging job hours, mileage, STORE tim
 - **Summary** — monthly hours/mileage, add/edit/cancel entries
 - **All Jobs** — month view with search; cancelled jobs greyed out; STORE entries in teal
 - **Crew** — all-time leaderboard, unique robot avatars, retire (tombstone) + reinstate
-- **Calendar** — Google Calendar connect tab (needs your OAuth Client ID)
-- Data stored in the browser (`localStorage`) — no backend required for hours
+- **Calendar** — sync Google Calendar into an in-app week/day schedule (OAuth Client ID required to sync)
+- Data stored in the browser (`localStorage`) — no backend required for hours; synced calendar events are cached locally after connect
 
 ## Project files
 
@@ -50,11 +50,13 @@ Static site — deploy the repo root (GitHub Pages / Netlify / Cloudflare Pages)
    - your live site origin
 7. Paste the Client ID into `google-config.js`
 8. Reload → **Calendar** tab → **Connect Google Calendar**
+9. Browse **Week** / **Day** views; synced events stay available after disconnect until the next refresh
 
 See `GOOGLE_CALENDAR_SETUP.md` for the checklist of values to provide.
 
 ## Notes
 
 - Hours data is per device/browser today.
-- Calendar uses Google browser OAuth (public Client ID only — no secrets in the app).
+- Calendar sync uses Google browser OAuth (public Client ID only — no secrets in the app).
+- Synced events are cached in `localStorage` on this device; shared multi-phone calendar comes later.
 - Demo July entries seed on first load of storage `v6`.
