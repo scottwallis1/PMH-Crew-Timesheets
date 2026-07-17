@@ -263,12 +263,6 @@
       button.classList.toggle("active", button.dataset.view === viewId);
     });
     el("topNav").classList.toggle("hidden", viewId === "loginView" || viewId === "addHoursView");
-
-    if (window.Pong) {
-      if (viewId === "pongView") window.Pong.start();
-      else window.Pong.stop();
-    }
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -654,8 +648,6 @@
         showView(viewId);
       });
     });
-
-    window.Pong?.bind?.();
   }
 
   initialize();

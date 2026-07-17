@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
   <div class="app">
@@ -32,10 +32,6 @@
       <button data-view="crewView">
         <span class="nav-icon" aria-hidden="true">●●</span>
         <span>Crew</span>
-      </button>
-      <button data-view="pongView">
-        <span class="nav-icon" aria-hidden="true">▮</span>
-        <span>Pong</span>
       </button>
     </nav>
 
@@ -177,30 +173,9 @@
           <p class="muted export-note">Uses the browser print dialog so the report can be saved as a PDF.</p>
         </div>
       </section>
-
-      <section id="pongView" class="view">
-        <div class="card game-card">
-          <div class="game-header">
-            <div>
-              <h2>Pong</h2>
-              <p class="muted">You vs Store AI. Drag to move. First to 7 wins.</p>
-            </div>
-            <div class="game-scores">
-              <div><span>You</span><strong id="pongYouScore">0</strong></div>
-              <div><span>AI</span><strong id="pongAiScore">0</strong></div>
-              <div><span>Best</span><strong id="pongBest">0</strong></div>
-            </div>
-          </div>
-
-          <canvas id="pongCanvas" width="360" height="460" aria-label="Pong game"></canvas>
-          <p id="pongStatus" class="game-status">Tap Play, then drag to move your paddle</p>
-          <button id="pongPlayButton" class="button primary" type="button">Play</button>
-        </div>
-      </section>
     </main>
   </div>
 
-  <script src="pong.js?v=10"></script>
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
