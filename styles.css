@@ -16,11 +16,11 @@
   --calendar-structure-border: rgba(239, 183, 93, 0.35);
   --calendar-other: #2a1540;
   --calendar-other-border: rgba(150, 110, 210, 0.45);
-  --event-purple-950: #140a22;
-  --event-purple-900: #1a0f2e;
-  --event-purple-800: #2a1540;
-  --event-purple-700: #3b1f57;
-  --event-purple-border: #5c2a7a;
+  --event-purple-950: #241338;
+  --event-purple-900: #2f1848;
+  --event-purple-800: #3d2160;
+  --event-purple-700: #53307a;
+  --event-purple-border: #7a45a0;
   --font-display: "Exo 2", "Segoe UI", sans-serif;
   --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
 }
