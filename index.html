@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.7.0">
+  <link rel="stylesheet" href="styles.css?v=1.7.1">
 </head>
 <body>
   <div class="app">
@@ -199,9 +199,14 @@
           <p id="completeJobSummary" class="muted"></p>
           <div id="completeJobCrew" class="complete-crew-list"></div>
 
-          <label for="completeJobPhotos">Job photos</label>
-          <p class="muted job-select-hint">Add site photos before marking complete (camera or gallery).</p>
-          <input id="completeJobPhotos" type="file" accept="image/*" capture="environment" multiple>
+          <label>Job photos</label>
+          <p class="muted job-select-hint">Add site photos before marking complete.</p>
+          <div class="photo-source-actions">
+            <button id="takeJobPhotoButton" class="button subtle" type="button">Take photo</button>
+            <button id="pickJobGalleryButton" class="button subtle" type="button">Upload from gallery</button>
+          </div>
+          <input id="completeJobCamera" class="hidden-file-input" type="file" accept="image/*" capture="environment">
+          <input id="completeJobPhotos" class="hidden-file-input" type="file" accept="image/*" multiple>
           <div id="completeJobPhotoPreview" class="photo-preview-grid"></div>
           <p id="completeJobStatus" class="muted job-select-hint"></p>
 
@@ -267,9 +272,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.7.0"></script>
+  <script src="google-config.js?v=1.7.1"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.7.0"></script>
-  <script src="app.js?v=1.7.0"></script>
+  <script src="calendar.js?v=1.7.1"></script>
+  <script src="app.js?v=1.7.1"></script>
 </body>
 </html>

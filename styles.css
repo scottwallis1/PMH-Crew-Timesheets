@@ -1015,6 +1015,31 @@ textarea {
   margin-top: 10px;
 }
 
+.photo-source-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+
+.hidden-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 520px) {
+  .photo-source-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   #completeJobView,
   .mark-complete-job {

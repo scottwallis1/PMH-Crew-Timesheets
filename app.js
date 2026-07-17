@@ -964,12 +964,20 @@
         <strong>${formatHours(row.hours)} hrs · ${Number(row.mileage || 0).toFixed(0)} miles</strong>
       </div>
     `).join("");
-    el("completeJobPhotos").value = "";
+    if (el("completeJobPhotos")) el("completeJobPhotos").value = "";
+    if (el("completeJobCamera")) el("completeJobCamera").value = "";
     el("completeJobStatus").textContent = window.PMHCalendar?.isConnected?.()
       ? "Google connected — calendar will be updated on complete."
       : "Google not connected — job can still be completed; connect Calendar to write hours onto the booking.";
     renderPendingPhotoPreview();
     showView("completeJobView");
+  }
+
+  function addPendingPhotos(fileList) {
+    const files = [...(fileList || [])].filter((file) => file && file.type.startsWith("image/"));
+    if (!files.length) return;
+    pendingPhotos = pendingPhotos.concat(files);
+    renderPendingPhotoPreview();
   }
 
   async function confirmCompleteJob() {
@@ -1293,10 +1301,18 @@
       applyAutoMileage(el("jobNumber").value);
     });
 
+    el("takeJobPhotoButton")?.addEventListener("click", () => {
+      el("completeJobCamera")?.click();
+    });
+    el("pickJobGalleryButton")?.addEventListener("click", () => {
+      el("completeJobPhotos")?.click();
+    });
+    el("completeJobCamera")?.addEventListener("change", (event) => {
+      addPendingPhotos(event.target.files);
+      event.target.value = "";
+    });
     el("completeJobPhotos")?.addEventListener("change", (event) => {
-      const files = [...(event.target.files || [])];
-      pendingPhotos = pendingPhotos.concat(files);
-      renderPendingPhotoPreview();
+      addPendingPhotos(event.target.files);
       event.target.value = "";
     });
     el("confirmCompleteJobButton")?.addEventListener("click", () => {
