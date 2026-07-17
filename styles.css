@@ -228,18 +228,26 @@ textarea {
 
 .robot-avatar {
   position: relative;
-  width: 70px;
-  height: 70px;
-  flex: 0 0 70px;
+  width: 84px;
+  height: 84px;
+  flex: 0 0 84px;
   overflow: hidden;
-  border: 2px solid rgba(239, 183, 93, 0.75);
+  border: 3px solid var(--gold);
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 35%, rgba(255, 40, 20, 0.18), transparent 55%),
-    radial-gradient(circle at 50% 30%, #1a2a28, #050908 78%);
+  background: #050708;
+  box-shadow:
+    0 0 0 4px rgba(239, 183, 93, 0.14),
+    0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.robot-avatar-md {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-width: 2px;
   box-shadow:
     0 0 0 3px rgba(239, 183, 93, 0.12),
-    0 0 16px color-mix(in srgb, var(--robot-glow, #ff1a00) 35%, transparent);
+    0 4px 10px rgba(0, 0, 0, 0.28);
 }
 
 .robot-avatar-sm {
@@ -247,7 +255,14 @@ textarea {
   height: 44px;
   flex: 0 0 44px;
   border-width: 2px;
-  box-shadow: 0 0 0 2px rgba(239, 183, 93, 0.1);
+}
+
+.robot-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .terminator-svg {
@@ -321,13 +336,15 @@ textarea {
 }
 
 .entry.store {
-  border-color: var(--store-border);
-  background: linear-gradient(135deg, rgba(26, 63, 77, 0.85), rgba(12, 40, 48, 0.9));
-  box-shadow: inset 0 0 0 1px rgba(110, 190, 210, 0.08);
+  border-color: #6ebed2;
+  border-width: 2px;
+  background: linear-gradient(135deg, #1f5366, #123845 70%);
+  box-shadow: inset 0 0 0 1px rgba(142, 215, 232, 0.2);
 }
 
 .entry.store strong:first-child {
-  color: #8ed7e8;
+  color: #9fe7f5;
+  letter-spacing: 0.04em;
 }
 
 .entry.cancelled {
@@ -434,12 +451,14 @@ textarea {
 }
 
 .job-card.store {
-  border-color: var(--store-border);
-  background: linear-gradient(135deg, #1a3f4d, #12333d);
+  border-color: #6ebed2;
+  border-width: 2px;
+  background: linear-gradient(135deg, #1f5366, #123845);
 }
 
 .job-card.store h3 {
-  color: #8ed7e8;
+  color: #9fe7f5;
+  letter-spacing: 0.04em;
 }
 
 .job-header,
@@ -480,8 +499,8 @@ textarea {
 .leaderboard-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 0;
+  gap: 12px;
+  padding: 14px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -506,27 +525,32 @@ textarea {
 
 .leaderboard-copy strong {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .leaderboard-hours {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   color: var(--gold);
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  min-width: 7.5rem;
+  text-align: right;
 }
 
 .leaderboard-hours span {
-  display: inline-block;
-  margin-left: 2px;
+  display: block;
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -578,7 +602,9 @@ textarea {
 
   .site-header h1 { font-size: 19px; }
   .user-name { font-size: 30px; }
-  .leaderboard-hours { font-size: 20px; }
+  .leaderboard-hours { font-size: 24px; min-width: 6.5rem; }
+  .robot-avatar { width: 76px; height: 76px; flex-basis: 76px; }
+  .robot-avatar-md { width: 54px; height: 54px; flex-basis: 54px; }
 }
 
 @media print {

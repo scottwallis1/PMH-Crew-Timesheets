@@ -2,9 +2,9 @@
   "use strict";
 
   const STORAGE = {
-    users: "pm_users_v4",
-    entries: "pm_entries_v4",
-    currentUser: "pm_current_user_v4"
+    users: "pm_users_v5",
+    entries: "pm_entries_v5",
+    currentUser: "pm_current_user_v5"
   };
 
   const memoryStorage = {};
@@ -26,15 +26,15 @@
   }
 
   const defaultUsers = [
-    { id: "scott", name: "Scott", active: true, role: "Team member", seedHours: 1000000, robot: 0 },
-    { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 4862.5, robot: 1 },
-    { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 4315, robot: 2 },
-    { id: "jerald", name: "Jerald", active: true, role: "Team member", seedHours: 3988.5, robot: 3 },
-    { id: "kadek", name: "Kadek", active: true, role: "Team member", seedHours: 3721, robot: 4 },
-    { id: "josh", name: "Josh", active: true, role: "Team member", seedHours: 3506.5, robot: 5 },
-    { id: "nathan", name: "Nathan", active: true, role: "Team member", seedHours: 3104, robot: 6 },
-    { id: "caden", name: "Caden", active: true, role: "Team member", seedHours: 2844.5, robot: 7 },
-    { id: "luke", name: "Luke", active: true, role: "Team member", seedHours: 2517, robot: 8 }
+    { id: "scott", name: "Scott", active: true, role: "Team member", seedHours: 1000000, avatar: "scott" },
+    { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 4862.5, avatar: "ronnie" },
+    { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 4315, avatar: "jason" },
+    { id: "jerald", name: "Jerald", active: true, role: "Team member", seedHours: 3988.5, avatar: "jerald" },
+    { id: "kadek", name: "Kadek", active: true, role: "Team member", seedHours: 3721, avatar: "kadek" },
+    { id: "josh", name: "Josh", active: true, role: "Team member", seedHours: 3506.5, avatar: "josh" },
+    { id: "nathan", name: "Nathan", active: true, role: "Team member", seedHours: 3104, avatar: "nathan" },
+    { id: "caden", name: "Caden", active: true, role: "Team member", seedHours: 2844.5, avatar: "caden" },
+    { id: "luke", name: "Luke", active: true, role: "Team member", seedHours: 2517, avatar: "luke" }
   ];
 
   const defaultEntries = [
@@ -47,52 +47,57 @@
     { id: "e6", userId: "kadek", date: "2026-07-15", job: "456", start: "08:30", finish: "17:00", hours: 8.5, mileage: 12, notes: "", cancelled: false }
   ];
 
-  // 80s Terminator endoskeleton variants — unique chrome + eye glow per crew member
-  const robotPalettes = [
-    { metal: "#c5ccd1", dark: "#2b3238", glow: "#ff1a00", accent: "#8a939b" },
-    { metal: "#9aa7b0", dark: "#1c242a", glow: "#ff3b1f", accent: "#6d7a84" },
-    { metal: "#d4b483", dark: "#3a2a14", glow: "#ff4d00", accent: "#8f7040" },
-    { metal: "#8f9aa3", dark: "#151b20", glow: "#ff0022", accent: "#5c6770" },
-    { metal: "#dde3e8", dark: "#3a4349", glow: "#00e5ff", accent: "#9aa6af" },
-    { metal: "#6f8f82", dark: "#15241f", glow: "#7CFF00", accent: "#3f5c50" },
-    { metal: "#e8ebe9", dark: "#4a5250", glow: "#ff8a00", accent: "#9ea5a2" },
-    { metal: "#b07a52", dark: "#2c180e", glow: "#ff2438", accent: "#7a4d30" },
-    { metal: "#7f92a8", dark: "#141c28", glow: "#39a7ff", accent: "#4d6075" },
-    { metal: "#9a7aad", dark: "#241530", glow: "#ff31d2", accent: "#634b72" },
-    { metal: "#a8b8be", dark: "#24343a", glow: "#ffd400", accent: "#6f8289" },
-    { metal: "#b07070", dark: "#301818", glow: "#ff6b35", accent: "#7a4040" }
-  ];
+  const avatarFiles = {
+    scott: "assets/avatars/scott.png",
+    ronnie: "assets/avatars/ronnie.png",
+    jason: "assets/avatars/jason.png",
+    jerald: "assets/avatars/jerald.png",
+    kadek: "assets/avatars/kadek.png",
+    josh: "assets/avatars/josh.png",
+    nathan: "assets/avatars/nathan.png",
+    caden: "assets/avatars/caden.png",
+    luke: "assets/avatars/luke.png"
+  };
+
+  const fallbackAvatars = Object.keys(avatarFiles);
 
   let users = load(STORAGE.users, null);
   let entries = load(STORAGE.entries, null);
   let currentUserId = storageGet(STORAGE.currentUser) || "";
 
-  // Migrate from v3 storage if present, otherwise seed defaults.
+  // Migrate from earlier storage if present, otherwise seed defaults.
   if (!Array.isArray(users) || users.length === 0) {
-    const legacyUsers = load("pm_users_v3", null);
+    const legacyUsers = load("pm_users_v4", null) || load("pm_users_v3", null);
     users = Array.isArray(legacyUsers) && legacyUsers.length
       ? legacyUsers
       : JSON.parse(JSON.stringify(defaultUsers));
     storageSet(STORAGE.users, JSON.stringify(users));
   }
   if (!Array.isArray(entries)) {
-    const legacyEntries = load("pm_entries_v3", null);
+    const legacyEntries = load("pm_entries_v4", null) || load("pm_entries_v3", null);
     entries = Array.isArray(legacyEntries)
       ? legacyEntries
       : JSON.parse(JSON.stringify(defaultEntries));
     storageSet(STORAGE.entries, JSON.stringify(entries));
   }
   if (!currentUserId) {
-    currentUserId = storageGet("pm_current_user_v3") || "";
+    currentUserId = storageGet("pm_current_user_v4") || storageGet("pm_current_user_v3") || "";
     if (currentUserId) storageSet(STORAGE.currentUser, currentUserId);
   }
 
-  // Keep crew roles flat — no Boss tag.
-  users = users.map((user, index) => ({
-    ...user,
-    role: "Team member",
-    robot: Number.isInteger(user.robot) ? user.robot : index % robotPalettes.length
-  }));
+  // Keep crew roles flat and ensure every user has a unique robot avatar image.
+  users = users.map((user, index) => {
+    const avatarKey = avatarFiles[user.avatar]
+      ? user.avatar
+      : avatarFiles[user.id]
+        ? user.id
+        : fallbackAvatars[index % fallbackAvatars.length];
+    return {
+      ...user,
+      role: "Team member",
+      avatar: avatarKey
+    };
+  });
   storageSet(STORAGE.users, JSON.stringify(users));
 
   const el = (id) => document.getElementById(id);
@@ -138,61 +143,15 @@
     return users.find((user) => user.id === currentUserId);
   }
 
-  function renderRobot(target, robotIndex) {
-    const palette = robotPalettes[robotIndex % robotPalettes.length];
-    const uidSvg = `r${robotIndex}_${Math.random().toString(36).slice(2, 8)}`;
-    target.style.setProperty("--robot-glow", palette.glow);
-    target.innerHTML = `
-      <svg class="terminator-svg" viewBox="0 0 64 64" aria-hidden="true">
-        <defs>
-          <linearGradient id="metal-${uidSvg}" x1="0.15" y1="0" x2="0.9" y2="1">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="28%" stop-color="${palette.metal}"/>
-            <stop offset="62%" stop-color="${palette.accent}"/>
-            <stop offset="100%" stop-color="${palette.dark}"/>
-          </linearGradient>
-          <linearGradient id="jaw-${uidSvg}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${palette.metal}"/>
-            <stop offset="100%" stop-color="${palette.dark}"/>
-          </linearGradient>
-          <radialGradient id="eye-${uidSvg}" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="25%" stop-color="${palette.glow}"/>
-            <stop offset="100%" stop-color="#2a0500"/>
-          </radialGradient>
-          <filter id="glow-${uidSvg}" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="1.8" result="blur"/>
-            <feMerge>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        <circle cx="32" cy="32" r="31" fill="#050708"/>
-        <path d="M16 28 C16 14 48 14 48 28 L46 22 C42 12 22 12 18 22 Z"
-              fill="url(#metal-${uidSvg})" stroke="${palette.dark}" stroke-width="1"/>
-        <path d="M15 27 C15 18 49 18 49 27 L51 34 C51 48 42 56 32 56 C22 56 13 48 13 34 Z"
-              fill="url(#metal-${uidSvg})" stroke="${palette.dark}" stroke-width="1.1"/>
-        <path d="M18 28 H46 L44 33 H20 Z" fill="${palette.dark}" opacity="0.95"/>
-        <path d="M20 29 H44" stroke="${palette.metal}" stroke-width="1" opacity="0.55"/>
-        <ellipse cx="24" cy="35" rx="6.2" ry="5.2" fill="#0b0d0f"/>
-        <ellipse cx="40" cy="35" rx="6.2" ry="5.2" fill="#0b0d0f"/>
-        <circle cx="24" cy="35" r="3.6" fill="url(#eye-${uidSvg})" filter="url(#glow-${uidSvg})"/>
-        <circle cx="40" cy="35" r="3.6" fill="url(#eye-${uidSvg})" filter="url(#glow-${uidSvg})"/>
-        <circle cx="24" cy="35" r="1.2" fill="#fff8f0"/>
-        <circle cx="40" cy="35" r="1.2" fill="#fff8f0"/>
-        <path d="M30 38 L32 44 L34 38 Z" fill="${palette.dark}"/>
-        <path d="M17 40 L21 46 L17 48 Z" fill="${palette.accent}" opacity="0.7"/>
-        <path d="M47 40 L43 46 L47 48 Z" fill="${palette.accent}" opacity="0.7"/>
-        <path d="M20 46 H44 L42 53 H22 Z" fill="url(#jaw-${uidSvg})" stroke="${palette.dark}" stroke-width="0.8"/>
-        <path d="M23 47 V51 M27 47 V51 M31 47 V51 M35 47 V51 M39 47 V51"
-              stroke="${palette.dark}" stroke-width="1.3"/>
-        <path d="M14 30 L9 24" stroke="${palette.metal}" stroke-width="2.2" stroke-linecap="round"/>
-        <path d="M50 30 L55 24" stroke="${palette.metal}" stroke-width="2.2" stroke-linecap="round"/>
-        <circle cx="9" cy="24" r="2" fill="${palette.accent}"/>
-        <circle cx="55" cy="24" r="2" fill="${palette.accent}"/>
-      </svg>
-    `;
+  function avatarSrc(user) {
+    const key = user?.avatar || user?.id;
+    return avatarFiles[key] || avatarFiles.scott;
+  }
+
+  function renderRobot(target, user) {
+    const src = typeof user === "string" ? (avatarFiles[user] || avatarFiles.scott) : avatarSrc(user);
+    const name = typeof user === "object" && user?.name ? user.name : "Crew";
+    target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
   }
 
   function populateTimes() {
@@ -267,7 +226,7 @@
 
     el("summaryUserName").textContent = user.name;
     el("summaryRole").textContent = user.role;
-    renderRobot(el("summaryRobot"), user.robot);
+    renderRobot(el("summaryRobot"), user);
 
     const selectedMonth = el("summaryMonth").value || availableMonths()[0];
     populateMonthSelect(el("summaryMonth"), selectedMonth);
@@ -470,17 +429,19 @@
     el("crewLeaderboard").innerHTML = leaderboard.map((user, index) => `
       <div class="leaderboard-row">
         <div class="rank">${index + 1}</div>
-        <div class="robot-avatar robot-avatar-sm" data-robot="${user.robot}"></div>
+        <div class="robot-avatar robot-avatar-md" data-avatar="${escapeHtml(user.avatar || user.id)}"></div>
         <div class="leaderboard-copy">
           <strong>${escapeHtml(user.name)}</strong>
           <div class="muted">All-time total</div>
         </div>
-        <div class="leaderboard-hours">${formatHours(user.allTimeHours)} <span>hrs</span></div>
+        <div class="leaderboard-hours">${formatHours(user.allTimeHours)}<span>hrs</span></div>
       </div>
     `).join("");
 
     document.querySelectorAll("#crewLeaderboard .robot-avatar").forEach((avatar) => {
-      renderRobot(avatar, Number(avatar.dataset.robot) || 0);
+      const key = avatar.dataset.avatar;
+      const user = users.find((item) => item.avatar === key || item.id === key) || { avatar: key, name: key };
+      renderRobot(avatar, user);
     });
 
     const retireable = users.filter((user) => user.active && user.id !== "scott");
@@ -508,13 +469,14 @@
     }
 
     const id = uid("user");
+    const avatar = fallbackAvatars[users.length % fallbackAvatars.length];
     users.push({
       id,
       name,
       active: true,
       role: "Team member",
       seedHours: 0,
-      robot: users.length % robotPalettes.length
+      avatar
     });
 
     currentUserId = id;
