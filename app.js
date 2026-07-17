@@ -27,7 +27,7 @@
   }
 
   const defaultUsers = [
-    { id: "scott", name: "Scott", active: true, role: "Team member", seedHours: 1000000, avatar: "scott" },
+    { id: "scott", name: "Scott", active: true, role: "Owner", seedHours: 1000000, avatar: "scott" },
     { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 4862.5, avatar: "ronnie" },
     { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 4315, avatar: "jason" },
     { id: "jerald", name: "Jerald", active: true, role: "Team member", seedHours: 3988.5, avatar: "jerald" },
@@ -115,7 +115,7 @@
     if (currentUserId) storageSet(STORAGE.currentUser, currentUserId);
   }
 
-  // Keep crew roles flat and ensure every user has a unique robot avatar image.
+  // Ensure every user has a unique robot avatar; Scott is Owner.
   users = users.map((user, index) => {
     const avatarKey = avatarFiles[user.avatar]
       ? user.avatar
@@ -124,7 +124,7 @@
         : fallbackAvatars[index % fallbackAvatars.length];
     return {
       ...user,
-      role: "Team member",
+      role: user.id === "scott" ? "Owner" : "Team member",
       avatar: avatarKey
     };
   });

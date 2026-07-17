@@ -63,22 +63,22 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 2. ~~Per-profile PIN~~ **done (v1.4.0)** — demo still uses seeded names
 3. **Self-signup onboarding (real app)** — no pre-seeded names; each person creates username + password
 4. **Shared calendar (no per-user Google connect)** — crew open the app and the calendar is already there / kept up to date
-5. **Admin role** — Scott is Admin and can see everyone; other users only their own Profile
+5. **Owner role** — Scott is Owner and can see everyone; other users only their own Profile
 6. Add Hours → select a calendar booking / job *(dropdown started in v1.5.0; refine with calendar pick if needed)*
 7. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
-8. Hide Connect Google / Refresh Sync from crew Calendar UI (Admin/setup only)
+8. Hide Connect Google / Refresh Sync from crew Calendar UI (Owner/setup only)
 
 ## Product notes — roles (decided)
 
-**Scott = Admin** (not “Master User” / not “Moderator”).
+**Scott = Owner** (not Admin / Master / Moderator).
 
-- Admin can see everyone’s Profiles / hours / crew data as needed
+- Owner can see everyone’s Profiles / hours / crew data as needed
 - Other crew are standard users: own Profile only (PIN/password protected)
-- Role label in the app: **Admin**
-- Alternatives considered and rejected: Master User, Moderator
-- Optional softer UI synonym later: Manager — but default is Admin
+- Role label in the app: **Owner**
+- Scott’s avatar: Terminator-style option 3 (dark armor + gold trim)
+- Alternatives considered: Admin, Master User, Moderator
 
-Open later: whether Admin-only covers All Jobs + Crew + retire/add users, while standard users only see Profile + Calendar + Add Hours.
+Open later: whether Owner-only covers All Jobs + Crew + retire/add users, while standard users only see Profile + Calendar + Add Hours.
 
 **Demo now:** someone Connects Google on a device → events cache locally on that browser.
 
