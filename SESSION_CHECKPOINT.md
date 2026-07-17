@@ -57,9 +57,25 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 
 ## Next session priorities
 
-1. Shared storage so all crew phones see the same synced calendar (no per-phone Google login)
-2. Add Hours → select a calendar booking / job
-3. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
+1. **Rename Summary → Profile** (nav label + headings) — action noted by Scott
+2. Shared storage so all crew phones see the same synced calendar (no per-phone Google login)
+3. Private profiles / hours (see privacy notes below)
+4. Add Hours → select a calendar booking / job
+5. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
+
+## Product notes — private profiles (discussion)
+
+**Today:** “login” is pick a name; all hours live in one browser `localStorage`. Anyone on that phone can switch user and see everyone’s Summary.
+
+**Recommended direction (simple → real privacy):**
+
+1. **Own phone first (lightest):** each crew member installs/opens the app on *their* phone and only uses their own profile. Privacy is mostly “my device.” Still no password. Fine for casual use; weak if phones are shared.
+2. **Local PIN per profile (medium):** each profile has a PIN/password stored only on that device (hashed). Locks Profile / Add Hours for that user. Good for a shared yard tablet. Does **not** sync across phones and is not strong security.
+3. **Real accounts + cloud (proper privacy):** each person creates a profile (email/password or Google Sign-In) and hours are stored on a backend (Firebase/Supabase) scoped to that user. This is what you need if Profile must stay private across devices and people.
+
+Scott’s lean: give them the app → create profile + password → private Profile page. That maps to **(3)** once shared storage exists; until then **(2)** can bridge on a single device.
+
+Open decisions for next session: PIN vs full password; who can see All Jobs / Crew (everyone vs managers only); whether calendar stays shared/read-only for all.
 
 ## Key files
 
