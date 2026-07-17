@@ -2,9 +2,9 @@
   "use strict";
 
   const STORAGE = {
-    users: "pm_users_v5",
-    entries: "pm_entries_v5",
-    currentUser: "pm_current_user_v5"
+    users: "pm_users_v6",
+    entries: "pm_entries_v6",
+    currentUser: "pm_current_user_v6"
   };
 
   const memoryStorage = {};
@@ -39,12 +39,37 @@
 
   const defaultEntries = [
     { id: "e1", userId: "scott", date: "2026-07-17", job: "789", start: "08:00", finish: "17:00", hours: 9, mileage: 24, notes: "Commercial marquee install", cancelled: false },
-    { id: "e2", userId: "scott", date: "2026-07-15", job: "456", start: "08:30", finish: "18:00", hours: 9.5, mileage: 18, notes: "Gala setup", cancelled: false },
-    { id: "e3", userId: "scott", date: "2026-07-14", job: "STORE", start: "09:00", finish: "13:00", hours: 4, mileage: 12, notes: "Loaded flooring", cancelled: false },
-    { id: "e7", userId: "scott", date: "2026-07-12", job: "321", start: "08:00", finish: "12:00", hours: 4, mileage: 8, notes: "Weather delay", cancelled: true },
-    { id: "e4", userId: "ronnie", date: "2026-07-17", job: "789", start: "08:30", finish: "17:00", hours: 8.5, mileage: 18, notes: "", cancelled: false },
-    { id: "e5", userId: "jason", date: "2026-07-17", job: "789", start: "09:00", finish: "16:00", hours: 7, mileage: 0, notes: "", cancelled: false },
-    { id: "e6", userId: "kadek", date: "2026-07-15", job: "456", start: "08:30", finish: "17:00", hours: 8.5, mileage: 12, notes: "", cancelled: false }
+    { id: "e2", userId: "scott", date: "2026-07-16", job: "812", start: "07:30", finish: "16:30", hours: 9, mileage: 31, notes: "Wedding clear-down", cancelled: false },
+    { id: "e3", userId: "scott", date: "2026-07-15", job: "456", start: "08:30", finish: "18:00", hours: 9.5, mileage: 18, notes: "Gala setup", cancelled: false },
+    { id: "e4", userId: "scott", date: "2026-07-14", job: "STORE", start: "09:00", finish: "13:00", hours: 4, mileage: 12, notes: "Loaded flooring", cancelled: false },
+    { id: "e5", userId: "scott", date: "2026-07-13", job: "STORE", start: "08:00", finish: "12:00", hours: 4, mileage: 6, notes: "Sorted chair stock", cancelled: false },
+    { id: "e6", userId: "scott", date: "2026-07-12", job: "321", start: "08:00", finish: "12:00", hours: 4, mileage: 8, notes: "Weather delay", cancelled: true },
+    { id: "e7", userId: "scott", date: "2026-07-10", job: "701", start: "08:00", finish: "17:30", hours: 9.5, mileage: 22, notes: "Festival marquees", cancelled: false },
+    { id: "e8", userId: "scott", date: "2026-07-08", job: "STORE", start: "10:00", finish: "15:00", hours: 5, mileage: 4, notes: "Van restock", cancelled: false },
+
+    { id: "e9", userId: "ronnie", date: "2026-07-17", job: "789", start: "08:30", finish: "17:00", hours: 8.5, mileage: 18, notes: "", cancelled: false },
+    { id: "e10", userId: "ronnie", date: "2026-07-16", job: "812", start: "08:00", finish: "16:00", hours: 8, mileage: 28, notes: "Pack-down lead", cancelled: false },
+    { id: "e11", userId: "ronnie", date: "2026-07-15", job: "456", start: "08:00", finish: "17:00", hours: 9, mileage: 16, notes: "", cancelled: false },
+    { id: "e12", userId: "ronnie", date: "2026-07-14", job: "STORE", start: "09:00", finish: "14:00", hours: 5, mileage: 10, notes: "Loaded sidewalls", cancelled: false },
+    { id: "e13", userId: "ronnie", date: "2026-07-11", job: "655", start: "07:30", finish: "16:00", hours: 8.5, mileage: 40, notes: "Coastal install", cancelled: false },
+    { id: "e14", userId: "ronnie", date: "2026-07-09", job: "640", start: "08:00", finish: "12:30", hours: 4.5, mileage: 14, notes: "Client postponed", cancelled: true },
+    { id: "e15", userId: "ronnie", date: "2026-07-07", job: "STORE", start: "08:30", finish: "12:30", hours: 4, mileage: 5, notes: "Tool check", cancelled: false },
+
+    { id: "e16", userId: "jason", date: "2026-07-17", job: "789", start: "09:00", finish: "16:00", hours: 7, mileage: 0, notes: "", cancelled: false },
+    { id: "e17", userId: "jason", date: "2026-07-16", job: "812", start: "08:30", finish: "17:00", hours: 8.5, mileage: 20, notes: "", cancelled: false },
+    { id: "e18", userId: "jason", date: "2026-07-15", job: "STORE", start: "09:00", finish: "13:30", hours: 4.5, mileage: 8, notes: "Frame rack tidy", cancelled: false },
+    { id: "e19", userId: "jason", date: "2026-07-13", job: "701", start: "08:00", finish: "17:00", hours: 9, mileage: 25, notes: "Peg team", cancelled: false },
+    { id: "e20", userId: "jason", date: "2026-07-12", job: "321", start: "08:00", finish: "11:00", hours: 3, mileage: 8, notes: "Stood down", cancelled: true },
+    { id: "e21", userId: "jason", date: "2026-07-10", job: "688", start: "08:00", finish: "16:30", hours: 8.5, mileage: 19, notes: "Garden party", cancelled: false },
+    { id: "e22", userId: "jason", date: "2026-07-08", job: "STORE", start: "10:00", finish: "14:00", hours: 4, mileage: 3, notes: "Counted weights", cancelled: false },
+
+    { id: "e23", userId: "kadek", date: "2026-07-17", job: "789", start: "08:00", finish: "16:30", hours: 8.5, mileage: 15, notes: "", cancelled: false },
+    { id: "e24", userId: "kadek", date: "2026-07-16", job: "STORE", start: "08:00", finish: "12:00", hours: 4, mileage: 7, notes: "Loaded carpets", cancelled: false },
+    { id: "e25", userId: "kadek", date: "2026-07-15", job: "456", start: "08:30", finish: "17:00", hours: 8.5, mileage: 12, notes: "", cancelled: false },
+    { id: "e26", userId: "kadek", date: "2026-07-14", job: "812", start: "09:00", finish: "15:00", hours: 6, mileage: 21, notes: "Early finish", cancelled: false },
+    { id: "e27", userId: "kadek", date: "2026-07-11", job: "655", start: "08:00", finish: "17:00", hours: 9, mileage: 36, notes: "", cancelled: false },
+    { id: "e28", userId: "kadek", date: "2026-07-09", job: "640", start: "08:00", finish: "12:00", hours: 4, mileage: 14, notes: "Cancelled with Ronnie", cancelled: true },
+    { id: "e29", userId: "kadek", date: "2026-07-07", job: "STORE", start: "09:00", finish: "15:30", hours: 6.5, mileage: 5, notes: "Deep clean bay 2", cancelled: false }
   ];
 
   const avatarFiles = {
@@ -56,7 +81,11 @@
     josh: "assets/avatars/josh.png",
     nathan: "assets/avatars/nathan.png",
     caden: "assets/avatars/caden.png",
-    luke: "assets/avatars/luke.png"
+    luke: "assets/avatars/luke.png",
+    spare1: "assets/avatars/spare1.png",
+    spare2: "assets/avatars/spare2.png",
+    spare3: "assets/avatars/spare3.png",
+    spare4: "assets/avatars/spare4.png"
   };
 
   const fallbackAvatars = Object.keys(avatarFiles);
@@ -67,21 +96,19 @@
 
   // Migrate from earlier storage if present, otherwise seed defaults.
   if (!Array.isArray(users) || users.length === 0) {
-    const legacyUsers = load("pm_users_v4", null) || load("pm_users_v3", null);
+    const legacyUsers = load("pm_users_v5", null) || load("pm_users_v4", null) || load("pm_users_v3", null);
     users = Array.isArray(legacyUsers) && legacyUsers.length
       ? legacyUsers
       : JSON.parse(JSON.stringify(defaultUsers));
     storageSet(STORAGE.users, JSON.stringify(users));
   }
   if (!Array.isArray(entries)) {
-    const legacyEntries = load("pm_entries_v4", null) || load("pm_entries_v3", null);
-    entries = Array.isArray(legacyEntries)
-      ? legacyEntries
-      : JSON.parse(JSON.stringify(defaultEntries));
+    // Prefer fresh demo seed for v6 so All Jobs has richer sample data.
+    entries = JSON.parse(JSON.stringify(defaultEntries));
     storageSet(STORAGE.entries, JSON.stringify(entries));
   }
   if (!currentUserId) {
-    currentUserId = storageGet("pm_current_user_v4") || storageGet("pm_current_user_v3") || "";
+    currentUserId = storageGet("pm_current_user_v5") || storageGet("pm_current_user_v4") || storageGet("pm_current_user_v3") || "";
     if (currentUserId) storageSet(STORAGE.currentUser, currentUserId);
   }
 
@@ -137,6 +164,18 @@
       minimumFractionDigits: hasFraction ? 1 : 0,
       maximumFractionDigits: hasFraction ? 1 : 0
     });
+  }
+
+  function nextAvatarKey() {
+    const used = new Set(users.map((user) => user.avatar).filter(Boolean));
+    const unused = fallbackAvatars.filter((key) => !used.has(key));
+    if (unused.length) return unused[0];
+    // Fall back to least-used avatar so new users still get a matching robot icon.
+    const counts = Object.fromEntries(fallbackAvatars.map((key) => [key, 0]));
+    users.forEach((user) => {
+      if (counts[user.avatar] !== undefined) counts[user.avatar] += 1;
+    });
+    return fallbackAvatars.sort((a, b) => counts[a] - counts[b])[0];
   }
 
   function getCurrentUser() {
@@ -414,21 +453,27 @@
     el("allJobsList").innerHTML = jobs.length
       ? jobs.map((job) => {
           const activeEntries = job.entries.filter((entry) => !entry.cancelled);
+          const cancelledEntries = job.entries.filter((entry) => entry.cancelled);
+          const allCancelled = activeEntries.length === 0 && cancelledEntries.length > 0;
           const totalHours = activeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
           const label = job.job === "STORE" ? "STORE" : `#${job.job}`;
           const typeClass = job.job === "STORE" ? "store" : "job";
-          return `<article class="job-card ${typeClass}">
+          return `<article class="job-card ${typeClass}${allCancelled ? " cancelled" : ""}">
             <div class="job-header">
-              <div><h3>${label}</h3><div class="muted">${formatDate(job.date)}</div></div>
-              <strong>${formatHours(totalHours)} hrs</strong>
+              <div>
+                <h3>${label}${allCancelled ? '<span class="status">Cancelled</span>' : ""}</h3>
+                <div class="muted">${formatDate(job.date)}</div>
+              </div>
+              <strong>${allCancelled ? `<s>${formatHours(job.entries.reduce((sum, entry) => sum + Number(entry.hours), 0))} hrs</s>` : `${formatHours(totalHours)} hrs`}</strong>
             </div>
             ${job.entries.map((entry) => {
               const user = users.find((item) => item.id === entry.userId);
               return `<div class="job-person ${entry.cancelled ? "cancelled" : ""}">
                 <span>${escapeHtml(user?.name || "Unknown")}${entry.cancelled ? " — Cancelled" : ""}</span>
-                <strong>${entry.cancelled ? "0 hrs · 0 miles" : `${formatHours(entry.hours)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles`}</strong>
+                <strong>${entry.cancelled ? `<s>${formatHours(entry.hours)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles</s>` : `${formatHours(entry.hours)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles`}</strong>
               </div>`;
             }).join("")}
+            ${allCancelled ? '<div class="entry-meta">Excluded from totals</div>' : ""}
           </article>`;
         }).join("")
       : '<p class="muted">No matching jobs found.</p>';
@@ -496,7 +541,7 @@
     }
 
     const id = uid("user");
-    const avatar = fallbackAvatars[users.length % fallbackAvatars.length];
+    const avatar = nextAvatarKey();
     users.push({
       id,
       name,
