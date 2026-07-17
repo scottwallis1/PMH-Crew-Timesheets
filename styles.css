@@ -14,8 +14,8 @@
   --cancelled-bg: rgba(120, 130, 128, 0.18);
   --calendar-structure: #003b32;
   --calendar-structure-border: rgba(239, 183, 93, 0.35);
-  --calendar-other: #4a2f6b;
-  --calendar-other-border: rgba(196, 160, 255, 0.4);
+  --calendar-other: #2a1540;
+  --calendar-other-border: rgba(150, 110, 210, 0.45);
   --font-display: "Exo 2", "Segoe UI", sans-serif;
   --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
 }
@@ -74,8 +74,8 @@ button { cursor: pointer; }
   margin: 0;
   color: var(--gold);
   font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -700,6 +700,29 @@ textarea {
   font-weight: 600;
 }
 
+.pin-success {
+  margin: 0;
+  color: var(--gold-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-pin-panel {
+  margin-top: 14px;
+}
+
+.profile-pin-panel summary {
+  cursor: pointer;
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.profile-pin-panel .pin-panel {
+  margin-top: 10px;
+}
+
 .export-note { text-align: center; }
 
 .calendar-status {
@@ -799,7 +822,7 @@ textarea {
   margin: 10px 0 2px;
   color: var(--gold);
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -809,7 +832,7 @@ textarea {
 
 .calendar-event {
   margin: 0;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid rgba(239, 183, 93, 0.16);
   border-radius: 12px;
   cursor: pointer;
@@ -827,13 +850,23 @@ textarea {
   gap: 10px;
 }
 
+.calendar-event-top strong {
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.calendar-event .entry-meta {
+  font-size: 14px;
+}
+
 .calendar-tone-badge {
   flex: 0 0 auto;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   font-family: var(--font-display);
-  opacity: 0.9;
-  padding: 2px 8px;
+  letter-spacing: 0.04em;
+  opacity: 0.95;
+  padding: 4px 10px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.22);
 }
@@ -928,7 +961,7 @@ textarea {
   }
 
   .site-header h1 { font-size: 24px; }
-  .site-header p { font-size: 15px; }
+  .site-header p { font-size: 18px; }
   .user-name { font-size: 30px; }
   .leaderboard-hours { font-size: 24px; min-width: 6.5rem; }
   .robot-avatar { width: 96px; height: 96px; flex-basis: 96px; }

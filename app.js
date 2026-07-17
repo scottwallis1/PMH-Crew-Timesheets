@@ -249,6 +249,77 @@
     return true;
   }
 
+  async function changeProfilePin() {
+    const errorNode = el("changePinError");
+    const successNode = el("changePinSuccess");
+    const showError = (message) => {
+      if (successNode) {
+        successNode.textContent = "";
+        successNode.classList.add("hidden");
+      }
+      if (!errorNode) return;
+      if (!message) {
+        errorNode.textContent = "";
+        errorNode.classList.add("hidden");
+        return;
+      }
+      errorNode.textContent = message;
+      errorNode.classList.remove("hidden");
+    };
+    const showSuccess = (message) => {
+      if (errorNode) {
+        errorNode.textContent = "";
+        errorNode.classList.add("hidden");
+      }
+      if (!successNode) return;
+      successNode.textContent = message;
+      successNode.classList.remove("hidden");
+    };
+
+    if (!currentUserId) {
+      showError("Enter a Profile first.");
+      return;
+    }
+    if (!hasPin(currentUserId)) {
+      showError("No PIN set yet. Sign out and create one on login.");
+      return;
+    }
+
+    const currentPin = (el("currentPin")?.value || "").trim();
+    const newPin = (el("newPin")?.value || "").trim();
+    const confirmPin = (el("newPinConfirm")?.value || "").trim();
+
+    if (!isValidPin(currentPin) || !isValidPin(newPin)) {
+      showError("Use 4–6 digit PINs.");
+      return;
+    }
+    if (newPin !== confirmPin) {
+      showError("New PINs do not match.");
+      return;
+    }
+    if (newPin === currentPin) {
+      showError("New PIN must be different from the current PIN.");
+      return;
+    }
+
+    const record = pins[currentUserId];
+    const currentHash = await hashPin(currentPin, record.salt);
+    if (currentHash !== record.hash) {
+      showError("Current PIN is incorrect.");
+      return;
+    }
+
+    const salt = randomSalt();
+    const hash = await hashPin(newPin, salt);
+    pins[currentUserId] = { hash, salt, updatedAt: Date.now() };
+    storageSet(STORAGE.pins, JSON.stringify(pins));
+
+    if (el("currentPin")) el("currentPin").value = "";
+    if (el("newPin")) el("newPin").value = "";
+    if (el("newPinConfirm")) el("newPinConfirm").value = "";
+    showSuccess("PIN updated.");
+  }
+
   function formatHours(value) {
     const hours = Number(value) || 0;
     const hasFraction = Math.abs(hours % 1) > 0.001;
