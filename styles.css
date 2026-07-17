@@ -372,13 +372,18 @@ body:has(.app.theme-event-hire) {
   color: #9b8aad;
 }
 
-/* Calendar: PMH green that sits alongside Event Hire purple. */
+/* Calendar: muted sage PMH — quieter next to Event Hire purple. */
 .app.theme-event-hire .legend-chip.tone-structure,
 .app.theme-event-hire .calendar-event.tone-structure,
 .app.theme-event-hire .calendar-detail-body.tone-structure {
-  background: #1f4d3d;
-  border-color: rgba(140, 210, 170, 0.42);
-  color: #eafff4;
+  background: #314540;
+  border-color: rgba(150, 170, 160, 0.35);
+  color: #e8eee9;
+}
+
+.app.theme-event-hire .calendar-event.tone-structure .calendar-tone-badge,
+.app.theme-event-hire .legend-chip.tone-structure {
+  background: #314540;
 }
 
 .app.theme-event-hire .calendar-day-label {
