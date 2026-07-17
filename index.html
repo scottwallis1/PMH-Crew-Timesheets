@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.7.3">
+  <link rel="stylesheet" href="styles.css?v=1.7.4">
 </head>
 <body>
   <div class="app">
@@ -186,7 +186,10 @@
           <label for="allJobsMonth">Month</label>
           <select id="allJobsMonth"></select>
           <label for="jobSearch">Search jobs</label>
-          <input id="jobSearch" type="search" placeholder="Search #job or STORE">
+          <select id="jobSearch">
+            <option value="">All calendar jobs</option>
+          </select>
+          <p id="jobSearchHint" class="muted job-select-hint">Choose a job from the calendar list.</p>
         </div>
         <div class="card jobs-card">
           <div id="allJobsList" class="job-list"></div>
@@ -272,9 +275,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.7.2"></script>
+  <script src="google-config.js?v=1.7.4"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.7.2"></script>
-  <script src="app.js?v=1.7.2"></script>
+  <script src="calendar.js?v=1.7.4"></script>
+  <script src="app.js?v=1.7.4"></script>
 </body>
 </html>

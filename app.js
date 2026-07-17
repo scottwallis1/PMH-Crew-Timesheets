@@ -821,6 +821,59 @@
     }
   }
 
+  function collectCalendarJobOptions() {
+    const byCode = new Map();
+    const calendarEvents = window.PMHCalendar?.getEvents?.() || [];
+
+    calendarEvents.forEach((event) => {
+      const title = event.summary || "";
+      const description = String(event.description || "").replace(/<[^>]+>/g, " ");
+      const location = event.location || "";
+      const code = extractJobNumber(`${title} ${description}`);
+      if (!code) return;
+      const postcode =
+        extractUkPostcode(location) ||
+        extractUkPostcode(description) ||
+        extractUkPostcode(title) ||
+        "";
+      const label = title.trim()
+        ? (postcode ? `#${code} · ${title.trim()} · ${postcode}` : `#${code} · ${title.trim()}`)
+        : `#${code}`;
+      const existing = byCode.get(code);
+      if (!existing || (postcode && !existing.postcode) || (title && !String(existing.label).includes("·"))) {
+        byCode.set(code, { value: code, label, postcode });
+      }
+    });
+
+    return [...byCode.values()].sort((a, b) => Number(a.value) - Number(b.value));
+  }
+
+  function populateAllJobsSearch(selected = "") {
+    const select = el("jobSearch");
+    const hint = el("jobSearchHint");
+    if (!select) return;
+
+    const wanted = String(selected || "").replace("#", "").trim();
+    const jobs = collectCalendarJobOptions();
+    const options = [
+      '<option value="">All calendar jobs</option>',
+      ...jobs.map((job) => `<option value="${escapeHtml(job.value)}">${escapeHtml(job.label)}</option>`)
+    ];
+
+    select.innerHTML = options.join("");
+    if (wanted && [...select.options].some((opt) => opt.value === wanted)) {
+      select.value = wanted;
+    } else {
+      select.value = "";
+    }
+
+    if (hint) {
+      hint.textContent = jobs.length
+        ? "Dropdown shows job numbers found on the calendar only."
+        : "No calendar jobs found yet — connect/refresh Calendar to populate this list.";
+    }
+  }
+
   function resetEntryForm() {
     el("editingEntryId").value = "";
     el("entryFormTitle").textContent = "Add Hours";
@@ -1052,8 +1105,10 @@
   function renderAllJobs() {
     const selectedMonth = el("allJobsMonth").value || availableMonths()[0];
     populateMonthSelect(el("allJobsMonth"), selectedMonth);
+    const previousJobFilter = el("jobSearch")?.value || "";
+    populateAllJobsSearch(previousJobFilter);
     const month = el("allJobsMonth").value;
-    const query = el("jobSearch").value.trim().toLowerCase();
+    const jobFilter = (el("jobSearch")?.value || "").trim().toUpperCase();
     const userId = currentUserId;
 
     if (!userId) {
@@ -1066,8 +1121,8 @@
       .filter((entry) => entry.userId === userId)
       .filter((entry) => entry.date.startsWith(month))
       .filter((entry) => {
-        if (!query) return true;
-        return entry.job.toLowerCase().includes(query.replace("#", ""));
+        if (!jobFilter) return true;
+        return String(entry.job || "").toUpperCase() === jobFilter;
       })
       .sort((a, b) => b.date.localeCompare(a.date))
       .forEach((entry) => {
@@ -1111,7 +1166,9 @@
             ${!allCancelled && !complete && job.job !== "STORE" ? `<button type="button" class="button primary small-action mark-complete-job" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Mark complete</button>` : ""}
           </article>`;
         }).join("")
-      : '<p class="muted">No jobs logged for this month yet. Add hours on a job to see it here.</p>';
+      : jobFilter
+        ? `<p class="muted">No hours logged on #${escapeHtml(jobFilter)} for this month yet.</p>`
+        : '<p class="muted">No jobs logged for this month yet. Add hours on a job to see it here.</p>';
 
     document.querySelectorAll(".mark-complete-job").forEach((button) => {
       button.addEventListener("click", () => openCompleteJob(button.dataset.date, button.dataset.job));
@@ -1329,7 +1386,7 @@
     el("saveHoursButton").addEventListener("click", saveEntry);
     el("summaryMonth").addEventListener("change", renderSummary);
     el("allJobsMonth").addEventListener("change", renderAllJobs);
-    el("jobSearch").addEventListener("input", renderAllJobs);
+    el("jobSearch")?.addEventListener("change", renderAllJobs);
     el("exportPdfButton").addEventListener("click", () => window.print());
 
     document.querySelectorAll("#topNav button").forEach((button) => {
