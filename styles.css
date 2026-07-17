@@ -204,46 +204,132 @@ main { padding: 10px 12px; }
 .robot-avatar.avatar-event-hire {
   border-color: var(--event-purple-border);
   box-shadow:
-    0 0 0 4px rgba(92, 42, 122, 0.4),
+    0 0 0 4px rgba(92, 42, 122, 0.45),
     0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
 .robot-avatar-md.avatar-event-hire {
   box-shadow:
-    0 0 0 3px rgba(92, 42, 122, 0.35),
+    0 0 0 3px rgba(92, 42, 122, 0.4),
     0 4px 10px rgba(0, 0, 0, 0.28);
 }
 
-/* Event Hire profile: keep the normal green layout; purple is accent only. */
-#summaryView.profile-theme-event .summary-card {
-  background:
-    linear-gradient(90deg, var(--event-purple-800) 0, var(--event-purple-800) 6px, transparent 6px),
-    linear-gradient(180deg, rgba(42, 21, 64, 0.55), rgba(26, 15, 46, 0.35)),
-    var(--green-700);
-  border-color: rgba(92, 42, 122, 0.55);
+.change-user-link.hidden,
+.change-user-link[hidden] {
+  display: none !important;
 }
 
-#summaryView.profile-theme-event .jobs-card {
-  background:
-    linear-gradient(90deg, var(--event-purple-900) 0, var(--event-purple-900) 6px, transparent 6px),
-    var(--green-700);
-  border-color: rgba(92, 42, 122, 0.4);
+.profile-actions .sign-out-link {
+  opacity: 0.9;
 }
 
-#summaryView.profile-theme-event #summaryRole {
-  color: #c9a6e8;
+/* Full Event Hire shell — no marquee green while Karen’s profile is active. */
+body:has(.app.theme-event-hire) {
+  background:
+    radial-gradient(ellipse at top, rgba(184, 144, 224, 0.12), transparent 42%),
+    linear-gradient(180deg, #100818, #0a0610 80%);
+}
+
+.app.theme-event-hire {
+  background: linear-gradient(180deg, var(--event-purple-700), var(--event-purple-950));
+  box-shadow: 0 0 40px rgba(20, 8, 30, 0.5);
+}
+
+.app.theme-event-hire .site-header {
+  background: linear-gradient(180deg, #4a2670, var(--event-purple-800));
+  border-bottom-color: #b890e0;
+}
+
+.app.theme-event-hire .site-header img {
+  border-color: rgba(184, 144, 224, 0.55);
+}
+
+.app.theme-event-hire .site-header p {
+  color: #d7b8f0;
+}
+
+.app.theme-event-hire .top-nav {
+  background: linear-gradient(180deg, #3b1f57, #1a0f2e);
+  border-color: rgba(184, 144, 224, 0.45);
+}
+
+.app.theme-event-hire .top-nav button {
+  color: #e8ddf5;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.app.theme-event-hire .top-nav button.active {
+  color: #241033;
+  background: linear-gradient(180deg, #e2c8f7, #c9a6e8);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 4px 12px rgba(150, 110, 210, 0.35);
+}
+
+.app.theme-event-hire .card {
+  background: linear-gradient(180deg, var(--event-purple-800), var(--event-purple-900));
+  border-color: rgba(184, 144, 224, 0.28);
+}
+
+.app.theme-event-hire input,
+.app.theme-event-hire select,
+.app.theme-event-hire textarea {
+  background: var(--event-purple-950);
+  border-color: rgba(184, 144, 224, 0.3);
+}
+
+.app.theme-event-hire .stat-card {
+  background: var(--event-purple-950);
+  border-color: rgba(184, 144, 224, 0.28);
+}
+
+.app.theme-event-hire .stat-card strong,
+.app.theme-event-hire .section-heading {
+  color: #e2c8f7;
+}
+
+.app.theme-event-hire #summaryRole {
+  color: #d7b8f0;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-size: 13px;
 }
 
-#summaryView.profile-theme-event .sign-out-link {
-  color: var(--gold);
+.app.theme-event-hire .change-user-link,
+.app.theme-event-hire .sign-out-link {
+  color: #e2c8f7;
 }
 
-.profile-actions .sign-out-link {
-  opacity: 0.9;
+.app.theme-event-hire .change-user-link:hover,
+.app.theme-event-hire .change-user-link:focus-visible,
+.app.theme-event-hire .sign-out-link:hover,
+.app.theme-event-hire .sign-out-link:focus-visible {
+  color: #f3e8ff;
+}
+
+.app.theme-event-hire .change-user-icon {
+  border-color: rgba(184, 144, 224, 0.55);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.app.theme-event-hire .primary {
+  color: #241033;
+  background: linear-gradient(180deg, #e2c8f7, #c9a6e8);
+}
+
+.app.theme-event-hire .subtle {
+  background: rgba(184, 144, 224, 0.12);
+  border-color: rgba(184, 144, 224, 0.28);
+}
+
+.app.theme-event-hire .management-panel {
+  border-color: rgba(184, 144, 224, 0.25);
+}
+
+.app.theme-event-hire .muted,
+.app.theme-event-hire .entry-meta,
+.app.theme-event-hire label {
+  color: #cbb6e0;
 }
 
 .robot-photo {

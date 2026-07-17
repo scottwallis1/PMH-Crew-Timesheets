@@ -143,6 +143,25 @@
     switchButton.hidden = !allowed;
     switchButton.classList.toggle("hidden", !allowed);
     switchButton.setAttribute("aria-hidden", allowed ? "false" : "true");
+    if (!allowed) switchButton.style.display = "none";
+    else switchButton.style.removeProperty("display");
+  }
+
+  function updateBrandTheme() {
+    const user = getCurrentUser();
+    const eventHire = isEventHire(user);
+    document.querySelector(".app")?.classList.toggle("theme-event-hire", eventHire);
+
+    const title = document.querySelector(".site-header h1");
+    const subtitle = document.querySelector(".site-header p");
+    const logo = document.querySelector(".site-header img");
+    if (title) title.textContent = eventHire ? "Peterhead Event Hire" : "Peterhead Marquees";
+    if (subtitle) subtitle.textContent = "Team Manager";
+    if (logo) logo.alt = eventHire ? "Peterhead Event Hire" : "Peterhead Marquees";
+
+    const summaryView = el("summaryView");
+    if (summaryView) summaryView.classList.toggle("profile-theme-event", eventHire);
+    el("summaryRobot")?.classList.toggle("avatar-event-hire", eventHire);
   }
 
   function canEditTarget(targetId, actor = getActor()) {
@@ -574,6 +593,8 @@
       "hidden",
       viewId === "loginView" || viewId === "addHoursView" || viewId === "completeJobView"
     );
+    updateBrandTheme();
+    updateSwitchProfileVisibility();
     if (viewId === "calendarView") {
       window.PMHCalendar?.show?.();
     }
@@ -627,13 +648,13 @@
     el("summaryUserName").textContent = user.name;
     el("summaryRole").textContent = user.role;
     renderRobot(el("summaryRobot"), user);
-
-    const summaryView = el("summaryView");
-    if (summaryView) summaryView.classList.toggle("profile-theme-event", isEventHire(user));
-    el("summaryRobot")?.classList.toggle("avatar-event-hire", isEventHire(user));
+    updateBrandTheme();
 
     updateSwitchProfileVisibility();
-    if (signOutButton) signOutButton.classList.remove("hidden");
+    if (signOutButton) {
+      signOutButton.classList.remove("hidden");
+      signOutButton.hidden = false;
+    }
     if (addHoursButton) addHoursButton.classList.toggle("hidden", !editable);
     if (changePinPanel) {
       changePinPanel.classList.toggle("hidden", !(sessionActorId && sessionActorId === currentUserId));
@@ -1333,6 +1354,7 @@
   function renderAll() {
     renderLogin();
     renderCrew();
+    updateBrandTheme();
     updateSwitchProfileVisibility();
     if (currentUserId && users.some((user) => user.id === currentUserId && user.active)) {
       renderSummary();
