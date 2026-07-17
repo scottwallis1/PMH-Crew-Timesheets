@@ -2,11 +2,12 @@
   "use strict";
 
   const STORAGE = {
-    users: "pm_users_v7",
-    entries: "pm_entries_v7",
-    currentUser: "pm_current_user_v7",
-    pins: "pm_pins_v1",
-    completedJobs: "pm_completed_jobs_v2"
+    users: "pm_users_v8",
+    entries: "pm_entries_v8",
+    currentUser: "pm_current_user_v8",
+    sessionActor: "pm_session_actor_v8",
+    pins: "pm_pins_v2",
+    completedJobs: "pm_completed_jobs_v3"
   };
 
   const memoryStorage = {};
@@ -29,29 +30,18 @@
 
   const defaultUsers = [
     { id: "scott", name: "Scott", active: true, role: "Owner", seedHours: 0, avatar: "scott" },
-    { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 0, avatar: "ronnie" },
-    { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 0, avatar: "jason" },
-    { id: "jerald", name: "Jerald", active: true, role: "Team member", seedHours: 0, avatar: "jerald" },
-    { id: "kadek", name: "Kadek", active: true, role: "Team member", seedHours: 0, avatar: "kadek" },
-    { id: "josh", name: "Josh", active: true, role: "Team member", seedHours: 0, avatar: "josh" },
-    { id: "nathan", name: "Nathan", active: true, role: "Team member", seedHours: 0, avatar: "nathan" },
-    { id: "caden", name: "Caden", active: true, role: "Team member", seedHours: 0, avatar: "caden" },
-    { id: "luke", name: "Luke", active: true, role: "Team member", seedHours: 0, avatar: "luke" }
+    { id: "ronnie", name: "Ronnie", active: true, role: "Manager", seedHours: 0, avatar: "ronnie" },
+    { id: "karen", name: "Karen", active: true, role: "Team member", seedHours: 0, avatar: "karen" },
+    { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 0, avatar: "jason" }
   ];
 
-  // Demo hour seed removed — start empty so real/calendar work is clearer.
   const defaultEntries = [];
 
   const avatarFiles = {
     scott: "assets/avatars/scott.png",
     ronnie: "assets/avatars/ronnie.png",
+    karen: "assets/avatars/karen.png",
     jason: "assets/avatars/jason.png",
-    jerald: "assets/avatars/jerald.png",
-    kadek: "assets/avatars/kadek.png",
-    josh: "assets/avatars/josh.png",
-    nathan: "assets/avatars/nathan.png",
-    caden: "assets/avatars/caden.png",
-    luke: "assets/avatars/luke.png",
     spare1: "assets/avatars/spare1.png",
     spare2: "assets/avatars/spare2.png",
     spare3: "assets/avatars/spare3.png",
@@ -59,9 +49,16 @@
   };
 
   const fallbackAvatars = Object.keys(avatarFiles);
+  const CANONICAL_ROLES = {
+    scott: "Owner",
+    ronnie: "Manager",
+    karen: "Team member",
+    jason: "Team member"
+  };
 
   let users = load(STORAGE.users, null);
   let entries = load(STORAGE.entries, null);
+  let sessionActorId = storageGet(STORAGE.sessionActor) || "";
   let currentUserId = storageGet(STORAGE.currentUser) || "";
   let pins = load(STORAGE.pins, {}) || {};
   if (!pins || typeof pins !== "object" || Array.isArray(pins)) pins = {};
@@ -69,35 +66,18 @@
   if (!completedJobs || typeof completedJobs !== "object" || Array.isArray(completedJobs)) completedJobs = {};
   let pendingComplete = null;
   let pendingPhotos = [];
+  let loginMode = "auth"; // "auth" | "switch"
 
-  // Migrate profiles from earlier storage if present; hours start empty (v7 clean slate).
+  // Fresh roster for the access model — no legacy demo users carried over.
   if (!Array.isArray(users) || users.length === 0) {
-    const legacyUsers =
-      load("pm_users_v6", null) ||
-      load("pm_users_v5", null) ||
-      load("pm_users_v4", null) ||
-      load("pm_users_v3", null);
-    users = Array.isArray(legacyUsers) && legacyUsers.length
-      ? legacyUsers
-      : JSON.parse(JSON.stringify(defaultUsers));
+    users = JSON.parse(JSON.stringify(defaultUsers));
     storageSet(STORAGE.users, JSON.stringify(users));
   }
   if (!Array.isArray(entries)) {
-    entries = [];
+    entries = JSON.parse(JSON.stringify(defaultEntries));
     storageSet(STORAGE.entries, JSON.stringify(entries));
   }
-  if (!currentUserId) {
-    currentUserId =
-      storageGet("pm_current_user_v6") ||
-      storageGet("pm_current_user_v5") ||
-      storageGet("pm_current_user_v4") ||
-      storageGet("pm_current_user_v3") ||
-      "";
-    if (currentUserId) storageSet(STORAGE.currentUser, currentUserId);
-  }
 
-  // Ensure every user has a unique robot avatar; Scott is Owner.
-  // Zero demo seed hours so Crew/Profile totals only show real logged hours.
   users = users.map((user, index) => {
     const avatarKey = avatarFiles[user.avatar]
       ? user.avatar
@@ -106,7 +86,7 @@
         : fallbackAvatars[index % fallbackAvatars.length];
     return {
       ...user,
-      role: user.id === "scott" ? "Owner" : "Team member",
+      role: CANONICAL_ROLES[user.id] || user.role || "Team member",
       avatar: avatarKey,
       seedHours: 0
     };
@@ -130,6 +110,41 @@
     storageSet(STORAGE.entries, JSON.stringify(entries));
     storageSet(STORAGE.pins, JSON.stringify(pins));
     storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
+    storageSet(STORAGE.sessionActor, sessionActorId || "");
+    storageSet(STORAGE.currentUser, currentUserId || "");
+  }
+
+  function getActor() {
+    return users.find((user) => user.id === sessionActorId && user.active);
+  }
+
+  function isOwner(user = getActor()) {
+    return Boolean(user && (user.id === "scott" || user.role === "Owner"));
+  }
+
+  function isManager(user = getActor()) {
+    return Boolean(user && (user.id === "ronnie" || user.role === "Manager"));
+  }
+
+  function canSwitchProfiles(user = getActor()) {
+    return isOwner(user) || isManager(user);
+  }
+
+  function canEditTarget(targetId, actor = getActor()) {
+    if (!actor || !targetId) return false;
+    if (actor.id === "scott") return true;
+    if (targetId === "scott") return false;
+    if (actor.id === "ronnie") return true;
+    return actor.id === targetId;
+  }
+
+  function canEditCurrentProfile() {
+    return canEditTarget(currentUserId);
+  }
+
+  function persistSession() {
+    storageSet(STORAGE.sessionActor, sessionActorId || "");
+    storageSet(STORAGE.currentUser, currentUserId || "");
   }
 
   function jobKey(date, job) {
@@ -276,22 +291,55 @@
   }
 
   function updatePinPanel() {
-    const userId = el("loginUser")?.value || "";
-    const creating = userId && !hasPin(userId);
+    const pinPanel = el("pinPanel");
     const confirmWrap = el("pinConfirmWrap");
     const help = el("pinHelp");
     const label = el("loginPinLabel");
     const button = el("continueButton");
+    const switching = loginMode === "switch";
 
+    if (pinPanel) pinPanel.classList.toggle("hidden", switching);
+    if (switching) {
+      if (help) {
+        help.textContent = isOwner()
+          ? "Open any profile with no PIN — you can edit everyone."
+          : "Open any profile with no PIN. Scott’s profile is view only.";
+      }
+      if (button) button.textContent = "Open profile";
+      clearPinFields();
+      return;
+    }
+
+    const userId = el("loginUser")?.value || "";
+    const creating = userId && !hasPin(userId);
     if (confirmWrap) confirmWrap.classList.toggle("hidden", !creating);
     if (help) {
       help.textContent = creating
-        ? "First time for this profile — create a 4-digit PIN."
-        : "Enter this profile’s PIN to continue.";
+        ? "First time for this profile — create a 4–6 digit PIN. This phone will stay signed in after that."
+        : "Enter this profile’s PIN once. This phone will stay signed in.";
     }
     if (label) label.textContent = creating ? "Create PIN" : "PIN";
     if (button) button.textContent = creating ? "Set PIN & Enter Profile" : "Enter Profile";
     clearPinFields();
+  }
+
+  async function ensureSeedPins() {
+    const defaults = ["scott", "ronnie", "karen", "jason"];
+    let changed = false;
+    for (const userId of defaults) {
+      if (hasPin(userId)) continue;
+      const salt = randomSalt();
+      const hash = await hashPin("0000", salt);
+      pins[userId] = { hash, salt, updatedAt: Date.now() };
+      changed = true;
+    }
+    Object.keys(pins).forEach((userId) => {
+      if (!users.some((user) => user.id === userId)) {
+        delete pins[userId];
+        changed = true;
+      }
+    });
+    if (changed) storageSet(STORAGE.pins, JSON.stringify(pins));
   }
 
   function isValidPin(pin) {
@@ -355,11 +403,11 @@
       successNode.classList.remove("hidden");
     };
 
-    if (!currentUserId) {
-      showError("Enter a Profile first.");
+    if (!sessionActorId || sessionActorId !== currentUserId) {
+      showError("You can only change the PIN on your own signed-in profile.");
       return;
     }
-    if (!hasPin(currentUserId)) {
+    if (!hasPin(sessionActorId)) {
       showError("No PIN set yet. Sign out and create one on login.");
       return;
     }
@@ -381,7 +429,7 @@
       return;
     }
 
-    const record = pins[currentUserId];
+    const record = pins[sessionActorId];
     const currentHash = await hashPin(currentPin, record.salt);
     if (currentHash !== record.hash) {
       showError("Current PIN is incorrect.");
@@ -390,7 +438,7 @@
 
     const salt = randomSalt();
     const hash = await hashPin(newPin, salt);
-    pins[currentUserId] = { hash, salt, updatedAt: Date.now() };
+    pins[sessionActorId] = { hash, salt, updatedAt: Date.now() };
     storageSet(STORAGE.pins, JSON.stringify(pins));
 
     if (el("currentPin")) el("currentPin").value = "";
@@ -427,7 +475,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.6.1`;
+    return `${path}?v=1.9.0`;
   }
 
   function renderRobot(target, user) {
@@ -451,7 +499,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.6.1`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.9.0`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -519,14 +567,34 @@
 
   function renderLogin() {
     const activeUsers = users.filter((user) => user.active);
+    const heading = el("loginHeading");
+    const intro = el("loginIntro");
+    const cancelSwitch = el("cancelSwitchButton");
+
+    if (heading) {
+      heading.textContent = loginMode === "switch" ? "Switch profile" : "Select Team Member";
+    }
+    if (intro) {
+      intro.textContent = loginMode === "switch"
+        ? "Scott and Ronnie can open other profiles from here."
+        : "Enter your PIN once on this phone. You’ll stay signed in until you sign out.";
+    }
+
     el("loginUser").innerHTML = activeUsers.length
-      ? activeUsers.map((user) => `<option value="${user.id}">${escapeHtml(user.name)}</option>`).join("")
+      ? activeUsers.map((user) => {
+          const roleNote = user.role && user.role !== "Team member" ? ` (${user.role})` : "";
+          return `<option value="${user.id}">${escapeHtml(user.name)}${escapeHtml(roleNote)}</option>`;
+        }).join("")
       : '<option value="" disabled selected>No active users</option>';
-    if (currentUserId && activeUsers.some((user) => user.id === currentUserId)) {
-      el("loginUser").value = currentUserId;
+
+    const preferredId = loginMode === "switch" ? currentUserId : (sessionActorId || currentUserId);
+    if (preferredId && activeUsers.some((user) => user.id === preferredId)) {
+      el("loginUser").value = preferredId;
     } else if (activeUsers.length) {
       el("loginUser").value = activeUsers[0].id;
     }
+
+    if (cancelSwitch) cancelSwitch.classList.toggle("hidden", loginMode !== "switch");
     updatePinPanel();
   }
 
@@ -534,9 +602,31 @@
     const user = getCurrentUser();
     if (!user) return;
 
+    const editable = canEditCurrentProfile();
+    const actor = getActor();
+    const switchButton = el("changeUserButton");
+    const signOutButton = el("signOutButton");
+    const addHoursButton = el("openAddHoursButton");
+    const changePinPanel = el("changePinPanel");
+    const viewOnlyBanner = el("viewOnlyBanner");
+
     el("summaryUserName").textContent = user.name;
     el("summaryRole").textContent = user.role;
     renderRobot(el("summaryRobot"), user);
+
+    if (switchButton) switchButton.classList.toggle("hidden", !canSwitchProfiles(actor));
+    if (signOutButton) signOutButton.classList.remove("hidden");
+    if (addHoursButton) addHoursButton.classList.toggle("hidden", !editable);
+    if (changePinPanel) {
+      changePinPanel.classList.toggle("hidden", !(sessionActorId && sessionActorId === currentUserId));
+    }
+    if (viewOnlyBanner) {
+      const showBanner = Boolean(actor && currentUserId === "scott" && actor.id !== "scott");
+      viewOnlyBanner.classList.toggle("hidden", !showBanner);
+      if (showBanner) {
+        viewOnlyBanner.textContent = "View only — Scott’s profile can’t be edited.";
+      }
+    }
 
     const selectedMonth = el("summaryMonth").value || availableMonths()[0];
     populateMonthSelect(el("summaryMonth"), selectedMonth);
@@ -582,10 +672,10 @@
               <strong class="entry-hours">${formatHours(entry.hours)} hrs</strong>
             </div>
             <div class="entry-meta">Mileage: ${Number(entry.mileage || 0).toFixed(0)} miles</div>
-            <div class="entry-actions">
+            ${editable ? `<div class="entry-actions">
               <button class="button subtle edit-entry" data-id="${entry.id}">Edit</button>
               <button class="button subtle cancel-entry" data-id="${entry.id}">Cancel Entry</button>
-            </div>
+            </div>` : '<div class="entry-meta">View only</div>'}
           </article>`;
         }).join("")
       : '<p class="muted">No entries recorded for this month.</p>';
@@ -866,6 +956,10 @@
   }
 
   function openEditEntry(entryId) {
+    if (!canEditCurrentProfile()) {
+      alert("You can’t edit this profile.");
+      return;
+    }
     const entry = entries.find((item) => item.id === entryId && item.userId === currentUserId);
     if (!entry) return;
     el("editingEntryId").value = entry.id;
@@ -882,6 +976,10 @@
   }
 
   function cancelEntry(entryId) {
+    if (!canEditCurrentProfile()) {
+      alert("You can’t edit this profile.");
+      return;
+    }
     const entry = entries.find((item) => item.id === entryId && item.userId === currentUserId);
     if (!entry) return;
     if (!confirm("Cancel this entry? Its hours and mileage will be excluded from totals.")) return;
@@ -891,6 +989,10 @@
   }
 
   function saveEntry() {
+    if (!canEditCurrentProfile()) {
+      alert("You can’t edit this profile.");
+      return;
+    }
     const jobValue = el("jobNumber").value.trim().toUpperCase();
     if (!(jobValue === "STORE" || /^\d{3,5}$/.test(jobValue))) {
       alert("Select a job number from the list, or STORE.");
@@ -970,6 +1072,10 @@
   }
 
   function openCompleteJob(date, jobCode) {
+    if (!canEditCurrentProfile()) {
+      alert("You can’t edit this profile.");
+      return;
+    }
     if (String(jobCode).toUpperCase() === "STORE") {
       alert("STORE does not use calendar completion.");
       return;
@@ -1141,7 +1247,7 @@
             ${crew.length > 1 ? `<div class="entry-meta">Crew on this job: ${crew.map((row) => `${escapeHtml(row.name)} ${formatHours(row.hours)}h`).join(" · ")}</div>` : ""}
             ${complete ? `<div class="entry-meta">Completed${completeMeta?.calendarUpdated ? " · calendar updated" : ""}${completeMeta?.photoCount ? ` · ${completeMeta.photoCount} photo(s)` : ""}</div>
               <div class="job-photo-gallery" data-photo-job="${escapeHtml(job.job)}" data-photo-date="${escapeHtml(job.date)}"></div>` : ""}
-            ${!allCancelled && !complete && job.job !== "STORE" ? `<button type="button" class="button primary small-action mark-complete-job" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Mark complete</button>` : ""}
+            ${!allCancelled && !complete && job.job !== "STORE" && canEditCurrentProfile() ? `<button type="button" class="button primary small-action mark-complete-job" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Mark complete</button>` : ""}
           </article>`;
         }).join("")
       : jobFilter
@@ -1158,6 +1264,7 @@
   }
 
   function renderCrew() {
+    const ownerActor = isOwner();
     const leaderboard = users
       .map((user) => {
         const recordedHours = entries
@@ -1175,9 +1282,9 @@
         <div class="rank">${index + 1}</div>
         <div class="robot-avatar robot-avatar-md ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
         <div class="leaderboard-copy">
-          <strong>${escapeHtml(user.name)}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
+          <strong>${escapeHtml(user.name)}${user.role && user.role !== "Team member" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
           <div class="muted">${user.active ? "All-time total" : "Retired · history kept"}</div>
-          ${user.active ? "" : `<button type="button" class="button subtle reinstate-user" data-id="${escapeHtml(user.id)}">Reinstate</button>`}
+          ${user.active || !ownerActor ? "" : `<button type="button" class="button subtle reinstate-user" data-id="${escapeHtml(user.id)}">Reinstate</button>`}
         </div>
         <div class="leaderboard-hours">${formatHours(user.allTimeHours)}<span>hrs</span></div>
       </div>
@@ -1192,10 +1299,17 @@
       button.addEventListener("click", () => reinstateUser(button.dataset.id));
     });
 
+    const addUserPanel = el("addUserPanel");
+    const retirePanel = el("retireUserPanel");
+    if (addUserPanel) addUserPanel.classList.toggle("hidden", !ownerActor);
+    if (retirePanel) retirePanel.classList.toggle("hidden", !ownerActor);
+
     const retireable = users.filter((user) => user.active && user.id !== "scott");
-    el("retireUserSelect").innerHTML = retireable.length
-      ? retireable.map((user) => `<option value="${user.id}">${escapeHtml(user.name)}</option>`).join("")
-      : '<option value="" disabled selected>No active users to retire</option>';
+    if (el("retireUserSelect")) {
+      el("retireUserSelect").innerHTML = retireable.length
+        ? retireable.map((user) => `<option value="${user.id}">${escapeHtml(user.name)}</option>`).join("")
+        : '<option value="" disabled selected>No active users to retire</option>';
+    }
   }
 
   function renderAll() {
@@ -1207,7 +1321,39 @@
     }
   }
 
+  function signOut() {
+    sessionActorId = "";
+    currentUserId = "";
+    loginMode = "auth";
+    persistSession();
+    clearPinFields();
+    renderAll();
+    showView("loginView");
+  }
+
+  function openProfileSwitcher() {
+    if (!canSwitchProfiles()) return;
+    loginMode = "switch";
+    renderLogin();
+    showView("loginView");
+  }
+
+  function cancelProfileSwitch() {
+    loginMode = "auth";
+    if (sessionActorId && currentUserId) {
+      renderAll();
+      showView("summaryView");
+      return;
+    }
+    renderLogin();
+    showView("loginView");
+  }
+
   function addUser() {
+    if (!isOwner()) {
+      alert("Only Scott can add users.");
+      return;
+    }
     const name = el("newUserName").value.trim();
     if (!name) {
       alert("Enter a name.");
@@ -1229,33 +1375,41 @@
       avatar
     });
 
-    currentUserId = id;
-    storageSet(STORAGE.currentUser, currentUserId);
     saveAll();
     el("newUserName").value = "";
+    alert(`${name} added. They can set a PIN the first time they sign in on their phone.`);
+    renderAll();
+    showView("crewView");
+  }
+
+  function retireUser() {
+    if (!isOwner()) {
+      alert("Only Scott can retire users.");
+      return;
+    }
+    const userId = el("retireUserSelect").value;
+    const user = users.find((item) => item.id === userId);
+    if (!user || !user.active) return;
+    if (user.id === "scott") {
+      alert("Scott can’t be retired.");
+      return;
+    }
+    if (!confirm(`Retire ${user.name}? They will stay on the crew list greyed out with a tombstone, and can be reinstated later.`)) return;
+    user.active = false;
+    if (currentUserId === user.id) {
+      currentUserId = sessionActorId || "scott";
+      persistSession();
+    }
+    saveAll();
     renderAll();
     showView("summaryView");
   }
 
-  function retireUser() {
-    const userId = el("retireUserSelect").value;
-    const user = users.find((item) => item.id === userId);
-    if (!user || !user.active) return;
-    if (!confirm(`Retire ${user.name}? They will stay on the crew list greyed out with a tombstone, and can be reinstated later.`)) return;
-    user.active = false;
-    if (currentUserId === user.id) {
-      currentUserId = "";
-      storageSet(STORAGE.currentUser, "");
-      saveAll();
-      renderAll();
-      showView("loginView");
+  function reinstateUser(userId) {
+    if (!isOwner()) {
+      alert("Only Scott can reinstate users.");
       return;
     }
-    saveAll();
-    renderAll();
-  }
-
-  function reinstateUser(userId) {
     const user = users.find((item) => item.id === userId);
     if (!user || user.active) return;
     user.active = true;
@@ -1263,24 +1417,53 @@
     renderAll();
   }
 
-  function initialize() {
+  async function initialize() {
     populateTimes();
     resetEntryForm();
-    // Always start on the select-team-member screen each load.
-    currentUserId = "";
-    storageSet(STORAGE.currentUser, "");
-    renderAll();
-    showView("loginView");
+    await ensureSeedPins();
+
+    const actor = users.find((user) => user.id === sessionActorId && user.active);
+    if (actor) {
+      if (!currentUserId || !users.some((user) => user.id === currentUserId && user.active)) {
+        currentUserId = sessionActorId;
+        persistSession();
+      }
+      loginMode = "auth";
+      renderAll();
+      showView("summaryView");
+    } else {
+      sessionActorId = "";
+      currentUserId = "";
+      loginMode = "auth";
+      persistSession();
+      renderAll();
+      showView("loginView");
+    }
 
     el("continueButton").addEventListener("click", async () => {
       const selectedId = el("loginUser").value;
       if (!selectedId) return;
       el("continueButton").disabled = true;
       try {
+        if (loginMode === "switch") {
+          if (!canSwitchProfiles()) {
+            signOut();
+            return;
+          }
+          currentUserId = selectedId;
+          persistSession();
+          loginMode = "auth";
+          clearPinFields();
+          renderAll();
+          showView("summaryView");
+          return;
+        }
+
         const ok = await verifyOrCreatePin(selectedId);
         if (!ok) return;
+        sessionActorId = selectedId;
         currentUserId = selectedId;
-        storageSet(STORAGE.currentUser, currentUserId);
+        persistSession();
         clearPinFields();
         renderAll();
         showView("summaryView");
@@ -1301,14 +1484,11 @@
       });
     });
 
-    el("changeUserButton").addEventListener("click", () => {
-      currentUserId = "";
-      storageSet(STORAGE.currentUser, "");
-      renderLogin();
-      showView("loginView");
-    });
-    el("addUserButton").addEventListener("click", addUser);
-    el("retireUserButton").addEventListener("click", retireUser);
+    el("changeUserButton")?.addEventListener("click", openProfileSwitcher);
+    el("signOutButton")?.addEventListener("click", signOut);
+    el("cancelSwitchButton")?.addEventListener("click", cancelProfileSwitch);
+    el("addUserButton")?.addEventListener("click", addUser);
+    el("retireUserButton")?.addEventListener("click", retireUser);
 
     el("changePinButton")?.addEventListener("click", () => {
       changeProfilePin();
@@ -1321,7 +1501,11 @@
       });
     });
 
-    el("openAddHoursButton").addEventListener("click", () => {
+    el("openAddHoursButton")?.addEventListener("click", () => {
+      if (!canEditCurrentProfile()) {
+        alert("You can’t edit this profile.");
+        return;
+      }
       resetEntryForm();
       populateJobSelect("");
       showView("addHoursView");

@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.8.0">
+  <link rel="stylesheet" href="styles.css?v=1.9.0">
 </head>
 <body>
   <div class="app">
@@ -47,23 +47,18 @@
     <main>
       <section id="loginView" class="view active">
         <div class="card login-card">
-          <h2>Select Team Member</h2>
-          <p class="muted">Names are visible. Opening a Profile needs that person’s PIN.</p>
+          <h2 id="loginHeading">Select Team Member</h2>
+          <p id="loginIntro" class="muted">Enter your PIN once on this phone. You’ll stay signed in until you sign out.</p>
           <label for="loginUser">Team member</label>
           <select id="loginUser">
-            <option value="scott">Scott</option>
-            <option value="ronnie">Ronnie</option>
+            <option value="scott">Scott (Owner)</option>
+            <option value="ronnie">Ronnie (Manager)</option>
+            <option value="karen">Karen</option>
             <option value="jason">Jason</option>
-            <option value="jerald">Jerald</option>
-            <option value="kadek">Kadek</option>
-            <option value="josh">Josh</option>
-            <option value="nathan">Nathan</option>
-            <option value="caden">Caden</option>
-            <option value="luke">Luke</option>
           </select>
 
           <div id="pinPanel" class="pin-panel">
-            <p id="pinHelp" class="muted">Enter or create a 4-digit PIN for this profile.</p>
+            <p id="pinHelp" class="muted">Enter this profile’s PIN once. This phone will stay signed in.</p>
             <label for="loginPin" id="loginPinLabel">PIN</label>
             <input id="loginPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••">
             <div id="pinConfirmWrap" class="hidden">
@@ -74,13 +69,7 @@
           </div>
 
           <button id="continueButton" class="button primary">Enter Profile</button>
-
-          <details class="management-panel">
-            <summary>Add User</summary>
-            <label for="newUserName">Name</label>
-            <input id="newUserName" type="text" maxlength="40" placeholder="Enter team member name">
-            <button id="addUserButton" class="button primary small-action">Add User</button>
-          </details>
+          <button id="cancelSwitchButton" class="button subtle hidden" type="button">Cancel</button>
         </div>
       </section>
 
@@ -91,12 +80,17 @@
             <div class="profile-copy">
               <h2 id="summaryUserName" class="user-name"></h2>
               <p id="summaryRole">Team member</p>
-              <button id="changeUserButton" class="change-user-link" type="button">
-                <span class="change-user-icon" aria-hidden="true">↻</span>
-                Switch profile
-              </button>
+              <div class="profile-actions">
+                <button id="changeUserButton" class="change-user-link hidden" type="button">
+                  <span class="change-user-icon" aria-hidden="true">↻</span>
+                  Switch profile
+                </button>
+                <button id="signOutButton" class="change-user-link" type="button">Sign out</button>
+              </div>
             </div>
           </div>
+
+          <p id="viewOnlyBanner" class="view-only-banner hidden" role="status">View only — Scott’s profile can’t be edited.</p>
 
           <label for="summaryMonth">Month</label>
           <select id="summaryMonth"></select>
@@ -224,7 +218,14 @@
           <p class="muted">Ranked by total all-time hours. Retired crew stay listed with a tombstone.</p>
           <div id="crewLeaderboard"></div>
 
-          <details class="management-panel">
+          <details id="addUserPanel" class="management-panel hidden">
+            <summary>Add User</summary>
+            <label for="newUserName">Name</label>
+            <input id="newUserName" type="text" maxlength="40" placeholder="Enter team member name">
+            <button id="addUserButton" class="button primary small-action">Add User</button>
+          </details>
+
+          <details id="retireUserPanel" class="management-panel hidden">
             <summary>Retire User</summary>
             <label for="retireUserSelect">Select active user</label>
             <select id="retireUserSelect"></select>
@@ -275,9 +276,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.8.0"></script>
+  <script src="google-config.js?v=1.9.0"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.8.0"></script>
-  <script src="app.js?v=1.8.0"></script>
+  <script src="calendar.js?v=1.9.0"></script>
+  <script src="app.js?v=1.9.0"></script>
 </body>
 </html>

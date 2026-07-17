@@ -1035,6 +1035,24 @@ textarea {
   margin-top: 10px;
 }
 
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 6px;
+}
+
+.view-only-banner {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 183, 93, 0.35);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--gold);
+  font-weight: 600;
+  font-size: 14px;
+}
+
 .photo-source-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -21,15 +21,18 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.8.0`**
+Asset cache bust: **`?v=1.9.0`**
 
-## Clean slate (v1.8)
+## Access model (v1.9)
 
-- All demo hour **entries** removed (storage `pm_entries_v7` starts empty)
-- Demo seed hours zeroed on profiles — Crew/Profile totals only show real logged hours
-- Completed-job demo state cleared (`pm_completed_jobs_v2`)
-- **Calendar left intact** (Google connect + cached events unchanged)
-- Demo user names / PINs kept
+**Users:** Scott (Owner), Ronnie (Manager), Karen, Jason — hours empty; calendar intact  
+**Default PIN:** `0000` for all four (changeable on own profile)  
+**Persistent login:** after PIN once, phone stays signed in until **Sign out**  
+**Switch profile:** Scott + Ronnie only  
+- Scott: open anyone, edit anyone  
+- Ronnie: can open Scott (view only) and edit everyone else  
+- Karen/Jason: own profile only, no switch  
+**Add/retire users:** Scott only
 
 ## What’s working
 
