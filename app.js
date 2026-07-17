@@ -276,7 +276,8 @@
 
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
-    return avatarFiles[key] || avatarFiles.scott;
+    const path = avatarFiles[key] || avatarFiles.scott;
+    return `${path}?v=1.5.1`;
   }
 
   function renderRobot(target, user) {
@@ -299,7 +300,9 @@
       `;
       return;
     }
-    const src = typeof user === "string" ? (avatarFiles[user] || avatarFiles.scott) : avatarSrc(user);
+    const src = typeof user === "string"
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.5.1`
+      : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
   }
