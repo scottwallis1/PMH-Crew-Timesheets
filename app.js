@@ -160,7 +160,6 @@
     el("summaryView")?.classList.remove("profile-theme-event");
     el("summaryRobot")?.classList.remove("avatar-event-hire");
     el("summaryRobot")?.classList.toggle("avatar-owner", Boolean(user && user.id === "scott"));
-    el("eventHireChip")?.classList.add("hidden");
   }
 
   function canEditTarget(targetId, actor = getActor()) {
