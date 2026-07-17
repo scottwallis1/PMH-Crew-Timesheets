@@ -30,8 +30,8 @@
 
   const defaultUsers = [
     { id: "scott", name: "Scott", active: true, role: "Owner", seedHours: 0, avatar: "scott" },
-    { id: "ronnie", name: "Ronnie", active: true, role: "Manager", seedHours: 0, avatar: "ronnie" },
-    { id: "karen", name: "Karen", active: true, role: "Team member", seedHours: 0, avatar: "karen" },
+    { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 0, avatar: "ronnie" },
+    { id: "karen", name: "Karen", active: true, role: "Event Hire", seedHours: 0, avatar: "karen" },
     { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 0, avatar: "jason" }
   ];
 
@@ -51,8 +51,8 @@
   const fallbackAvatars = Object.keys(avatarFiles);
   const CANONICAL_ROLES = {
     scott: "Owner",
-    ronnie: "Manager",
-    karen: "Team member",
+    ronnie: "Team member",
+    karen: "Event Hire",
     jason: "Team member"
   };
 
@@ -123,7 +123,12 @@
   }
 
   function isManager(user = getActor()) {
-    return Boolean(user && (user.id === "ronnie" || user.role === "Manager"));
+    // Ronnie keeps manager powers; label stays "Team member" in the UI.
+    return Boolean(user && user.id === "ronnie");
+  }
+
+  function isEventHire(user) {
+    return Boolean(user && (user.id === "karen" || user.role === "Event Hire"));
   }
 
   function canSwitchProfiles(user = getActor()) {
@@ -582,7 +587,7 @@
 
     el("loginUser").innerHTML = activeUsers.length
       ? activeUsers.map((user) => {
-          const roleNote = user.role && user.role !== "Team member" ? ` (${user.role})` : "";
+          const roleNote = user.role === "Owner" || user.role === "Event Hire" ? ` (${user.role})` : "";
           return `<option value="${user.id}">${escapeHtml(user.name)}${escapeHtml(roleNote)}</option>`;
         }).join("")
       : '<option value="" disabled selected>No active users</option>';
@@ -613,6 +618,10 @@
     el("summaryUserName").textContent = user.name;
     el("summaryRole").textContent = user.role;
     renderRobot(el("summaryRobot"), user);
+
+    const summaryView = el("summaryView");
+    if (summaryView) summaryView.classList.toggle("profile-theme-event", isEventHire(user));
+    el("summaryRobot")?.classList.toggle("avatar-event-hire", isEventHire(user));
 
     if (switchButton) switchButton.classList.toggle("hidden", !canSwitchProfiles(actor));
     if (signOutButton) signOutButton.classList.remove("hidden");
@@ -1280,9 +1289,9 @@
     el("crewLeaderboard").innerHTML = leaderboard.map((user, index) => `
       <div class="leaderboard-row ${user.active ? "" : "retired"}">
         <div class="rank">${index + 1}</div>
-        <div class="robot-avatar robot-avatar-md ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
+        <div class="robot-avatar robot-avatar-md ${isEventHire(user) ? "avatar-event-hire" : ""} ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
         <div class="leaderboard-copy">
-          <strong>${escapeHtml(user.name)}${user.role && user.role !== "Team member" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
+          <strong>${escapeHtml(user.name)}${user.role === "Owner" || user.role === "Event Hire" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
           <div class="muted">${user.active ? "All-time total" : "Retired · history kept"}</div>
           ${user.active || !ownerActor ? "" : `<button type="button" class="button subtle reinstate-user" data-id="${escapeHtml(user.id)}">Reinstate</button>`}
         </div>
