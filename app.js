@@ -2,11 +2,11 @@
   "use strict";
 
   const STORAGE = {
-    users: "pm_users_v6",
-    entries: "pm_entries_v6",
-    currentUser: "pm_current_user_v6",
+    users: "pm_users_v7",
+    entries: "pm_entries_v7",
+    currentUser: "pm_current_user_v7",
     pins: "pm_pins_v1",
-    completedJobs: "pm_completed_jobs_v1"
+    completedJobs: "pm_completed_jobs_v2"
   };
 
   const memoryStorage = {};
@@ -28,51 +28,19 @@
   }
 
   const defaultUsers = [
-    { id: "scott", name: "Scott", active: true, role: "Owner", seedHours: 1000000, avatar: "scott" },
-    { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 4862.5, avatar: "ronnie" },
-    { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 4315, avatar: "jason" },
-    { id: "jerald", name: "Jerald", active: true, role: "Team member", seedHours: 3988.5, avatar: "jerald" },
-    { id: "kadek", name: "Kadek", active: true, role: "Team member", seedHours: 3721, avatar: "kadek" },
-    { id: "josh", name: "Josh", active: true, role: "Team member", seedHours: 3506.5, avatar: "josh" },
-    { id: "nathan", name: "Nathan", active: true, role: "Team member", seedHours: 3104, avatar: "nathan" },
-    { id: "caden", name: "Caden", active: true, role: "Team member", seedHours: 2844.5, avatar: "caden" },
-    { id: "luke", name: "Luke", active: true, role: "Team member", seedHours: 2517, avatar: "luke" }
+    { id: "scott", name: "Scott", active: true, role: "Owner", seedHours: 0, avatar: "scott" },
+    { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 0, avatar: "ronnie" },
+    { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 0, avatar: "jason" },
+    { id: "jerald", name: "Jerald", active: true, role: "Team member", seedHours: 0, avatar: "jerald" },
+    { id: "kadek", name: "Kadek", active: true, role: "Team member", seedHours: 0, avatar: "kadek" },
+    { id: "josh", name: "Josh", active: true, role: "Team member", seedHours: 0, avatar: "josh" },
+    { id: "nathan", name: "Nathan", active: true, role: "Team member", seedHours: 0, avatar: "nathan" },
+    { id: "caden", name: "Caden", active: true, role: "Team member", seedHours: 0, avatar: "caden" },
+    { id: "luke", name: "Luke", active: true, role: "Team member", seedHours: 0, avatar: "luke" }
   ];
 
-  const defaultEntries = [
-    { id: "e1", userId: "scott", date: "2026-07-17", job: "789", start: "08:00", finish: "17:00", hours: 9, mileage: 24, notes: "Commercial marquee install", cancelled: false },
-    { id: "e2", userId: "scott", date: "2026-07-16", job: "812", start: "07:30", finish: "16:30", hours: 9, mileage: 31, notes: "Wedding clear-down", cancelled: false },
-    { id: "e3", userId: "scott", date: "2026-07-15", job: "456", start: "08:30", finish: "18:00", hours: 9.5, mileage: 18, notes: "Gala setup", cancelled: false },
-    { id: "e4", userId: "scott", date: "2026-07-14", job: "STORE", start: "09:00", finish: "13:00", hours: 4, mileage: 12, notes: "Loaded flooring", cancelled: false },
-    { id: "e5", userId: "scott", date: "2026-07-13", job: "STORE", start: "08:00", finish: "12:00", hours: 4, mileage: 6, notes: "Sorted chair stock", cancelled: false },
-    { id: "e6", userId: "scott", date: "2026-07-12", job: "321", start: "08:00", finish: "12:00", hours: 4, mileage: 8, notes: "Weather delay", cancelled: true },
-    { id: "e7", userId: "scott", date: "2026-07-10", job: "701", start: "08:00", finish: "17:30", hours: 9.5, mileage: 22, notes: "Festival marquees", cancelled: false },
-    { id: "e8", userId: "scott", date: "2026-07-08", job: "STORE", start: "10:00", finish: "15:00", hours: 5, mileage: 4, notes: "Van restock", cancelled: false },
-
-    { id: "e9", userId: "ronnie", date: "2026-07-17", job: "789", start: "08:30", finish: "17:00", hours: 8.5, mileage: 18, notes: "", cancelled: false },
-    { id: "e10", userId: "ronnie", date: "2026-07-16", job: "812", start: "08:00", finish: "16:00", hours: 8, mileage: 28, notes: "Pack-down lead", cancelled: false },
-    { id: "e11", userId: "ronnie", date: "2026-07-15", job: "456", start: "08:00", finish: "17:00", hours: 9, mileage: 16, notes: "", cancelled: false },
-    { id: "e12", userId: "ronnie", date: "2026-07-14", job: "STORE", start: "09:00", finish: "14:00", hours: 5, mileage: 10, notes: "Loaded sidewalls", cancelled: false },
-    { id: "e13", userId: "ronnie", date: "2026-07-11", job: "655", start: "07:30", finish: "16:00", hours: 8.5, mileage: 40, notes: "Coastal install", cancelled: false },
-    { id: "e14", userId: "ronnie", date: "2026-07-09", job: "640", start: "08:00", finish: "12:30", hours: 4.5, mileage: 14, notes: "Client postponed", cancelled: true },
-    { id: "e15", userId: "ronnie", date: "2026-07-07", job: "STORE", start: "08:30", finish: "12:30", hours: 4, mileage: 5, notes: "Tool check", cancelled: false },
-
-    { id: "e16", userId: "jason", date: "2026-07-17", job: "789", start: "09:00", finish: "16:00", hours: 7, mileage: 0, notes: "", cancelled: false },
-    { id: "e17", userId: "jason", date: "2026-07-16", job: "812", start: "08:30", finish: "17:00", hours: 8.5, mileage: 20, notes: "", cancelled: false },
-    { id: "e18", userId: "jason", date: "2026-07-15", job: "STORE", start: "09:00", finish: "13:30", hours: 4.5, mileage: 8, notes: "Frame rack tidy", cancelled: false },
-    { id: "e19", userId: "jason", date: "2026-07-13", job: "701", start: "08:00", finish: "17:00", hours: 9, mileage: 25, notes: "Peg team", cancelled: false },
-    { id: "e20", userId: "jason", date: "2026-07-12", job: "321", start: "08:00", finish: "11:00", hours: 3, mileage: 8, notes: "Stood down", cancelled: true },
-    { id: "e21", userId: "jason", date: "2026-07-10", job: "688", start: "08:00", finish: "16:30", hours: 8.5, mileage: 19, notes: "Garden party", cancelled: false },
-    { id: "e22", userId: "jason", date: "2026-07-08", job: "STORE", start: "10:00", finish: "14:00", hours: 4, mileage: 3, notes: "Counted weights", cancelled: false },
-
-    { id: "e23", userId: "kadek", date: "2026-07-17", job: "789", start: "08:00", finish: "16:30", hours: 8.5, mileage: 15, notes: "", cancelled: false },
-    { id: "e24", userId: "kadek", date: "2026-07-16", job: "STORE", start: "08:00", finish: "12:00", hours: 4, mileage: 7, notes: "Loaded carpets", cancelled: false },
-    { id: "e25", userId: "kadek", date: "2026-07-15", job: "456", start: "08:30", finish: "17:00", hours: 8.5, mileage: 12, notes: "", cancelled: false },
-    { id: "e26", userId: "kadek", date: "2026-07-14", job: "812", start: "09:00", finish: "15:00", hours: 6, mileage: 21, notes: "Early finish", cancelled: false },
-    { id: "e27", userId: "kadek", date: "2026-07-11", job: "655", start: "08:00", finish: "17:00", hours: 9, mileage: 36, notes: "", cancelled: false },
-    { id: "e28", userId: "kadek", date: "2026-07-09", job: "640", start: "08:00", finish: "12:00", hours: 4, mileage: 14, notes: "Cancelled with Ronnie", cancelled: true },
-    { id: "e29", userId: "kadek", date: "2026-07-07", job: "STORE", start: "09:00", finish: "15:30", hours: 6.5, mileage: 5, notes: "Deep clean bay 2", cancelled: false }
-  ];
+  // Demo hour seed removed — start empty so real/calendar work is clearer.
+  const defaultEntries = [];
 
   const avatarFiles = {
     scott: "assets/avatars/scott.png",
@@ -102,25 +70,34 @@
   let pendingComplete = null;
   let pendingPhotos = [];
 
-  // Migrate from earlier storage if present, otherwise seed defaults.
+  // Migrate profiles from earlier storage if present; hours start empty (v7 clean slate).
   if (!Array.isArray(users) || users.length === 0) {
-    const legacyUsers = load("pm_users_v5", null) || load("pm_users_v4", null) || load("pm_users_v3", null);
+    const legacyUsers =
+      load("pm_users_v6", null) ||
+      load("pm_users_v5", null) ||
+      load("pm_users_v4", null) ||
+      load("pm_users_v3", null);
     users = Array.isArray(legacyUsers) && legacyUsers.length
       ? legacyUsers
       : JSON.parse(JSON.stringify(defaultUsers));
     storageSet(STORAGE.users, JSON.stringify(users));
   }
   if (!Array.isArray(entries)) {
-    // Prefer fresh demo seed for v6 so All Jobs has richer sample data.
-    entries = JSON.parse(JSON.stringify(defaultEntries));
+    entries = [];
     storageSet(STORAGE.entries, JSON.stringify(entries));
   }
   if (!currentUserId) {
-    currentUserId = storageGet("pm_current_user_v5") || storageGet("pm_current_user_v4") || storageGet("pm_current_user_v3") || "";
+    currentUserId =
+      storageGet("pm_current_user_v6") ||
+      storageGet("pm_current_user_v5") ||
+      storageGet("pm_current_user_v4") ||
+      storageGet("pm_current_user_v3") ||
+      "";
     if (currentUserId) storageSet(STORAGE.currentUser, currentUserId);
   }
 
   // Ensure every user has a unique robot avatar; Scott is Owner.
+  // Zero demo seed hours so Crew/Profile totals only show real logged hours.
   users = users.map((user, index) => {
     const avatarKey = avatarFiles[user.avatar]
       ? user.avatar
@@ -130,7 +107,8 @@
     return {
       ...user,
       role: user.id === "scott" ? "Owner" : "Team member",
-      avatar: avatarKey
+      avatar: avatarKey,
+      seedHours: 0
     };
   });
   storageSet(STORAGE.users, JSON.stringify(users));

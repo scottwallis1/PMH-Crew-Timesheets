@@ -21,7 +21,15 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.4.0`**
+Asset cache bust: **`?v=1.8.0`**
+
+## Clean slate (v1.8)
+
+- All demo hour **entries** removed (storage `pm_entries_v7` starts empty)
+- Demo seed hours zeroed on profiles — Crew/Profile totals only show real logged hours
+- Completed-job demo state cleared (`pm_completed_jobs_v2`)
+- **Calendar left intact** (Google connect + cached events unchanged)
+- Demo user names / PINs kept
 
 ## What’s working
 
