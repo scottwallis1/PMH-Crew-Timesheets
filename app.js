@@ -31,7 +31,7 @@
   const defaultUsers = [
     { id: "scott", name: "Scott", active: true, role: "Owner", seedHours: 0, avatar: "scott" },
     { id: "ronnie", name: "Ronnie", active: true, role: "Team member", seedHours: 0, avatar: "ronnie" },
-    { id: "karen", name: "Karen", active: true, role: "Event Hire", seedHours: 0, avatar: "karen" },
+    { id: "karen", name: "Karen", active: true, role: "Team member", seedHours: 0, avatar: "karen" },
     { id: "jason", name: "Jason", active: true, role: "Team member", seedHours: 0, avatar: "jason" }
   ];
 
@@ -52,7 +52,7 @@
   const CANONICAL_ROLES = {
     scott: "Owner",
     ronnie: "Team member",
-    karen: "Event Hire",
+    karen: "Team member",
     jason: "Team member"
   };
 
@@ -127,10 +127,6 @@
     return Boolean(user && user.id === "ronnie");
   }
 
-  function isEventHire(user) {
-    return Boolean(user && (user.id === "karen" || user.role === "Event Hire"));
-  }
-
   function canSwitchProfiles(user = getActor()) {
     // Hard gate: only Scott and Ronnie may switch profiles.
     return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
@@ -147,47 +143,24 @@
     else switchButton.style.removeProperty("display");
   }
 
-  const BRAND = {
-    marquees: {
-      title: "Peterhead Marquees",
-      subtitle: "Team Manager",
-      logo: "assets/peterhead-marquees-logo.jpg?v=1.10.0",
-      alt: "Peterhead Marquees"
-    },
-    eventHire: {
-      title: "Peterhead Event Hire",
-      subtitle: "Team Manager",
-      logo: "assets/peterhead-event-hire-logo.png?v=1.10.0",
-      alt: "Peterhead Event Hire"
-    }
-  };
-
   function updateBrandTheme() {
     const user = getCurrentUser();
-    const eventHire = isEventHire(user);
-    // Accent branding only — keep shared green/gold chrome for every profile.
-    document.querySelector(".app")?.classList.toggle("brand-event-hire", eventHire);
-    document.querySelector(".app")?.classList.remove("theme-event-hire");
-
-    const brand = eventHire ? BRAND.eventHire : BRAND.marquees;
+    // Shared Marquees branding for every profile.
+    document.querySelector(".app")?.classList.remove("brand-event-hire", "theme-event-hire");
     const title = el("brandTitle") || document.querySelector(".site-header h1");
     const subtitle = el("brandSubtitle") || document.querySelector(".site-header p");
     const logo = el("brandLogo") || document.querySelector(".site-header img");
-    if (title) title.textContent = brand.title;
-    if (subtitle) subtitle.textContent = brand.subtitle;
+    if (title) title.textContent = "Peterhead Marquees";
+    if (subtitle) subtitle.textContent = "Team Manager";
     if (logo) {
-      const nextSrc = brand.logo;
+      const nextSrc = "assets/peterhead-marquees-logo.jpg?v=1.10.1";
       if (logo.getAttribute("src") !== nextSrc) logo.src = nextSrc;
-      logo.alt = brand.alt;
+      logo.alt = "Peterhead Marquees";
     }
-
-    const summaryView = el("summaryView");
-    if (summaryView) summaryView.classList.toggle("profile-theme-event", eventHire);
-    el("summaryRobot")?.classList.toggle("avatar-event-hire", eventHire);
+    el("summaryView")?.classList.remove("profile-theme-event");
+    el("summaryRobot")?.classList.remove("avatar-event-hire");
     el("summaryRobot")?.classList.toggle("avatar-owner", Boolean(user && user.id === "scott"));
-
-    const chip = el("eventHireChip");
-    if (chip) chip.classList.toggle("hidden", !eventHire);
+    el("eventHireChip")?.classList.add("hidden");
   }
 
   function canEditTarget(targetId, actor = getActor()) {
@@ -644,7 +617,7 @@
 
     el("loginUser").innerHTML = activeUsers.length
       ? activeUsers.map((user) => {
-          const roleNote = user.role === "Owner" || user.role === "Event Hire" ? ` (${user.role})` : "";
+          const roleNote = user.role === "Owner" ? ` (${user.role})` : "";
           return `<option value="${user.id}">${escapeHtml(user.name)}${escapeHtml(roleNote)}</option>`;
         }).join("")
       : '<option value="" disabled selected>No active users</option>';
@@ -675,7 +648,6 @@
     el("summaryRole").textContent = user.role;
     renderRobot(el("summaryRobot"), user);
     el("summaryRobot")?.classList.toggle("avatar-owner", user.id === "scott");
-    el("summaryRobot")?.classList.toggle("avatar-event-hire", isEventHire(user));
     updateBrandTheme();
 
     updateSwitchProfileVisibility();
@@ -1347,9 +1319,9 @@
     el("crewLeaderboard").innerHTML = leaderboard.map((user, index) => `
       <div class="leaderboard-row ${user.active ? "" : "retired"}">
         <div class="rank">${index + 1}</div>
-        <div class="robot-avatar robot-avatar-md ${user.id === "scott" ? "avatar-owner" : ""} ${isEventHire(user) ? "avatar-event-hire" : ""} ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
+        <div class="robot-avatar robot-avatar-md ${user.id === "scott" ? "avatar-owner" : ""} ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
         <div class="leaderboard-copy">
-          <strong>${escapeHtml(user.name)}${user.role === "Owner" || user.role === "Event Hire" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
+          <strong>${escapeHtml(user.name)}${user.role === "Owner" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
           <div class="muted">${user.active ? "All-time total" : "Retired · history kept"}</div>
           ${user.active || !ownerActor ? "" : `<button type="button" class="button subtle reinstate-user" data-id="${escapeHtml(user.id)}">Reinstate</button>`}
         </div>

@@ -25,14 +25,13 @@ Asset cache bust: **`?v=1.10.0`**
 
 ## Access model (v1.9)
 
-**Users:** Scott (Owner), Ronnie, Karen (Event Hire), Jason — hours empty; calendar intact  
+**Users:** Scott (Owner), Ronnie, Karen, Jason — same shared Marquees look; hours empty; calendar intact  
 **Default PIN:** `0000` for all four (changeable on own profile)  
 **Persistent login:** after PIN once, phone stays signed in until **Sign out**  
 **Switch profile:** Scott + Ronnie only  
 - Scott: open anyone, edit anyone  
-- Ronnie: can open Scott (view only) and edit everyone else (no “Manager” label)  
-- Karen: Event Hire — dark purple avatar ring + purple profile theme  
-- Jason: own profile only, no switch  
+- Ronnie: can open Scott (view only) and edit everyone else  
+- Karen / Jason: own profile only, no switch  
 **Add/retire users:** Scott only
 
 ## What’s working
