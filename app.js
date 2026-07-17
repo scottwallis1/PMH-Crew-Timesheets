@@ -162,6 +162,7 @@
     const summaryView = el("summaryView");
     if (summaryView) summaryView.classList.toggle("profile-theme-event", eventHire);
     el("summaryRobot")?.classList.toggle("avatar-event-hire", eventHire);
+    el("summaryRobot")?.classList.toggle("avatar-owner", Boolean(user && user.id === "scott"));
   }
 
   function canEditTarget(targetId, actor = getActor()) {
