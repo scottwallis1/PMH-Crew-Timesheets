@@ -448,6 +448,18 @@
       chip.classList.toggle("is-active", active);
       chip.setAttribute("aria-pressed", active ? "true" : "false");
     });
+
+    const calendarView = el("calendarView");
+    const boardCard = document.querySelector(".calendar-board-card");
+    if (calendarView) {
+      calendarView.classList.toggle("filter-pev", calendarFilter === "pev");
+      calendarView.classList.toggle("filter-pmh", calendarFilter === "pmh");
+    }
+    if (boardCard) {
+      boardCard.classList.toggle("filter-pev", calendarFilter === "pev");
+      boardCard.classList.toggle("filter-pmh", calendarFilter === "pmh");
+    }
+
     const hint = el("calendarFilterHint");
     if (!hint) return;
     if (calendarFilter === "pmh") hint.textContent = "Showing PMH bookings only. Tap All to clear.";

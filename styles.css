@@ -863,6 +863,21 @@ button.legend-chip {
   min-height: 120px;
 }
 
+/* PEV filter: light purple calendar surface. */
+#calendarView.filter-pev .calendar-board-card,
+.calendar-board-card.filter-pev {
+  background: linear-gradient(180deg, #5a3d78, #3d2858);
+  border-color: rgba(190, 150, 230, 0.4);
+}
+
+#calendarView.filter-pev .calendar-day-label {
+  color: #e6d4f7;
+}
+
+#calendarView.filter-pev #calendarFilterHint {
+  color: #d2bce8;
+}
+
 .calendar-rolling {
   display: grid;
   gap: 10px;
