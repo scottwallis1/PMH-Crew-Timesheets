@@ -60,9 +60,19 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 1. **Rename Summary → Profile** (nav label + headings)
 2. **Self-signup onboarding (real app)** — no pre-seeded names; each person opens the app, creates username + password, lands on their Profile, then uses the app. Demo name list goes away when we leave demo mode.
 3. **Per-profile credentials** — names/usernames can appear where needed, but nobody can open someone else’s Profile without their password (same privacy rule as the PIN plan)
-4. Shared storage so all crew phones see the same synced calendar (no per-phone Google login)
+4. **Shared calendar (no per-user Google connect)** — crew open the app and the calendar is already there / kept up to date. Only a central sync (admin or backend) talks to Google; profile users do not Connect.
 5. Add Hours → select a calendar booking / job
 6. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
+
+## Product notes — calendar access (decided)
+
+**Demo now:** someone Connects Google on a device → events cache locally on that browser.
+
+**Real app:** calendar appears automatically for every profile. Users do **not** each do Connect Google.
+- Google Calendar stays source of truth
+- One central sync writes into shared storage
+- All phones read that shared schedule (view-only for crew)
+- Connect Google is admin/setup only, not part of normal crew onboarding
 
 ## Product notes — private profiles (decided)
 
