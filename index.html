@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.0.0">
+  <link rel="stylesheet" href="styles.css?v=1.1.0">
 </head>
 <body>
   <div class="app">
@@ -37,6 +37,10 @@
       <button data-view="crewView">
         <span class="nav-icon" aria-hidden="true">●●</span>
         <span>Crew</span>
+      </button>
+      <button data-view="calendarView">
+        <span class="nav-icon" aria-hidden="true">▦</span>
+        <span>Calendar</span>
       </button>
     </nav>
 
@@ -178,9 +182,42 @@
           <p class="muted export-note">Uses the browser print dialog so the report can be saved as a PDF.</p>
         </div>
       </section>
+
+      <section id="calendarView" class="view">
+        <div class="card compact-top-card">
+          <h2>Calendar</h2>
+          <p class="muted">Link Google Calendar to view upcoming jobs and events here.</p>
+          <p id="calendarStatus" class="calendar-status">Checking setup…</p>
+
+          <div id="calendarSetup" class="calendar-setup">
+            <h3>Setup needed</h3>
+            <ol class="setup-list">
+              <li>Create a Google Cloud project and enable <strong>Google Calendar API</strong>.</li>
+              <li>Create an <strong>OAuth 2.0 Web Client ID</strong>.</li>
+              <li>Add your site URL (and <code>http://localhost:8080</code>) under Authorized JavaScript origins.</li>
+              <li>Paste the Client ID into <code>google-config.js</code>.</li>
+            </ol>
+            <p class="muted">Until that Client ID is set, Connect stays locked. No secrets belong in this frontend file except the public Client ID.</p>
+          </div>
+
+          <div id="calendarActions" class="calendar-actions hidden">
+            <button id="calendarConnectButton" class="button primary" type="button">Connect Google Calendar</button>
+            <button id="calendarRefreshButton" class="button subtle" type="button">Refresh Events</button>
+            <button id="calendarDisconnectButton" class="button subtle hidden" type="button">Disconnect</button>
+          </div>
+        </div>
+
+        <div class="card jobs-card">
+          <h3 class="section-heading">Upcoming</h3>
+          <div id="calendarEvents"></div>
+        </div>
+      </section>
     </main>
   </div>
 
-  <script src="app.js?v=1.0.0"></script>
+  <script src="google-config.js?v=1.1.0"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="calendar.js?v=1.1.0"></script>
+  <script src="app.js?v=1.1.0"></script>
 </body>
 </html>

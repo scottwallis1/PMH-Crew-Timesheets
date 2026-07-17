@@ -263,6 +263,9 @@
       button.classList.toggle("active", button.dataset.view === viewId);
     });
     el("topNav").classList.toggle("hidden", viewId === "loginView" || viewId === "addHoursView");
+    if (viewId === "calendarView") {
+      window.PMHCalendar?.show?.();
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -648,6 +651,8 @@
         showView(viewId);
       });
     });
+
+    window.PMHCalendar?.bind?.();
   }
 
   initialize();

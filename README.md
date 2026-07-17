@@ -8,7 +8,8 @@ Mobile-friendly crew timesheet web app for logging job hours, mileage, STORE tim
 - **Summary** — monthly hours/mileage, add/edit/cancel entries
 - **All Jobs** — month view with search; cancelled jobs greyed out; STORE entries in teal
 - **Crew** — all-time leaderboard, unique robot avatars, retire (tombstone) + reinstate
-- Data stored in the browser (`localStorage`) — no backend required
+- **Calendar** — Google Calendar connect tab (needs your OAuth Client ID)
+- Data stored in the browser (`localStorage`) — no backend required for hours
 
 ## Project files
 
@@ -16,6 +17,8 @@ Mobile-friendly crew timesheet web app for logging job hours, mileage, STORE tim
 index.html          App shell
 app.js              App logic
 styles.css          Brand styling
+calendar.js         Google Calendar tab logic
+google-config.js    Paste Google OAuth Client ID here
 assets/
   peterhead-marquees-logo.jpg
   avatars/          Robot profile images per crew member (+ spares for new users)
@@ -31,27 +34,27 @@ python3 -m http.server 8080
 
 Open http://localhost:8080
 
-Or open `index.html` directly in a browser (some browsers restrict `localStorage` on `file://`).
-
 ## Publish as a web app
 
-This is a static site. Deploy the repo root to any static host:
+Static site — deploy the repo root (GitHub Pages / Netlify / Cloudflare Pages). No build step.
 
-### GitHub Pages
-1. Merge this branch to `main`
-2. Repo **Settings → Pages → Deploy from branch** → `main` / root
-3. Site URL will be like `https://scottwallis1.github.io/PMH-Crew-Timesheets/`
+## Google Calendar setup
 
-### Netlify / Cloudflare Pages / Vercel
-1. Connect the GitHub repo
-2. Build command: none (leave empty)
-3. Publish directory: `/` (repo root)
+1. Open [Google Cloud Console](https://console.cloud.google.com/)
+2. Create/select a project
+3. Enable **Google Calendar API**
+4. Configure OAuth consent screen (add your Google account as a test user while testing)
+5. Create credentials → **OAuth client ID** → Application type **Web application**
+6. Authorized JavaScript origins:
+   - `http://localhost:8080`
+   - your live site origin
+7. Paste the Client ID into `google-config.js`
+8. Reload → **Calendar** tab → **Connect Google Calendar**
 
-### Phone home screen
-On iPhone/Android, open the live URL → Share / browser menu → **Add to Home Screen**.
+See `GOOGLE_CALENDAR_SETUP.md` for the checklist of values to provide.
 
-## Notes for next steps
+## Notes
 
-- Data is **per device/browser** today. Shared live data across phones needs a backend later (e.g. Supabase/Firebase).
-- Demo July entries seed for Scott, Ronnie, Jason, and Kadek on first load of storage version `v6`.
-- New users automatically get an unused robot avatar from the pool.
+- Hours data is per device/browser today.
+- Calendar uses Google browser OAuth (public Client ID only — no secrets in the app).
+- Demo July entries seed on first load of storage `v6`.
