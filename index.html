@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#003b32">
+  <title>Peterhead Marquees Crew Hours</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="site-header">
+      <img src="assets/peterhead-marquees-logo.jpg" alt="Peterhead Marquees">
+      <div>
+        <h1>Peterhead Marquees</h1>
+        <p>Crew Hours</p>
+      </div>
+    </header>
+
+    <main>
+      <section id="loginView" class="view active">
+        <div class="card login-card">
+          <h2>Select Team Member</h2>
+          <label for="loginUser">Team member</label>
+          <select id="loginUser">
+            <option value="scott">Scott</option>
+            <option value="ronnie">Ronnie</option>
+            <option value="jason">Jason</option>
+            <option value="jerald">Jerald</option>
+            <option value="kadek">Kadek</option>
+            <option value="josh">Josh</option>
+            <option value="nathan">Nathan</option>
+            <option value="caden">Caden</option>
+            <option value="luke">Luke</option>
+          </select>
+          <button id="continueButton" class="button primary">Continue</button>
+
+          <details class="management-panel">
+            <summary>Add User</summary>
+            <label for="newUserName">Name</label>
+            <input id="newUserName" type="text" maxlength="40" placeholder="Enter team member name">
+            <button id="addUserButton" class="button primary small-action">Add User</button>
+          </details>
+        </div>
+      </section>
+
+      <section id="summaryView" class="view">
+        <div class="card summary-card">
+          <button id="changeUserButton" class="icon-button" aria-label="Change user" title="Change user">
+            <span aria-hidden="true">↻</span>
+          </button>
+
+          <div class="profile-row">
+            <div id="summaryRobot" class="robot-avatar"></div>
+            <div class="profile-copy">
+              <h2 id="summaryUserName" class="user-name"></h2>
+              <p id="summaryRole">Team member</p>
+            </div>
+          </div>
+
+          <label for="summaryMonth">Month</label>
+          <select id="summaryMonth"></select>
+
+          <div class="summary-grid">
+            <div class="stat-card hours-primary">
+              <span>Monthly hours</span>
+              <strong id="monthlyHours">0.0</strong>
+            </div>
+            <div class="stat-card">
+              <span>Monthly mileage</span>
+              <strong id="monthlyMileage">0 miles</strong>
+            </div>
+          </div>
+
+          <button id="openAddHoursButton" class="button primary">Add Hours</button>
+        </div>
+
+        <div class="card jobs-card">
+          <h3 id="monthlyJobsHeading" class="section-heading">Monthly Jobs</h3>
+          <div id="myEntries"></div>
+        </div>
+      </section>
+
+      <section id="addHoursView" class="view">
+        <div class="card">
+          <h2 id="entryFormTitle">Add Hours</h2>
+          <input id="editingEntryId" type="hidden">
+
+          <label for="entryDate">Date</label>
+          <input id="entryDate" type="date">
+
+          <label for="jobNumber">Job label</label>
+          <div class="job-row">
+            <input id="jobNumber" type="text" maxlength="5" inputmode="numeric" placeholder="e.g. 123">
+            <button id="storeButton" class="button subtle">STORE</button>
+          </div>
+
+          <div class="two-column">
+            <div>
+              <label for="startTime">Start</label>
+              <select id="startTime"></select>
+            </div>
+            <div>
+              <label for="finishTime">Finish</label>
+              <select id="finishTime"></select>
+            </div>
+          </div>
+
+          <label for="mileage">Mileage <span class="optional">(optional)</span></label>
+          <input id="mileage" type="number" min="0" step="1" placeholder="Miles">
+
+          <label for="notes">Notes <span class="optional">(optional)</span></label>
+          <textarea id="notes" placeholder="Optional notes"></textarea>
+
+          <div class="hours-preview">
+            <span>Calculated hours</span>
+            <strong id="calculatedHours">0.0</strong>
+          </div>
+
+          <button id="saveHoursButton" class="button primary">Save Hours</button>
+          <button id="cancelFormButton" class="button subtle">Cancel</button>
+        </div>
+      </section>
+
+      <section id="allJobsView" class="view">
+        <div class="card compact-top-card">
+          <h2>All Jobs</h2>
+          <label for="allJobsMonth">Month</label>
+          <select id="allJobsMonth"></select>
+          <label for="jobSearch">Search jobs</label>
+          <input id="jobSearch" type="search" placeholder="Search #job, STORE or worker">
+        </div>
+        <div class="card jobs-card">
+          <div id="allJobsList" class="job-list"></div>
+        </div>
+      </section>
+
+      <section id="crewView" class="view">
+        <div class="card compact-top-card">
+          <h2>Crew</h2>
+          <p class="muted">Ranked by total all-time hours</p>
+          <div id="crewLeaderboard"></div>
+
+          <details class="management-panel">
+            <summary>Retire User</summary>
+            <label for="retireUserSelect">Select user</label>
+            <select id="retireUserSelect"></select>
+            <button id="retireUserButton" class="button danger">Retire Selected User</button>
+            <p class="muted">Historical entries remain in reports and exports.</p>
+          </details>
+        </div>
+
+        <div class="card">
+          <button id="exportPdfButton" class="button primary">Export All Data to PDF</button>
+          <p class="muted export-note">Uses the browser print dialog so the report can be saved as a PDF.</p>
+        </div>
+      </section>
+    </main>
+
+    <nav id="bottomNav" class="bottom-nav hidden">
+      <button data-view="summaryView" class="active">
+        <span class="nav-icon" aria-hidden="true">⌂</span>
+        <span>Summary</span>
+      </button>
+      <button data-view="allJobsView">
+        <span class="nav-icon" aria-hidden="true">▤</span>
+        <span>All Jobs</span>
+      </button>
+      <button data-view="crewView">
+        <span class="nav-icon" aria-hidden="true">●●</span>
+        <span>Crew</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
