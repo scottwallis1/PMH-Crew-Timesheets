@@ -58,26 +58,38 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 ## Next session priorities
 
 1. **Rename Summary → Profile** (nav label + headings)
-2. **Per-profile PIN** — can’t open someone else’s Profile without their PIN (agreed least-resistance privacy)
-3. Shared storage so all crew phones see the same synced calendar (no per-phone Google login)
-4. Add Hours → select a calendar booking / job
-5. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
+2. **Self-signup onboarding (real app)** — no pre-seeded names; each person opens the app, creates username + password, lands on their Profile, then uses the app. Demo name list goes away when we leave demo mode.
+3. **Per-profile credentials** — names/usernames can appear where needed, but nobody can open someone else’s Profile without their password (same privacy rule as the PIN plan)
+4. Shared storage so all crew phones see the same synced calendar (no per-phone Google login)
+5. Add Hours → select a calendar booking / job
+6. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
 
 ## Product notes — private profiles (decided)
 
-**Agreed path (least resistance):** per-profile **PIN** so crew can’t open someone else’s Profile on any phone.
+**Agreed path:**
 
-- Each person still uses their own phone.
-- Login list can show all names, but opening a profile requires that person’s PIN.
-- Locks **Profile** (renamed from Summary) and **Add Hours** for that user.
-- No cloud accounts yet — PIN stored on-device (hashed) until shared backend exists.
+### Demo environment (now)
+- Pre-seeded crew names for testing
+- Next small step can still be PIN-on-existing-profiles if useful while demoing
 
-**Action next update:**
+### Real app (execute when leaving demo)
+1. App ships with **no user names**
+2. Each crew member opens the app on their phone
+3. **Create account:** choose username + password
+4. They’re taken to their **Profile** page
+5. They use Add Hours / Calendar from there
+6. Another person can see a username in lists later if needed, but **cannot log into that Profile without that password**
+
+Technically doable on-device first (local accounts); for the same username/password to work across phones and keep hours private properly, pair this with shared backend storage when we leave demo.
+
+**Action when finished in demo environment:**
 1. Rename Summary → Profile
-2. Add set/enter PIN flow per profile
-3. Block switch-into another user’s Profile without their PIN
+2. Replace demo name picker with **Create account / Sign in**
+3. Remove pre-seeded Scott/Ronnie/… list from real onboarding
+4. Password-protect Profile + Add Hours per account
+5. Keep Calendar shared/viewable as decided separately
 
-Open later: whether All Jobs / Crew stay visible to everyone; calendar stays shared/read-only.
+Open later: whether All Jobs / Crew stay visible to everyone; calendar stays shared/read-only; admin reset for forgotten passwords.
 
 ## Key files
 
