@@ -151,13 +151,13 @@
     marquees: {
       title: "Peterhead Marquees",
       subtitle: "Team Manager",
-      logo: "assets/peterhead-marquees-logo.jpg?v=1.9.5",
+      logo: "assets/peterhead-marquees-logo.jpg?v=1.10.0",
       alt: "Peterhead Marquees"
     },
     eventHire: {
       title: "Peterhead Event Hire",
       subtitle: "Team Manager",
-      logo: "assets/peterhead-event-hire-logo.png?v=1.9.5",
+      logo: "assets/peterhead-event-hire-logo.png?v=1.10.0",
       alt: "Peterhead Event Hire"
     }
   };
@@ -165,7 +165,9 @@
   function updateBrandTheme() {
     const user = getCurrentUser();
     const eventHire = isEventHire(user);
-    document.querySelector(".app")?.classList.toggle("theme-event-hire", eventHire);
+    // Accent branding only — keep shared green/gold chrome for every profile.
+    document.querySelector(".app")?.classList.toggle("brand-event-hire", eventHire);
+    document.querySelector(".app")?.classList.remove("theme-event-hire");
 
     const brand = eventHire ? BRAND.eventHire : BRAND.marquees;
     const title = el("brandTitle") || document.querySelector(".site-header h1");
@@ -183,6 +185,9 @@
     if (summaryView) summaryView.classList.toggle("profile-theme-event", eventHire);
     el("summaryRobot")?.classList.toggle("avatar-event-hire", eventHire);
     el("summaryRobot")?.classList.toggle("avatar-owner", Boolean(user && user.id === "scott"));
+
+    const chip = el("eventHireChip");
+    if (chip) chip.classList.toggle("hidden", !eventHire);
   }
 
   function canEditTarget(targetId, actor = getActor()) {

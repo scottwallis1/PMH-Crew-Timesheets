@@ -16,11 +16,10 @@
   --calendar-structure-border: rgba(239, 183, 93, 0.35);
   --calendar-other: #2a1540;
   --calendar-other-border: rgba(150, 110, 210, 0.45);
-  --event-purple-950: #2e2a36;
-  --event-purple-900: #3a3445;
-  --event-purple-800: #4a4358;
-  --event-purple-700: #5d556d;
-  --event-purple-border: #8f84a3;
+  --event-purple: #8b4fc9;
+  --event-purple-deep: #5c2f8a;
+  --event-purple-soft: #c9a6e8;
+  --event-purple-border: #8b4fc9;
   --font-display: "Exo 2", "Segoe UI", sans-serif;
   --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
 }
@@ -201,31 +200,32 @@ main { padding: 10px 12px; }
   filter: grayscale(0.35);
 }
 
+/* Karen / Event Hire: purple avatar ring only (shared green chrome stays). */
 .robot-avatar.avatar-event-hire {
-  border-color: #9a8fb0;
+  border-color: var(--event-purple);
   box-shadow:
-    0 0 0 4px rgba(154, 143, 176, 0.35),
-    0 8px 18px rgba(0, 0, 0, 0.3);
+    0 0 0 4px rgba(139, 79, 201, 0.35),
+    0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
 .robot-avatar-md.avatar-event-hire {
   box-shadow:
-    0 0 0 3px rgba(154, 143, 176, 0.32),
-    0 4px 10px rgba(0, 0, 0, 0.26);
+    0 0 0 3px rgba(139, 79, 201, 0.32),
+    0 4px 10px rgba(0, 0, 0, 0.28);
 }
 
 /* Scott: gold inner ring + purple outer ring (Marquees + Event Hire). */
 .robot-avatar.avatar-owner {
   border-color: var(--gold);
   box-shadow:
-    0 0 0 3px var(--event-purple-border),
+    0 0 0 3px var(--event-purple),
     0 0 0 6px rgba(239, 183, 93, 0.22),
     0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
 .robot-avatar-md.avatar-owner {
   box-shadow:
-    0 0 0 2px var(--event-purple-border),
+    0 0 0 2px var(--event-purple),
     0 0 0 5px rgba(239, 183, 93, 0.2),
     0 4px 10px rgba(0, 0, 0, 0.28);
 }
@@ -239,163 +239,54 @@ main { padding: 10px 12px; }
   opacity: 0.9;
 }
 
-/* Event Hire shell — soft dusty mauve (not deep neon purple). */
-body:has(.app.theme-event-hire) {
+/* Event Hire brand accents — do not recolor the whole app. */
+.app.brand-event-hire .site-header {
+  border-bottom-color: var(--event-purple);
+}
+
+.app.brand-event-hire .site-header img {
+  border-color: rgba(139, 79, 201, 0.55);
+}
+
+.app.brand-event-hire .site-header p {
+  color: var(--event-purple-soft);
+}
+
+#summaryView.profile-theme-event .summary-card {
+  border-color: rgba(139, 79, 201, 0.4);
   background:
-    radial-gradient(ellipse at top, rgba(180, 168, 198, 0.16), transparent 48%),
-    linear-gradient(180deg, #26222e, #1d1a24 80%);
+    linear-gradient(90deg, var(--event-purple) 0, var(--event-purple) 5px, transparent 5px),
+    var(--green-700);
 }
 
-.app.theme-event-hire {
-  background: linear-gradient(180deg, #5f576e, #403a4c);
-  box-shadow: 0 0 40px rgba(30, 26, 40, 0.35);
+#summaryView.profile-theme-event .jobs-card {
+  border-color: rgba(139, 79, 201, 0.28);
+  background:
+    linear-gradient(90deg, var(--event-purple-deep) 0, var(--event-purple-deep) 5px, transparent 5px),
+    var(--green-700);
 }
 
-.app.theme-event-hire .site-header {
-  background: linear-gradient(180deg, #6e657f, #524b60);
-  border-bottom-color: #b7aec6;
-}
-
-.app.theme-event-hire .site-header img {
-  border-color: rgba(183, 174, 198, 0.55);
-}
-
-.app.theme-event-hire .site-header p {
-  color: #ddd6e8;
-}
-
-.app.theme-event-hire .top-nav {
-  background: linear-gradient(180deg, #5a5268, #3f394c);
-  border-color: rgba(183, 174, 198, 0.45);
-}
-
-.app.theme-event-hire .top-nav button {
-  color: #f2eef7;
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.app.theme-event-hire .top-nav button.active {
-  color: #2f2a38;
-  background: linear-gradient(180deg, #efeaf6, #d5cce3);
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 4px 12px rgba(120, 110, 140, 0.28);
-}
-
-.app.theme-event-hire .card {
-  background: linear-gradient(180deg, #564f65, #453f54);
-  border-color: rgba(183, 174, 198, 0.28);
-}
-
-.app.theme-event-hire input,
-.app.theme-event-hire select,
-.app.theme-event-hire textarea {
-  background: #3b3546;
-  border-color: rgba(183, 174, 198, 0.3);
-}
-
-.app.theme-event-hire .stat-card {
-  background: #3b3546;
-  border-color: rgba(183, 174, 198, 0.28);
-}
-
-.app.theme-event-hire .stat-card strong,
-.app.theme-event-hire .section-heading {
-  color: #e6dff0;
-}
-
-.app.theme-event-hire #summaryRole {
-  color: #d2c8e0;
+#summaryView.profile-theme-event #summaryRole {
+  color: var(--event-purple-soft);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   font-size: 13px;
 }
 
-.app.theme-event-hire .change-user-link,
-.app.theme-event-hire .sign-out-link {
-  color: #e6dff0;
-}
-
-.app.theme-event-hire .change-user-link:hover,
-.app.theme-event-hire .change-user-link:focus-visible,
-.app.theme-event-hire .sign-out-link:hover,
-.app.theme-event-hire .sign-out-link:focus-visible {
-  color: #f7f3fc;
-}
-
-.app.theme-event-hire .change-user-icon {
-  border-color: rgba(183, 174, 198, 0.5);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.app.theme-event-hire .primary {
-  color: #2f2a38;
-  background: linear-gradient(180deg, #efeaf6, #d5cce3);
-}
-
-.app.theme-event-hire .subtle {
-  background: rgba(183, 174, 198, 0.12);
-  border-color: rgba(183, 174, 198, 0.28);
-}
-
-.app.theme-event-hire .management-panel {
-  border-color: rgba(183, 174, 198, 0.25);
-}
-
-.app.theme-event-hire .muted,
-.app.theme-event-hire .entry-meta,
-.app.theme-event-hire label {
-  color: #c9c0d4;
-}
-
-/* Crew page tones for Event Hire. */
-.app.theme-event-hire .rank {
-  color: #f4f0f8;
-  background: #3b3546;
-  border-color: rgba(183, 174, 198, 0.45);
-}
-
-.app.theme-event-hire .leaderboard-hours {
-  color: #e6dff0;
-}
-
-.app.theme-event-hire .leaderboard-hours span {
-  color: #c9c0d4;
-}
-
-.app.theme-event-hire .management-panel summary {
-  color: #e6dff0;
-}
-
-.app.theme-event-hire .leaderboard-row.retired .leaderboard-hours,
-.app.theme-event-hire .leaderboard-row.retired .leaderboard-copy strong {
-  color: #9e96ab;
-}
-
-/* Calendar under Event Hire: soft sage PMH + soft lilac PEV. */
-.app.theme-event-hire .legend-chip.tone-structure,
-.app.theme-event-hire .calendar-event.tone-structure,
-.app.theme-event-hire .calendar-detail-body.tone-structure {
-  background: #3d4a45;
-  border-color: rgba(160, 175, 165, 0.4);
-  color: #eef2ef;
-}
-
-.app.theme-event-hire .legend-chip.tone-other,
-.app.theme-event-hire .calendar-event.tone-other,
-.app.theme-event-hire .calendar-detail-body.tone-other {
-  background: #4d4560;
-  border-color: rgba(183, 174, 198, 0.42);
-  color: #f4f0f8;
-}
-
-.app.theme-event-hire .calendar-day-label {
-  color: #e6dff0;
-}
-
-.app.theme-event-hire .calendar-status,
-.app.theme-event-hire #calendarFilterHint {
-  color: #c9c0d4;
+#summaryView.profile-theme-event .event-hire-chip {
+  display: inline-flex;
+  margin: 0 0 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 79, 201, 0.45);
+  background: rgba(139, 79, 201, 0.18);
+  color: var(--event-purple-soft);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .robot-photo {
@@ -1034,15 +925,6 @@ button.legend-chip {
   color: #f6efff;
 }
 
-.app.theme-event-hire .legend-chip.filter-all {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(183, 174, 198, 0.4);
-  color: #f2eef7;
-}
-
-.app.theme-event-hire .legend-chip.is-active {
-  outline-color: rgba(230, 223, 240, 0.7);
-}
 
 .calendar-board {
   min-height: 120px;

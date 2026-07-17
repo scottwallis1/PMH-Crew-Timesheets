@@ -21,7 +21,7 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.9.0`**
+Asset cache bust: **`?v=1.10.0`**
 
 ## Access model (v1.9)
 
