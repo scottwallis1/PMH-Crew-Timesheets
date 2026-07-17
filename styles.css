@@ -680,11 +680,11 @@ textarea {
 
 .export-note { text-align: center; }
 
-.peg-drop-card {
+.game-card {
   overflow: hidden;
 }
 
-.peg-drop-header {
+.game-header {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -692,23 +692,23 @@ textarea {
   margin-bottom: 12px;
 }
 
-.peg-drop-header h2 {
+.game-header h2 {
   margin-bottom: 4px;
 }
 
-.peg-drop-header .muted {
+.game-header .muted {
   margin: 0;
   max-width: 220px;
 }
 
-.peg-drop-scores {
+.game-scores {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  min-width: 140px;
+  min-width: 180px;
 }
 
-.peg-drop-scores div {
+.game-scores div {
   padding: 8px 10px;
   border: 1px solid rgba(239, 183, 93, 0.22);
   border-radius: 10px;
@@ -716,7 +716,7 @@ textarea {
   text-align: center;
 }
 
-.peg-drop-scores span {
+.game-scores span {
   display: block;
   color: var(--muted);
   font-size: 11px;
@@ -725,17 +725,17 @@ textarea {
   text-transform: uppercase;
 }
 
-.peg-drop-scores strong {
+.game-scores strong {
   display: block;
   margin-top: 2px;
   color: var(--gold);
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
   line-height: 1;
 }
 
-#pegDropCanvas {
+#pongCanvas {
   display: block;
   width: 100%;
   max-width: 360px;
@@ -744,12 +744,12 @@ textarea {
   border: 2px solid rgba(239, 183, 93, 0.4);
   border-radius: 14px;
   background: #01241e;
-  touch-action: manipulation;
+  touch-action: none;
   cursor: pointer;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
-.peg-drop-status {
+.game-status {
   margin: 10px 0 0;
   color: var(--gold);
   font-family: var(--font-display);
@@ -757,13 +757,6 @@ textarea {
   font-weight: 700;
   text-align: center;
   min-height: 1.2em;
-}
-
-.peg-drop-actions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  margin-top: 8px;
 }
 
 @media (max-width: 520px) {
@@ -781,11 +774,11 @@ textarea {
   .robot-avatar { width: 96px; height: 96px; flex-basis: 96px; }
   .robot-avatar-md { width: 64px; height: 64px; flex-basis: 64px; }
 
-  .peg-drop-header {
+  .game-header {
     flex-direction: column;
   }
 
-  .peg-drop-scores {
+  .game-scores {
     width: 100%;
   }
 
@@ -805,6 +798,7 @@ textarea {
   #addHoursView,
   #allJobsView,
   #pegDropView,
+  #pongView,
   .management-panel,
   #exportPdfButton,
   .export-note {

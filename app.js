@@ -264,9 +264,9 @@
     });
     el("topNav").classList.toggle("hidden", viewId === "loginView" || viewId === "addHoursView");
 
-    if (window.PegDrop) {
-      if (viewId === "pegDropView") window.PegDrop.start();
-      else window.PegDrop.stop();
+    if (window.Pong) {
+      if (viewId === "pongView") window.Pong.start();
+      else window.Pong.stop();
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -655,7 +655,7 @@
       });
     });
 
-    window.PegDrop?.bind?.();
+    window.Pong?.bind?.();
   }
 
   initialize();
