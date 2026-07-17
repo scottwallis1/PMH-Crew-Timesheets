@@ -132,7 +132,17 @@
   }
 
   function canSwitchProfiles(user = getActor()) {
-    return isOwner(user) || isManager(user);
+    // Hard gate: only Scott and Ronnie may switch profiles.
+    return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
+  }
+
+  function updateSwitchProfileVisibility() {
+    const switchButton = el("changeUserButton");
+    if (!switchButton) return;
+    const allowed = canSwitchProfiles();
+    switchButton.hidden = !allowed;
+    switchButton.classList.toggle("hidden", !allowed);
+    switchButton.setAttribute("aria-hidden", allowed ? "false" : "true");
   }
 
   function canEditTarget(targetId, actor = getActor()) {
@@ -609,7 +619,6 @@
 
     const editable = canEditCurrentProfile();
     const actor = getActor();
-    const switchButton = el("changeUserButton");
     const signOutButton = el("signOutButton");
     const addHoursButton = el("openAddHoursButton");
     const changePinPanel = el("changePinPanel");
@@ -623,7 +632,7 @@
     if (summaryView) summaryView.classList.toggle("profile-theme-event", isEventHire(user));
     el("summaryRobot")?.classList.toggle("avatar-event-hire", isEventHire(user));
 
-    if (switchButton) switchButton.classList.toggle("hidden", !canSwitchProfiles(actor));
+    updateSwitchProfileVisibility();
     if (signOutButton) signOutButton.classList.remove("hidden");
     if (addHoursButton) addHoursButton.classList.toggle("hidden", !editable);
     if (changePinPanel) {
@@ -1324,6 +1333,7 @@
   function renderAll() {
     renderLogin();
     renderCrew();
+    updateSwitchProfileVisibility();
     if (currentUserId && users.some((user) => user.id === currentUserId && user.active)) {
       renderSummary();
       renderAllJobs();
@@ -1341,7 +1351,10 @@
   }
 
   function openProfileSwitcher() {
-    if (!canSwitchProfiles()) return;
+    if (!canSwitchProfiles()) {
+      updateSwitchProfileVisibility();
+      return;
+    }
     loginMode = "switch";
     renderLogin();
     showView("loginView");

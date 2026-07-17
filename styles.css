@@ -204,47 +204,46 @@ main { padding: 10px 12px; }
 .robot-avatar.avatar-event-hire {
   border-color: var(--event-purple-border);
   box-shadow:
-    0 0 0 4px rgba(92, 42, 122, 0.35),
+    0 0 0 4px rgba(92, 42, 122, 0.4),
     0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
 .robot-avatar-md.avatar-event-hire {
   box-shadow:
-    0 0 0 3px rgba(92, 42, 122, 0.3),
+    0 0 0 3px rgba(92, 42, 122, 0.35),
     0 4px 10px rgba(0, 0, 0, 0.28);
 }
 
+/* Event Hire profile: keep the normal green layout; purple is accent only. */
 #summaryView.profile-theme-event .summary-card {
-  background: linear-gradient(180deg, var(--event-purple-700), var(--event-purple-900));
-  border-color: rgba(150, 110, 210, 0.35);
+  background:
+    linear-gradient(90deg, var(--event-purple-800) 0, var(--event-purple-800) 6px, transparent 6px),
+    linear-gradient(180deg, rgba(42, 21, 64, 0.55), rgba(26, 15, 46, 0.35)),
+    var(--green-700);
+  border-color: rgba(92, 42, 122, 0.55);
 }
 
 #summaryView.profile-theme-event .jobs-card {
-  background: linear-gradient(180deg, var(--event-purple-800), var(--event-purple-950));
-  border-color: rgba(150, 110, 210, 0.28);
+  background:
+    linear-gradient(90deg, var(--event-purple-900) 0, var(--event-purple-900) 6px, transparent 6px),
+    var(--green-700);
+  border-color: rgba(92, 42, 122, 0.4);
 }
 
-#summaryView.profile-theme-event .stat-card {
-  background: var(--event-purple-900);
-  border-color: rgba(150, 110, 210, 0.28);
+#summaryView.profile-theme-event #summaryRole {
+  color: #c9a6e8;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 13px;
 }
 
-#summaryView.profile-theme-event .section-heading,
-#summaryView.profile-theme-event .stat-card strong {
-  color: #d7b8f0;
+#summaryView.profile-theme-event .sign-out-link {
+  color: var(--gold);
 }
 
-#summaryView.profile-theme-event .change-user-link {
-  color: #d7b8f0;
-}
-
-#summaryView.profile-theme-event .change-user-link:hover,
-#summaryView.profile-theme-event .change-user-link:focus-visible {
-  color: #ead4ff;
-}
-
-#summaryView.profile-theme-event .change-user-icon {
-  border-color: rgba(150, 110, 210, 0.5);
+.profile-actions .sign-out-link {
+  opacity: 0.9;
 }
 
 .robot-photo {
