@@ -21,19 +21,20 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.3.0`**
+Asset cache bust: **`?v=1.4.0`**
 
 ## What’s working
 
-- Crew hours app: Summary / All Jobs / Crew (localStorage hours)
+- Crew hours app: **Profile** / All Jobs / Crew (localStorage hours)
+- Login: names visible; **PIN required** to open a Profile (create 4–6 digit PIN on first entry)
 - **Calendar** tab:
   - Google OAuth connect (Client ID in `google-config.js`)
-  - One **rolling list** of upcoming bookings (no week/day boards)
+  - One **rolling list** of upcoming bookings
   - Colour coding: dark green if title/description mentions marquee/tent/gazebo/pagoda; purple otherwise
   - Tap booking → details
   - Events cached in `localStorage` after sync
   - **Connect** only when signed out; **Refresh Sync** while connected
-- Preview tested: Google sign-in opens (no `origin_mismatch`) when JS origin is registered
+- Preview URL (may expire): `https://democratic-shows-abilities-exp.trycloudflare.com`
 
 ## Google Cloud (already set up)
 
@@ -58,10 +59,10 @@ Cloudflare quick-tunnel URLs are temporary. Next session: start `python3 -m http
 
 ## Next session priorities
 
-1. **Rename Summary → Profile** (nav label + headings)
-2. **Self-signup onboarding (real app)** — no pre-seeded names; each person opens the app, creates username + password, lands on their Profile, then uses the app. Demo name list goes away when we leave demo mode.
-3. **Per-profile credentials** — names/usernames can appear where needed, but nobody can open someone else’s Profile without their password (same privacy rule as the PIN plan)
-4. **Shared calendar (no per-user Google connect)** — crew open the app and the calendar is already there / kept up to date. Only a central sync (admin or backend) talks to Google; profile users do not Connect.
+1. ~~Rename Summary → Profile~~ **done (v1.4.0)**
+2. ~~Per-profile PIN~~ **done (v1.4.0)** — demo still uses seeded names
+3. **Self-signup onboarding (real app)** — no pre-seeded names; each person creates username + password
+4. **Shared calendar (no per-user Google connect)** — crew open the app and the calendar is already there / kept up to date
 5. Add Hours → select a calendar booking / job
 6. Deploy to a stable host (GitHub Pages / Netlify) and lock that origin in Google Console
 
