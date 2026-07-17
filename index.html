@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
   <div class="app">
@@ -32,6 +32,10 @@
       <button data-view="crewView">
         <span class="nav-icon" aria-hidden="true">●●</span>
         <span>Crew</span>
+      </button>
+      <button data-view="pegDropView">
+        <span class="nav-icon" aria-hidden="true">⇩</span>
+        <span>Peg Drop</span>
       </button>
     </nav>
 
@@ -173,9 +177,33 @@
           <p class="muted export-note">Uses the browser print dialog so the report can be saved as a PDF.</p>
         </div>
       </section>
+
+      <section id="pegDropView" class="view">
+        <div class="card peg-drop-card">
+          <div class="peg-drop-header">
+            <div>
+              <h2>Peg Drop</h2>
+              <p class="muted">Tap to drop each peg onto the bay. Perfect line-ups score +2.</p>
+            </div>
+            <div class="peg-drop-scores">
+              <div><span>Score</span><strong id="pegDropScore">0</strong></div>
+              <div><span>Best</span><strong id="pegDropBest">0</strong></div>
+            </div>
+          </div>
+
+          <canvas id="pegDropCanvas" width="360" height="460" aria-label="Peg Drop game"></canvas>
+          <p id="pegDropStatus" class="peg-drop-status">Tap DROP to place the first peg</p>
+
+          <div class="peg-drop-actions">
+            <button id="pegDropButton" class="button primary" type="button">Drop Peg</button>
+            <button id="pegDropRestart" class="button subtle hidden" type="button">Play Again</button>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
-  <script src="app.js?v=8"></script>
+  <script src="peg-drop.js?v=9"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>
