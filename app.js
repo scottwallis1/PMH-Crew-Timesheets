@@ -4,7 +4,8 @@
   const STORAGE = {
     users: "pm_users_v6",
     entries: "pm_entries_v6",
-    currentUser: "pm_current_user_v6"
+    currentUser: "pm_current_user_v6",
+    pins: "pm_pins_v1"
   };
 
   const memoryStorage = {};
@@ -93,6 +94,8 @@
   let users = load(STORAGE.users, null);
   let entries = load(STORAGE.entries, null);
   let currentUserId = storageGet(STORAGE.currentUser) || "";
+  let pins = load(STORAGE.pins, {}) || {};
+  if (!pins || typeof pins !== "object" || Array.isArray(pins)) pins = {};
 
   // Migrate from earlier storage if present, otherwise seed defaults.
   if (!Array.isArray(users) || users.length === 0) {
@@ -142,6 +145,7 @@
   function saveAll() {
     storageSet(STORAGE.users, JSON.stringify(users));
     storageSet(STORAGE.entries, JSON.stringify(entries));
+    storageSet(STORAGE.pins, JSON.stringify(pins));
   }
 
   function uid(prefix) {
@@ -155,6 +159,94 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function randomSalt() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function hashPin(pin, salt) {
+    const data = new TextEncoder().encode(`${salt}:${pin}`);
+    const digest = await crypto.subtle.digest("SHA-256", data);
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  function hasPin(userId) {
+    const record = pins[userId];
+    return Boolean(record && record.hash && record.salt);
+  }
+
+  function clearPinFields() {
+    if (el("loginPin")) el("loginPin").value = "";
+    if (el("loginPinConfirm")) el("loginPinConfirm").value = "";
+    setPinError("");
+  }
+
+  function setPinError(message) {
+    const node = el("pinError");
+    if (!node) return;
+    if (!message) {
+      node.textContent = "";
+      node.classList.add("hidden");
+      return;
+    }
+    node.textContent = message;
+    node.classList.remove("hidden");
+  }
+
+  function updatePinPanel() {
+    const userId = el("loginUser")?.value || "";
+    const creating = userId && !hasPin(userId);
+    const confirmWrap = el("pinConfirmWrap");
+    const help = el("pinHelp");
+    const label = el("loginPinLabel");
+    const button = el("continueButton");
+
+    if (confirmWrap) confirmWrap.classList.toggle("hidden", !creating);
+    if (help) {
+      help.textContent = creating
+        ? "First time for this profile — create a 4-digit PIN."
+        : "Enter this profile’s PIN to continue.";
+    }
+    if (label) label.textContent = creating ? "Create PIN" : "PIN";
+    if (button) button.textContent = creating ? "Set PIN & Enter Profile" : "Enter Profile";
+    clearPinFields();
+  }
+
+  function isValidPin(pin) {
+    return /^\d{4,6}$/.test(String(pin || ""));
+  }
+
+  async function verifyOrCreatePin(userId) {
+    const pin = (el("loginPin")?.value || "").trim();
+    const confirm = (el("loginPinConfirm")?.value || "").trim();
+
+    if (!isValidPin(pin)) {
+      setPinError("Use a 4–6 digit PIN.");
+      return false;
+    }
+
+    if (!hasPin(userId)) {
+      if (pin !== confirm) {
+        setPinError("PINs do not match.");
+        return false;
+      }
+      const salt = randomSalt();
+      const hash = await hashPin(pin, salt);
+      pins[userId] = { hash, salt, updatedAt: Date.now() };
+      storageSet(STORAGE.pins, JSON.stringify(pins));
+      return true;
+    }
+
+    const record = pins[userId];
+    const hash = await hashPin(pin, record.salt);
+    if (hash !== record.hash) {
+      setPinError("Incorrect PIN for this profile.");
+      return false;
+    }
+    return true;
   }
 
   function formatHours(value) {
@@ -279,6 +371,7 @@
     } else if (activeUsers.length) {
       el("loginUser").value = activeUsers[0].id;
     }
+    updatePinPanel();
   }
 
   function renderSummary() {
@@ -597,12 +690,33 @@
     renderAll();
     showView("loginView");
 
-    el("continueButton").addEventListener("click", () => {
-      currentUserId = el("loginUser").value;
-      if (!currentUserId) return;
-      storageSet(STORAGE.currentUser, currentUserId);
-      renderAll();
-      showView("summaryView");
+    el("continueButton").addEventListener("click", async () => {
+      const selectedId = el("loginUser").value;
+      if (!selectedId) return;
+      el("continueButton").disabled = true;
+      try {
+        const ok = await verifyOrCreatePin(selectedId);
+        if (!ok) return;
+        currentUserId = selectedId;
+        storageSet(STORAGE.currentUser, currentUserId);
+        clearPinFields();
+        renderAll();
+        showView("summaryView");
+      } finally {
+        el("continueButton").disabled = false;
+      }
+    });
+
+    el("loginUser").addEventListener("change", updatePinPanel);
+    const pinInputs = [el("loginPin"), el("loginPinConfirm")].filter(Boolean);
+    pinInputs.forEach((input) => {
+      input.addEventListener("input", () => {
+        input.value = input.value.replace(/\D/g, "").slice(0, 6);
+        setPinError("");
+      });
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") el("continueButton").click();
+      });
     });
 
     el("changeUserButton").addEventListener("click", () => {

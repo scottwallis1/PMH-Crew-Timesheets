@@ -4,11 +4,11 @@ Mobile-friendly crew timesheet web app for logging job hours, mileage, STORE tim
 
 ## What's included
 
-- **Select team member** on every load
-- **Summary** — monthly hours/mileage, add/edit/cancel entries
+- **Select team member** on every load (PIN required to open a Profile)
+- **Profile** — monthly hours/mileage, add/edit/cancel entries
 - **All Jobs** — month view with search; cancelled jobs greyed out; STORE entries in teal
 - **Crew** — all-time leaderboard, unique robot avatars, retire (tombstone) + reinstate
-- **Calendar** — sync Google Calendar into an in-app week/day schedule (OAuth Client ID required to sync)
+- **Calendar** — rolling list from Google Calendar; dark green for marquee/tent/gazebo/pagoda, purple for other jobs
 - Data stored in the browser (`localStorage`) — no backend required for hours; synced calendar events are cached locally after connect
 
 ## Project files

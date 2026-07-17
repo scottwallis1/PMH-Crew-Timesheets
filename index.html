@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.3.0">
+  <link rel="stylesheet" href="styles.css?v=1.4.0">
 </head>
 <body>
   <div class="app">
@@ -28,7 +28,7 @@
     <nav id="topNav" class="top-nav hidden">
       <button data-view="summaryView" class="active">
         <span class="nav-icon" aria-hidden="true">⌂</span>
-        <span>Summary</span>
+        <span>Profile</span>
       </button>
       <button data-view="allJobsView">
         <span class="nav-icon" aria-hidden="true">▤</span>
@@ -48,6 +48,7 @@
       <section id="loginView" class="view active">
         <div class="card login-card">
           <h2>Select Team Member</h2>
+          <p class="muted">Names are visible. Opening a Profile needs that person’s PIN.</p>
           <label for="loginUser">Team member</label>
           <select id="loginUser">
             <option value="scott">Scott</option>
@@ -60,7 +61,19 @@
             <option value="caden">Caden</option>
             <option value="luke">Luke</option>
           </select>
-          <button id="continueButton" class="button primary">Continue</button>
+
+          <div id="pinPanel" class="pin-panel">
+            <p id="pinHelp" class="muted">Enter or create a 4-digit PIN for this profile.</p>
+            <label for="loginPin" id="loginPinLabel">PIN</label>
+            <input id="loginPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••">
+            <div id="pinConfirmWrap" class="hidden">
+              <label for="loginPinConfirm">Confirm PIN</label>
+              <input id="loginPinConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••">
+            </div>
+            <p id="pinError" class="pin-error hidden" role="alert"></p>
+          </div>
+
+          <button id="continueButton" class="button primary">Enter Profile</button>
 
           <details class="management-panel">
             <summary>Add User</summary>
@@ -80,7 +93,7 @@
               <p id="summaryRole">Team member</p>
               <button id="changeUserButton" class="change-user-link" type="button">
                 <span class="change-user-icon" aria-hidden="true">↻</span>
-                Change user
+                Switch profile
               </button>
             </div>
           </div>
@@ -219,9 +232,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.3.0"></script>
+  <script src="google-config.js?v=1.4.0"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.3.0"></script>
-  <script src="app.js?v=1.3.0"></script>
+  <script src="calendar.js?v=1.4.0"></script>
+  <script src="app.js?v=1.4.0"></script>
 </body>
 </html>
