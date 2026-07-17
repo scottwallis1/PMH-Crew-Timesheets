@@ -624,6 +624,10 @@
 
     if (!response.ok) {
       const text = await response.text();
+      if (response.status === 401) {
+        storeToken("", 0);
+        throw new Error("Google session expired — tap Connect Google Calendar to sign in again.");
+      }
       throw new Error(`Calendar API error (${response.status}): ${text.slice(0, 180)}`);
     }
 

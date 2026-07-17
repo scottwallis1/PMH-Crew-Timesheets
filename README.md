@@ -60,3 +60,7 @@ See `GOOGLE_CALENDAR_SETUP.md` for the checklist of values to provide.
 - Calendar sync uses Google browser OAuth (public Client ID only — no secrets in the app).
 - Synced events are cached in `localStorage` on this device; shared multi-phone calendar comes later.
 - Demo July entries seed on first load of storage `v6`.
+
+## Pause / resume
+
+See `SESSION_CHECKPOINT.md` for the latest backup tags, Google setup, and next-session priorities.

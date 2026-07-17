@@ -1,22 +1,42 @@
-# Google Calendar — info needed
+# Google Calendar — setup status
 
-Fill these in when ready (paste values back in chat or edit `google-config.js`):
+## Done
 
-1. **OAuth Web Client ID**
-   - From Google Cloud Console → Credentials → OAuth 2.0 Client IDs
-   - Looks like: `1234567890-xxxx.apps.googleusercontent.com`
+- [x] Google Cloud project: **PMH Time Tracker** (`pmh-time-tracker`)
+- [x] Google Calendar API enabled
+- [x] OAuth consent screen (External, testing) + test user `scottwallis1@googlemail.com`
+- [x] OAuth Web Client: **PMH Crew Hours Web**
+- [x] Client ID pasted into `google-config.js`
+- [x] App reads calendar bookings into Week/Day views + detail panel
+- [x] Synced events cached in browser `localStorage`
 
-2. **Site URL(s) you will use**
-   - Local: `http://localhost:8080`
-   - Live (example): `https://scottwallis1.github.io`
+## Client ID (public — OK in frontend)
 
-3. **Which calendar?**
-   - [ ] Signed-in user's primary calendar
-   - [ ] A shared team calendar (need calendar ID)
+```
+192280919701-dbrqmkfr8518cupi6hj5ngv0ekpbqsm4.apps.googleusercontent.com
+```
 
-4. **What should the tab do first?**
-   - [ ] Read upcoming events (started)
-   - [ ] Push hours/jobs onto the calendar
-   - [ ] Both
+Do **not** put the client secret in this app.
 
-Do **not** send client secrets — this frontend only needs the public Client ID.
+## Authorized JavaScript origins checklist
+
+Add each exact origin you open the app from (no trailing slash):
+
+- [x] `http://localhost:8080`
+- [ ] Stable live site (GitHub Pages / Netlify) — when deployed
+- [ ] Current preview tunnel URL — **must match exactly**; Cloudflare quick tunnels change when restarted
+
+If you see `Error 400: origin_mismatch`, add the URL from the browser address bar (scheme + host only) under Authorized JavaScript origins, Save, wait ~1 minute, hard-refresh.
+
+## Product decisions so far
+
+- Google Calendar = source of truth for schedule
+- App recreates its own calendar view for crew
+- Hours stay user-entered for now
+- Later: shared backend so phones share one calendar without Google login
+- Later: Add Hours can pick a calendar event
+
+## Calendar ID
+
+- Currently: `primary` (signed-in Google account’s main calendar)
+- Optional later: shared team calendar ID
