@@ -1178,6 +1178,49 @@
     }
   }
 
+  function calendarEventStartMs(event) {
+    const startRaw = event?.start?.dateTime || event?.start?.date || "";
+    if (!startRaw) return null;
+    const allDay = Boolean(event.start?.date && !event.start?.dateTime);
+    const date = allDay
+      ? new Date(`${String(startRaw).slice(0, 10)}T00:00:00`)
+      : new Date(startRaw);
+    const ms = date.getTime();
+    return Number.isFinite(ms) ? ms : null;
+  }
+
+  function isInstallOrDeliveryEvent(event) {
+    const text = `${event?.summary || ""} ${String(event?.description || "").replace(/<[^>]+>/g, " ")}`.toLowerCase();
+    if (/\b(collect(?:ion)?|strike|dismantle|take[\s-]?down)\b/.test(text)) return false;
+    return /\b(deliver(?:y|ies)?|erect(?:ion)?|install|build|set[\s-]?up)\b/.test(text);
+  }
+
+  function startOfTodayMs() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.getTime();
+  }
+
+  function compareJobsByInstallDate(a, b) {
+    const aMs = a.installMs;
+    const bMs = b.installMs;
+    if (aMs == null && bMs == null) return Number(a.value) - Number(b.value);
+    if (aMs == null) return 1;
+    if (bMs == null) return -1;
+
+    const today = startOfTodayMs();
+    const aUpcoming = aMs >= today;
+    const bUpcoming = bMs >= today;
+    if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1;
+    // Upcoming: closest (soonest) first. Past: most recent first (closest behind today).
+    if (aUpcoming) {
+      if (aMs !== bMs) return aMs - bMs;
+    } else if (aMs !== bMs) {
+      return bMs - aMs;
+    }
+    return Number(a.value) - Number(b.value);
+  }
+
   function collectJobOptions() {
     const byCode = new Map();
 
@@ -1196,9 +1239,37 @@
       const label = title.trim()
         ? (postcode ? `#${code} · ${title.trim()} · ${postcode}` : `#${code} · ${title.trim()}`)
         : `#${code}`;
+      const startMs = calendarEventStartMs(event);
+      const isInstall = isInstallOrDeliveryEvent(event);
       const existing = byCode.get(code);
-      if (!existing || (postcode && !existing.postcode) || (title && !String(existing.label).includes("·"))) {
-        byCode.set(code, { value: code, label, source: "calendar", postcode });
+      if (!existing) {
+        byCode.set(code, {
+          value: code,
+          label,
+          source: "calendar",
+          postcode,
+          installMs: startMs,
+          hasLabeledInstall: Boolean(isInstall && startMs != null)
+        });
+        return;
+      }
+
+      if ((postcode && !existing.postcode) || (title && !String(existing.label).includes("·"))) {
+        existing.label = label;
+        existing.postcode = postcode || existing.postcode;
+      }
+
+      // Prefer labeled install/delivery dates; otherwise keep the earliest visit.
+      if (startMs == null) return;
+      if (isInstall) {
+        if (!existing.hasLabeledInstall || startMs < existing.installMs) {
+          existing.installMs = startMs;
+          existing.hasLabeledInstall = true;
+        }
+      } else if (!existing.hasLabeledInstall) {
+        if (existing.installMs == null || startMs < existing.installMs) {
+          existing.installMs = startMs;
+        }
       }
     });
 
@@ -1207,11 +1278,18 @@
       if (!code || code === "STORE") return;
       if (!/^\d{3,5}$/.test(code)) return;
       if (!byCode.has(code)) {
-        byCode.set(code, { value: code, label: `#${code}`, source: "entries", postcode: "" });
+        byCode.set(code, {
+          value: code,
+          label: `#${code}`,
+          source: "entries",
+          postcode: "",
+          installMs: null,
+          hasLabeledInstall: false
+        });
       }
     });
 
-    return [...byCode.values()].sort((a, b) => Number(a.value) - Number(b.value));
+    return [...byCode.values()].sort(compareJobsByInstallDate);
   }
 
   function populateJobSelect(selected = "") {
