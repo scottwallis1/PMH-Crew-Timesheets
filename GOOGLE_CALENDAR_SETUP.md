@@ -23,7 +23,7 @@ Do **not** put the client secret in this app.
 Add each exact origin you open the app from (no trailing slash):
 
 - [x] `http://localhost:8080`
-- [ ] Stable live site (GitHub Pages / Netlify) — when deployed
+- [ ] `https://scottwallis1.github.io` — **add this when the live site is up** (GitHub Pages)
 - [ ] Current preview tunnel URL — **must match exactly**; Cloudflare quick tunnels change when restarted
 
 If you see `Error 400: origin_mismatch`, add the URL from the browser address bar (scheme + host only) under Authorized JavaScript origins, Save, wait ~1 minute, hard-refresh.

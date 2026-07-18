@@ -36,7 +36,21 @@ Open http://localhost:8080
 
 ## Publish as a web app
 
-Static site — deploy the repo root (GitHub Pages / Netlify / Cloudflare Pages). No build step.
+Static site — GitHub Pages deploys from `main` via `.github/workflows/deploy-pages.yml`.
+
+**Live URL:** https://scottwallis1.github.io/PMH-Crew-Timesheets/
+
+See `GO_LIVE.md` for the Google origin step and phone install tips.
+
+### Web app icons
+
+Square PNG icons are generated from the Marquees logo:
+
+- `assets/icons/icon-192.png` / `icon-512.png` — PWA / Android
+- `assets/icons/apple-touch-icon.png` — iPhone home screen
+- `assets/icons/favicon.ico` (+ 16/32 PNG) — browser tab
+
+`manifest.webmanifest` wires these for “Add to Home Screen”.
 
 ## Google Calendar setup
 

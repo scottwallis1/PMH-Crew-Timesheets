@@ -21,7 +21,10 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.10.5`**
+Asset cache bust: **`?v=1.11.0`**
+
+**Live URL:** https://scottwallis1.github.io/PMH-Crew-Timesheets/  
+(Add Google JS origin `https://scottwallis1.github.io` — see `GO_LIVE.md`)
 
 ## Access model (v1.9)
 
