@@ -9,7 +9,8 @@ Mobile-friendly crew timesheet web app for logging job hours, mileage, STORE tim
 - **All Jobs** — month view with search; cancelled jobs greyed out; STORE entries in teal
 - **Crew** — all-time leaderboard, unique robot avatars, retire (tombstone) + reinstate
 - **Calendar** — rolling list from Google Calendar; dark green for marquee/tent/gazebo/pagoda, purple for other jobs
-- Data stored in the browser (`localStorage`) — no backend required for hours; synced calendar events are cached locally after connect
+- **Cloud sync (Firebase)** — when configured, hours/PINs stay shared and survive clearing site data (see `FIREBASE_SETUP.md`)
+- Until Firebase is configured, hours stay in the browser on that device only; calendar events cache locally after Google Connect
 
 ## Project files
 
@@ -19,6 +20,9 @@ app.js              App logic
 styles.css          Brand styling
 calendar.js         Google Calendar tab logic
 google-config.js    Paste Google OAuth Client ID here
+firebase-config.js  Paste Firebase web config for cloud sync
+cloud-sync.js       Automatic Firestore sync
+FIREBASE_SETUP.md   One-time Firebase console steps
 assets/
   peterhead-marquees-logo.jpg
   avatars/          Robot profile images per crew member (+ spares for new users)
