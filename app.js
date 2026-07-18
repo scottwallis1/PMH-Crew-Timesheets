@@ -67,6 +67,9 @@
   let pendingComplete = null;
   let pendingPhotos = [];
   let loginMode = "auth"; // "auth" | "switch"
+  let cloudRenderTimer = null;
+  let jobsViewDirty = true;
+  let uiBound = false;
 
   // Fresh roster for the access model — no legacy demo users carried over.
   if (!Array.isArray(users) || users.length === 0) {
@@ -104,9 +107,19 @@
         ...user,
         role: CANONICAL_ROLES[user.id] || user.role || "Team member",
         avatar: avatarKey,
-        seedHours: 0
+        seedHours: 0,
+        // Missing active must mean active — cloud payloads sometimes omit the field.
+        active: user.active !== false
       };
     });
+  }
+
+  function isUserActive(user) {
+    return Boolean(user && user.active !== false);
+  }
+
+  function findActiveUser(userId) {
+    return users.find((user) => user.id === userId && isUserActive(user)) || null;
   }
 
   function saveAll() {
@@ -116,6 +129,7 @@
     storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
     storageSet(STORAGE.sessionActor, sessionActorId || "");
     storageSet(STORAGE.currentUser, currentUserId || "");
+    jobsViewDirty = true;
     window.PMHCloud?.pushState?.({
       users,
       entries,
@@ -126,29 +140,51 @@
   }
 
   function applyCloudState(state) {
-    users = normalizeUsers(state.users);
-    entries = Array.isArray(state.entries) ? state.entries : [];
-    pins = state.pins && typeof state.pins === "object" ? state.pins : {};
-    completedJobs = state.completedJobs && typeof state.completedJobs === "object"
-      ? state.completedJobs
-      : {};
+    const nextUsers = normalizeUsers(state.users);
+    // Never replace a good local roster with an empty cloud payload.
+    if (nextUsers.length) {
+      users = nextUsers;
+    }
+    if (Array.isArray(state.entries)) entries = state.entries;
+    if (state.pins && typeof state.pins === "object") pins = state.pins;
+    if (state.completedJobs && typeof state.completedJobs === "object") {
+      completedJobs = state.completedJobs;
+    }
 
-    // Keep session pointers valid after a remote roster change.
-    if (sessionActorId && !users.some((user) => user.id === sessionActorId && user.active)) {
-      sessionActorId = "";
-      currentUserId = "";
-    } else if (currentUserId && !users.some((user) => user.id === currentUserId)) {
-      currentUserId = sessionActorId || "";
+    // Only force sign-out if this actor was explicitly retired — never on soft/empty sync.
+    if (sessionActorId && users.length) {
+      const actor = users.find((user) => user.id === sessionActorId);
+      if (actor && actor.active === false) {
+        sessionActorId = "";
+        currentUserId = "";
+        persistSession();
+      } else if (actor && currentUserId && !users.some((user) => user.id === currentUserId)) {
+        currentUserId = sessionActorId;
+        persistSession();
+      }
     }
 
     storageSet(STORAGE.users, JSON.stringify(users));
     storageSet(STORAGE.entries, JSON.stringify(entries));
     storageSet(STORAGE.pins, JSON.stringify(pins));
     storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
-    storageSet(STORAGE.sessionActor, sessionActorId || "");
-    storageSet(STORAGE.currentUser, currentUserId || "");
-    renderAll();
-    if (!sessionActorId) showView("loginView");
+    jobsViewDirty = true;
+
+    scheduleRenderAll();
+    if (!sessionActorId && !el("loginView")?.classList.contains("active")) {
+      showView("loginView");
+    }
+  }
+
+  function scheduleRenderAll() {
+    clearTimeout(cloudRenderTimer);
+    cloudRenderTimer = setTimeout(() => {
+      try {
+        renderAll();
+      } catch (error) {
+        console.error("Failed to refresh after cloud sync", error);
+      }
+    }, 220);
   }
 
   function updateCloudStatus(info) {
@@ -178,7 +214,7 @@
   }
 
   function getActor() {
-    return users.find((user) => user.id === sessionActorId && user.active);
+    return findActiveUser(sessionActorId);
   }
 
   function isOwner(user = getActor()) {
@@ -833,12 +869,18 @@
   }
 
   function populateMonthSelect(select, selected) {
+    if (!select) return;
     const months = availableMonths();
-    select.innerHTML = months.map((month) => `<option value="${month}">${monthLabel(month)}</option>`).join("");
-    select.value = months.includes(selected) ? selected : months[0];
+    const existing = [...select.options].map((option) => option.value).join("|");
+    const next = months.join("|");
+    if (existing !== next) {
+      select.innerHTML = months.map((month) => `<option value="${month}">${monthLabel(month)}</option>`).join("");
+    }
+    select.value = months.includes(selected) ? selected : months[0] || "";
   }
 
   function showView(viewId) {
+    const previousView = document.querySelector(".view.active")?.id || "";
     document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === viewId));
     document.querySelectorAll("#topNav button").forEach((button) => {
       button.classList.toggle("active", button.dataset.view === viewId);
@@ -852,11 +894,22 @@
     if (viewId === "calendarView") {
       window.PMHCalendar?.show?.();
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (viewId === "allJobsView" && jobsViewDirty) {
+      try {
+        renderAllJobs();
+        jobsViewDirty = false;
+      } catch (error) {
+        console.error("Failed to render My Jobs", error);
+      }
+    }
+    // Only jump to top when the user actually changes screen — not on cloud refreshes.
+    if (previousView && previousView !== viewId) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   function renderLogin() {
-    const activeUsers = users.filter((user) => user.active);
+    const activeUsers = users.filter((user) => isUserActive(user));
     const heading = el("loginHeading");
     const intro = el("loginIntro");
     const cancelSwitch = el("cancelSwitchButton");
@@ -867,7 +920,7 @@
     if (intro) {
       intro.textContent = loginMode === "switch"
         ? "Scott and Ronnie can open other profiles from here."
-        : "Enter your PIN once on this phone. You’ll stay signed in until you sign out.";
+        : "Enter your PIN once on this phone. You’ll stay signed in until you tap Sign out.";
     }
 
     el("loginUser").innerHTML = activeUsers.length
@@ -1219,12 +1272,14 @@
 
     const wanted = String(selected || "").replace("#", "").trim();
     const jobs = collectCalendarJobOptions();
-    const options = [
-      '<option value="">All calendar jobs</option>',
-      ...jobs.map((job) => `<option value="${escapeHtml(job.value)}">${escapeHtml(job.label)}</option>`)
-    ];
-
-    select.innerHTML = options.join("");
+    const nextSignature = ["", ...jobs.map((job) => `${job.value}:${job.label}`)].join("|");
+    const existingSignature = [...select.options].map((opt) => `${opt.value}:${opt.textContent}`).join("|");
+    if (existingSignature !== nextSignature) {
+      select.innerHTML = [
+        '<option value="">All calendar jobs</option>',
+        ...jobs.map((job) => `<option value="${escapeHtml(job.value)}">${escapeHtml(job.label)}</option>`)
+      ].join("");
+    }
     if (wanted && [...select.options].some((opt) => opt.value === wanted)) {
       select.value = wanted;
     } else {
@@ -1925,11 +1980,34 @@
     renderCrew();
     updateBrandTheme();
     updateSwitchProfileVisibility();
-    if (currentUserId && users.some((user) => user.id === currentUserId && user.active)) {
+    if (currentUserId && findActiveUser(currentUserId)) {
       renderSummary();
-      renderAllJobs();
+      if (el("allJobsView")?.classList.contains("active")) {
+        renderAllJobs();
+        jobsViewDirty = false;
+      } else {
+        jobsViewDirty = true;
+      }
     }
-    window.PMHCalendar?.render?.();
+    if (el("calendarView")?.classList.contains("active")) {
+      window.PMHCalendar?.render?.();
+    }
+  }
+
+  function restoreSessionView() {
+    const actor = findActiveUser(sessionActorId);
+    if (!actor) return false;
+    if (!currentUserId || !findActiveUser(currentUserId)) {
+      currentUserId = sessionActorId;
+      persistSession();
+    }
+    loginMode = "auth";
+    renderAll();
+    const activeView = document.querySelector(".view.active")?.id;
+    if (!activeView || activeView === "loginView") {
+      showView("summaryView");
+    }
+    return true;
   }
 
   function signOut() {
@@ -2034,6 +2112,15 @@
   async function initialize() {
     populateTimes();
     resetEntryForm();
+    bindUi();
+
+    // Restore signed-in session immediately from this phone — don't wait on cloud.
+    const restoredEarly = restoreSessionView();
+    if (!restoredEarly) {
+      renderLogin();
+      showView("loginView");
+    }
+
     await ensureSeedPins();
 
     updateCloudStatus(window.PMHCloud?.getStatus?.() || {
@@ -2042,30 +2129,47 @@
     });
 
     if (window.PMHCloud?.start) {
-      await window.PMHCloud.start({
-        getState: () => ({ users, entries, pins, completedJobs }),
-        setState: (state) => applyCloudState(state),
-        onStatus: updateCloudStatus
-      });
+      try {
+        await window.PMHCloud.start({
+          getState: () => ({ users, entries, pins, completedJobs }),
+          setState: (state) => applyCloudState(state),
+          onStatus: updateCloudStatus
+        });
+      } catch (error) {
+        console.error("Cloud sync failed to start", error);
+        updateCloudStatus({
+          configured: true,
+          ready: false,
+          message: "Cloud sync retrying…",
+          error: error.message || "Cloud start failed"
+        });
+      }
     }
 
-    const actor = users.find((user) => user.id === sessionActorId && user.active);
-    if (actor) {
-      if (!currentUserId || !users.some((user) => user.id === currentUserId && user.active)) {
-        currentUserId = sessionActorId;
+    // After cloud sync, keep the local session unless that person was retired.
+    if (sessionActorId) {
+      const actor = findActiveUser(sessionActorId);
+      if (actor) {
+        restoreSessionView();
+      } else if (users.some((user) => user.id === sessionActorId && user.active === false)) {
+        sessionActorId = "";
+        currentUserId = "";
         persistSession();
+        renderLogin();
+        showView("loginView");
+      } else if (!restoredEarly) {
+        // Session id exists but roster not ready — stay on login without wiping.
+        renderLogin();
+        showView("loginView");
       }
-      loginMode = "auth";
-      renderAll();
-      showView("summaryView");
-    } else {
-      sessionActorId = "";
-      currentUserId = "";
-      loginMode = "auth";
-      persistSession();
-      renderAll();
-      showView("loginView");
     }
+
+    window.PMHCalendar?.bind?.();
+  }
+
+  function bindUi() {
+    if (uiBound) return;
+    uiBound = true;
 
     el("continueButton").addEventListener("click", async () => {
       const selectedId = el("loginUser").value;
@@ -2092,6 +2196,7 @@
         currentUserId = selectedId;
         persistSession();
         clearPinFields();
+        jobsViewDirty = true;
         renderAll();
         showView("summaryView");
       } finally {
@@ -2134,11 +2239,9 @@
         return;
       }
       resetEntryForm();
-      populateJobSelect("");
       showView("addHoursView");
     });
-
-    el("cancelFormButton").addEventListener("click", () => {
+    el("cancelFormButton")?.addEventListener("click", () => {
       resetEntryForm();
       showView("summaryView");
     });
@@ -2185,8 +2288,16 @@
     el("finishTime").addEventListener("change", calculateHours);
     el("saveHoursButton").addEventListener("click", saveEntry);
     el("summaryMonth").addEventListener("change", renderSummary);
-    el("allJobsMonth").addEventListener("change", renderAllJobs);
-    el("jobSearch")?.addEventListener("change", renderAllJobs);
+    el("allJobsMonth").addEventListener("change", () => {
+      jobsViewDirty = true;
+      renderAllJobs();
+      jobsViewDirty = false;
+    });
+    el("jobSearch")?.addEventListener("change", () => {
+      jobsViewDirty = true;
+      renderAllJobs();
+      jobsViewDirty = false;
+    });
     el("exportPdfButton").addEventListener("click", () => window.print());
 
     document.querySelectorAll("#topNav button").forEach((button) => {
@@ -2194,7 +2305,10 @@
         const viewId = button.dataset.view;
         try {
           if (viewId === "summaryView") renderSummary();
-          if (viewId === "allJobsView") renderAllJobs();
+          if (viewId === "allJobsView") {
+            renderAllJobs();
+            jobsViewDirty = false;
+          }
           if (viewId === "crewView") renderCrew();
         } catch (error) {
           console.error("Failed to render view", viewId, error);
@@ -2204,15 +2318,15 @@
     });
 
     window.addEventListener("pmh-calendar-events-changed", () => {
+      jobsViewDirty = true;
       if (!el("allJobsView")?.classList.contains("active")) return;
       try {
         renderAllJobs();
+        jobsViewDirty = false;
       } catch (error) {
         console.error("Failed to refresh My Jobs", error);
       }
     });
-
-    window.PMHCalendar?.bind?.();
   }
 
   initialize();
