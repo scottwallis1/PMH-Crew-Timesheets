@@ -21,7 +21,7 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.10.0`**
+Asset cache bust: **`?v=1.10.3`**
 
 ## Access model (v1.9)
 
@@ -37,6 +37,7 @@ Asset cache bust: **`?v=1.10.0`**
 ## What’s working
 
 - Crew hours app: **Profile** / All Jobs / Crew (localStorage hours)
+- **Profile stats:** **This week** hours (Mon–Sun) alongside **This month** hours + monthly mileage
 - Login: names visible; **PIN required** to open a Profile (create 4–6 digit PIN on first entry)
 - **Calendar** tab:
   - Google OAuth connect (Client ID in `google-config.js`)
@@ -45,7 +46,7 @@ Asset cache bust: **`?v=1.10.0`**
   - Tap booking → details
   - Events cached in `localStorage` after sync
   - **Connect** only when signed out; **Refresh Sync** while connected
-- Preview URL (may expire): `https://cow-liquid-ambien-hose.trycloudflare.com`
+- Preview URL (may expire): `https://tuition-out-operated-rows.trycloudflare.com`
 
 ## Google Cloud (already set up)
 
