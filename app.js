@@ -1337,24 +1337,29 @@
   }
 
   function jobSiteDetails(jobCode, date = "") {
-    const code = String(jobCode || "").toUpperCase();
-    if (!code || code === "STORE") {
+    try {
+      const code = String(jobCode || "").toUpperCase();
+      if (!code || code === "STORE") {
+        return { name: "", address: "" };
+      }
+      const event = window.PMHCalendar?.findEventForJob?.(code, date) || null;
+      if (!event) return { name: "", address: "" };
+
+      const summary = String(event.summary || "").trim();
+      const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      // Titles are usually "#186 - Customer - Place" — strip the leading job number for a cleaner name.
+      let name = summary
+        .replace(new RegExp(`^#?\\s*${escaped}\\s*[-–—:]\\s*`, "i"), "")
+        .replace(new RegExp(`^job\\s*#?\\s*${escaped}\\s*[-–—:]\\s*`, "i"), "")
+        .trim();
+      if (!name || name === summary) {
+        name = summary.replace(/^#\d{3,5}\s*[-–—:]?\s*/i, "").trim() || summary;
+      }
+      const address = String(event.location || "").trim();
+      return { name, address };
+    } catch {
       return { name: "", address: "" };
     }
-    const event = window.PMHCalendar?.findEventForJob?.(code, date) || null;
-    if (!event) return { name: "", address: "" };
-
-    const summary = String(event.summary || "").trim();
-    // Titles are usually "#186 - Customer - Place" — strip the leading job number for a cleaner name.
-    let name = summary
-      .replace(new RegExp(`^#?\\s*${code}\\s*[-–—:]\\s*`, "i"), "")
-      .replace(new RegExp(`^job\\s*#?\\s*${code}\\s*[-–—:]\\s*`, "i"), "")
-      .trim();
-    if (!name || name === summary) {
-      name = summary.replace(/^#\d{3,5}\s*[-–—:]?\s*/i, "").trim() || summary;
-    }
-    const address = String(event.location || "").trim();
-    return { name, address };
   }
 
   function renderAllJobs() {
@@ -1749,15 +1754,24 @@
     document.querySelectorAll("#topNav button").forEach((button) => {
       button.addEventListener("click", () => {
         const viewId = button.dataset.view;
-        if (viewId === "summaryView") renderSummary();
-        if (viewId === "allJobsView") renderAllJobs();
-        if (viewId === "crewView") renderCrew();
+        try {
+          if (viewId === "summaryView") renderSummary();
+          if (viewId === "allJobsView") renderAllJobs();
+          if (viewId === "crewView") renderCrew();
+        } catch (error) {
+          console.error("Failed to render view", viewId, error);
+        }
         showView(viewId);
       });
     });
 
     window.addEventListener("pmh-calendar-events-changed", () => {
-      if (el("allJobsView")?.classList.contains("active")) renderAllJobs();
+      if (!el("allJobsView")?.classList.contains("active")) return;
+      try {
+        renderAllJobs();
+      } catch (error) {
+        console.error("Failed to refresh All Jobs", error);
+      }
     });
 
     window.PMHCalendar?.bind?.();

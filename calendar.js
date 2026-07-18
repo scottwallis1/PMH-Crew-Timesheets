@@ -83,6 +83,15 @@
     return { start, end, allDay };
   }
 
+  function eventOccursOnDay(event, day) {
+    const bounds = eventBounds(event);
+    if (!bounds || !(day instanceof Date) || Number.isNaN(day.getTime())) return false;
+    const dayStart = startOfDay(day);
+    const dayEnd = addDays(dayStart, 1);
+    // Inclusive of any overlap with the calendar day.
+    return bounds.start < dayEnd && bounds.end > dayStart;
+  }
+
   function plainText(value) {
     return String(value ?? "")
       .replace(/<br\s*\/?>/gi, "\n")
