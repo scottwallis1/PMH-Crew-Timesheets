@@ -232,8 +232,8 @@
   }
 
   function canManageCalendarSync(user = getActor()) {
-    // Only Scott/Ronnie connect Google; everyone else just reads the shared schedule.
-    return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
+    // Only Scott connects Google; everyone else just reads the shared schedule.
+    return Boolean(user && user.id === "scott");
   }
 
   window.PMHApp = {

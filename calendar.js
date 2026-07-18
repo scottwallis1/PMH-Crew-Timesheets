@@ -356,7 +356,7 @@
     if (!window.PMHCloud?.isReady?.() || !window.PMHCloud.subscribeCalendar) return;
     window.PMHCloud.subscribeCalendar((payload) => {
       if (!payload) return;
-      // While Scott is actively Google-connected, local sync wins until disconnect.
+      // While the owner is actively Google-connected, local sync wins until disconnect.
       if (isConnected()) return;
       if (applySharedCalendar(payload)) render();
     });
@@ -887,7 +887,7 @@
             (isConnected()
               ? "No open bookings in the synced range yet. Try Refresh after adding jobs in Google Calendar."
               : canManageGoogleSync()
-                ? "No shared schedule yet. Tap Connect Google Calendar to publish bookings for the crew."
+                ? "No shared schedule yet. Tap Connect Google to publish bookings for the crew."
                 : "No bookings yet. They’ll show here automatically after the team schedule syncs.")
           }
         </p>
@@ -941,7 +941,7 @@
             isConnected()
               ? "No events in the synced range yet. Try Refresh after adding jobs in Google Calendar."
               : canManageGoogleSync()
-                ? "No shared schedule yet. Tap Connect Google Calendar to publish bookings for the crew."
+                ? "No shared schedule yet. Tap Connect Google to publish bookings for the crew."
                 : "No bookings yet. They’ll show here automatically after the team schedule syncs."
           }
         </p>
@@ -972,13 +972,13 @@
     }
 
     connectBtn.disabled = !isConfigured();
-    connectBtn.textContent = "Connect Google Calendar";
+    connectBtn.textContent = "Connect Google";
     connectBtn.classList.toggle("hidden", connected);
     if (disconnectBtn) disconnectBtn.classList.toggle("hidden", !connected);
     if (refreshBtn) {
       refreshBtn.classList.remove("hidden");
       refreshBtn.disabled = !connected;
-      refreshBtn.textContent = "Refresh Sync";
+      refreshBtn.textContent = "Refresh";
     }
   }
 
