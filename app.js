@@ -78,19 +78,7 @@
     storageSet(STORAGE.entries, JSON.stringify(entries));
   }
 
-  users = users.map((user, index) => {
-    const avatarKey = avatarFiles[user.avatar]
-      ? user.avatar
-      : avatarFiles[user.id]
-        ? user.id
-        : fallbackAvatars[index % fallbackAvatars.length];
-    return {
-      ...user,
-      role: CANONICAL_ROLES[user.id] || user.role || "Team member",
-      avatar: avatarKey,
-      seedHours: 0
-    };
-  });
+  users = normalizeUsers(users);
   storageSet(STORAGE.users, JSON.stringify(users));
 
   const el = (id) => document.getElementById(id);
@@ -105,6 +93,22 @@
     }
   }
 
+  function normalizeUsers(list) {
+    return (Array.isArray(list) ? list : []).map((user, index) => {
+      const avatarKey = avatarFiles[user.avatar]
+        ? user.avatar
+        : avatarFiles[user.id]
+          ? user.id
+          : fallbackAvatars[index % fallbackAvatars.length];
+      return {
+        ...user,
+        role: CANONICAL_ROLES[user.id] || user.role || "Team member",
+        avatar: avatarKey,
+        seedHours: 0
+      };
+    });
+  }
+
   function saveAll() {
     storageSet(STORAGE.users, JSON.stringify(users));
     storageSet(STORAGE.entries, JSON.stringify(entries));
@@ -112,6 +116,65 @@
     storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
     storageSet(STORAGE.sessionActor, sessionActorId || "");
     storageSet(STORAGE.currentUser, currentUserId || "");
+    window.PMHCloud?.pushState?.({
+      users,
+      entries,
+      pins,
+      completedJobs,
+      updatedBy: sessionActorId || currentUserId || "crew"
+    });
+  }
+
+  function applyCloudState(state) {
+    users = normalizeUsers(state.users);
+    entries = Array.isArray(state.entries) ? state.entries : [];
+    pins = state.pins && typeof state.pins === "object" ? state.pins : {};
+    completedJobs = state.completedJobs && typeof state.completedJobs === "object"
+      ? state.completedJobs
+      : {};
+
+    // Keep session pointers valid after a remote roster change.
+    if (sessionActorId && !users.some((user) => user.id === sessionActorId && user.active)) {
+      sessionActorId = "";
+      currentUserId = "";
+    } else if (currentUserId && !users.some((user) => user.id === currentUserId)) {
+      currentUserId = sessionActorId || "";
+    }
+
+    storageSet(STORAGE.users, JSON.stringify(users));
+    storageSet(STORAGE.entries, JSON.stringify(entries));
+    storageSet(STORAGE.pins, JSON.stringify(pins));
+    storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
+    storageSet(STORAGE.sessionActor, sessionActorId || "");
+    storageSet(STORAGE.currentUser, currentUserId || "");
+    renderAll();
+    if (!sessionActorId) showView("loginView");
+  }
+
+  function updateCloudStatus(info) {
+    const node = el("cloudSyncStatus");
+    if (!node) return;
+    const message = info?.message || info?.status || "";
+    node.textContent = message;
+    node.dataset.state = info?.configured
+      ? (info?.ready ? "on" : "pending")
+      : "off";
+    node.title = info?.error
+      ? info.error
+      : info?.configured
+        ? "Hours are saved to the shared cloud automatically."
+        : "Cloud sync is not configured yet. See FIREBASE_SETUP.md.";
+  }
+
+  function persistPins() {
+    storageSet(STORAGE.pins, JSON.stringify(pins));
+    window.PMHCloud?.pushState?.({
+      users,
+      entries,
+      pins,
+      completedJobs,
+      updatedBy: sessionActorId || currentUserId || "crew"
+    });
   }
 
   function getActor() {
@@ -370,7 +433,7 @@
         changed = true;
       }
     });
-    if (changed) storageSet(STORAGE.pins, JSON.stringify(pins));
+    if (changed) persistPins();
   }
 
   function isValidPin(pin) {
@@ -394,7 +457,7 @@
       const salt = randomSalt();
       const hash = await hashPin(pin, salt);
       pins[userId] = { hash, salt, updatedAt: Date.now() };
-      storageSet(STORAGE.pins, JSON.stringify(pins));
+      persistPins();
       return true;
     }
 
@@ -470,7 +533,7 @@
     const salt = randomSalt();
     const hash = await hashPin(newPin, salt);
     pins[sessionActorId] = { hash, salt, updatedAt: Date.now() };
-    storageSet(STORAGE.pins, JSON.stringify(pins));
+    persistPins();
 
     if (el("currentPin")) el("currentPin").value = "";
     if (el("newPin")) el("newPin").value = "";
@@ -1504,6 +1567,19 @@
     populateTimes();
     resetEntryForm();
     await ensureSeedPins();
+
+    updateCloudStatus(window.PMHCloud?.getStatus?.() || {
+      configured: false,
+      message: "Cloud sync off"
+    });
+
+    if (window.PMHCloud?.start) {
+      await window.PMHCloud.start({
+        getState: () => ({ users, entries, pins, completedJobs }),
+        setState: (state) => applyCloudState(state),
+        onStatus: updateCloudStatus
+      });
+    }
 
     const actor = users.find((user) => user.id === sessionActorId && user.active);
     if (actor) {

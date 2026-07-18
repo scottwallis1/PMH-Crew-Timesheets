@@ -81,6 +81,28 @@ button { cursor: pointer; }
   text-transform: uppercase;
 }
 
+.cloud-sync-status {
+  margin-top: 4px !important;
+  color: var(--muted) !important;
+  font-family: var(--font-body) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+}
+
+.cloud-sync-status[data-state="on"] {
+  color: #8fd6b5 !important;
+}
+
+.cloud-sync-status[data-state="pending"] {
+  color: var(--gold-soft) !important;
+}
+
+.cloud-sync-status[data-state="off"] {
+  color: var(--muted) !important;
+}
+
 main { padding: 10px 12px; }
 
 .view { display: none; }
