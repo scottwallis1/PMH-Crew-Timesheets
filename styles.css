@@ -871,6 +871,17 @@ button.legend-chip {
   border-color: rgba(255, 255, 255, 0.22);
 }
 
+.legend-chip.filter-completed {
+  background: rgba(31, 157, 85, 0.28);
+  border-color: rgba(31, 157, 85, 0.55);
+  color: #d9ffe8;
+}
+
+#calendarView.filter-completed .calendar-board-card,
+.calendar-board-card.filter-completed {
+  border-color: rgba(31, 157, 85, 0.35);
+}
+
 .legend-chip.tone-structure,
 .calendar-event.tone-structure,
 .calendar-detail-body.tone-structure {
@@ -1204,7 +1215,8 @@ button.legend-chip {
   background: rgba(0, 0, 0, 0.25);
 }
 
-.mark-complete-job {
+.mark-complete-job,
+.add-job-photos {
   margin-top: 10px;
 }
 

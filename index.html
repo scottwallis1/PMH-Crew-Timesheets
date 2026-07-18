@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.16.0">
+  <link rel="stylesheet" href="styles.css?v=1.17.0">
 </head>
 <body>
   <div class="app">
@@ -207,8 +207,10 @@
           <p id="completeJobSummary" class="muted"></p>
           <div id="completeJobCrew" class="complete-crew-list"></div>
 
+          <div id="completeJobExistingPhotos" class="job-photo-gallery hidden"></div>
+
           <label>Job photos</label>
-          <p class="muted job-select-hint">Add site photos before marking complete.</p>
+          <p id="completeJobPhotoHint" class="muted job-select-hint">Add site photos before marking complete.</p>
           <div class="photo-source-actions">
             <button id="takeJobPhotoButton" class="button subtle" type="button">Take photo</button>
             <button id="pickJobGalleryButton" class="button subtle" type="button">Upload from gallery</button>
@@ -279,8 +281,9 @@
             <button type="button" id="calendarFilterAll" class="legend-chip filter-all is-active" data-calendar-filter="all">All</button>
             <button type="button" id="calendarFilterPmh" class="legend-chip tone-structure" data-calendar-filter="pmh">PMH</button>
             <button type="button" id="calendarFilterPev" class="legend-chip tone-other" data-calendar-filter="pev">PEV</button>
+            <button type="button" id="calendarFilterCompleted" class="legend-chip filter-completed" data-calendar-filter="completed">Completed</button>
           </div>
-          <p id="calendarFilterHint" class="muted job-select-hint">Showing all bookings. Same job numbers are grouped together.</p>
+          <p id="calendarFilterHint" class="muted job-select-hint">Showing open bookings. Same job numbers are grouped together.</p>
           <div id="calendarBoard" class="calendar-board"></div>
           <div id="calendarDetail" class="calendar-detail hidden" aria-live="polite"></div>
         </div>
@@ -288,14 +291,14 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.16.0"></script>
-  <script src="firebase-config.js?v=1.16.0"></script>
+  <script src="google-config.js?v=1.17.0"></script>
+  <script src="firebase-config.js?v=1.17.0"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.16.0"></script>
-  <script src="cloud-sync.js?v=1.16.0"></script>
-  <script src="app.js?v=1.16.0"></script>
+  <script src="calendar.js?v=1.17.0"></script>
+  <script src="cloud-sync.js?v=1.17.0"></script>
+  <script src="app.js?v=1.17.0"></script>
 </body>
 </html>

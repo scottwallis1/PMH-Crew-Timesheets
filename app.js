@@ -204,7 +204,8 @@
     canManageCalendarSync: () => canManageCalendarSync(),
     isJobNumberComplete: (jobCode) => isJobNumberComplete(jobCode),
     isCalendarBookingComplete: (eventId, jobCode, date) =>
-      isCalendarBookingComplete(eventId, jobCode, date)
+      isCalendarBookingComplete(eventId, jobCode, date),
+    openAddPhotosForJob: (date, jobCode, returnView) => openAddPhotosForJob(date, jobCode, returnView)
   };
 
   function updateSwitchProfileVisibility() {
@@ -1243,6 +1244,24 @@
     }
   }
 
+  function latestCompletedMetaForJob(jobCode) {
+    const code = String(jobCode || "").toUpperCase();
+    if (!code) return null;
+    return Object.values(completedJobs)
+      .filter((row) => String(row?.job || "").toUpperCase() === code)
+      .sort((a, b) => Number(b?.completedAt || 0) - Number(a?.completedAt || 0))[0] || null;
+  }
+
+  function resolveCompletedJobKey(date, jobCode) {
+    const code = String(jobCode || "").toUpperCase();
+    if (!code || code === "STORE") return "";
+    if (date && isJobComplete(date, code)) return jobKey(date, code);
+    const meta = latestCompletedMetaForJob(code);
+    if (meta?.date) return jobKey(meta.date, code);
+    if (date) return jobKey(date, code);
+    return "";
+  }
+
   function openCompleteJob(date, jobCode) {
     if (!canEditCurrentProfile()) {
       alert("You can’t edit this profile.");
@@ -1253,7 +1272,7 @@
       return;
     }
     if (isJobComplete(date, jobCode)) {
-      alert("This job is already marked complete.");
+      openAddPhotosForJob(date, jobCode, "allJobsView");
       return;
     }
     const crew = crewHoursForJob(date, jobCode);
@@ -1262,7 +1281,12 @@
       return;
     }
 
-    pendingComplete = { date, job: String(jobCode).toUpperCase() };
+    pendingComplete = {
+      date,
+      job: String(jobCode).toUpperCase(),
+      mode: "complete",
+      returnView: "allJobsView"
+    };
     pendingPhotos = [];
     el("completeJobTitle").textContent = `Complete #${pendingComplete.job}`;
     el("completeJobSummary").textContent =
@@ -1273,11 +1297,72 @@
         <strong>${formatHours(row.hours)} hrs · ${Number(row.mileage || 0).toFixed(0)} miles</strong>
       </div>
     `).join("");
+    const existing = el("completeJobExistingPhotos");
+    if (existing) {
+      existing.classList.add("hidden");
+      existing.innerHTML = "";
+    }
+    if (el("completeJobPhotoHint")) {
+      el("completeJobPhotoHint").textContent = "Add site photos before marking complete.";
+    }
+    if (el("confirmCompleteJobButton")) {
+      el("confirmCompleteJobButton").textContent = "Mark complete & update calendar";
+    }
     if (el("completeJobPhotos")) el("completeJobPhotos").value = "";
     if (el("completeJobCamera")) el("completeJobCamera").value = "";
     el("completeJobStatus").textContent = window.PMHCalendar?.isConnected?.()
       ? "Google connected — calendar will be updated on complete."
       : "Google not connected — job can still be completed; connect Calendar to write hours onto the booking.";
+    renderPendingPhotoPreview();
+    showView("completeJobView");
+  }
+
+  function openAddPhotosForJob(date, jobCode, returnView = "allJobsView") {
+    if (!canEditCurrentProfile()) {
+      alert("You can’t edit this profile.");
+      return;
+    }
+    const code = String(jobCode || "").toUpperCase();
+    if (!code || code === "STORE") {
+      alert("STORE does not use job photos.");
+      return;
+    }
+
+    const key = resolveCompletedJobKey(date, code);
+    if (!key || !completedJobs[key]) {
+      alert("Mark this job complete first, then you can add photos.");
+      return;
+    }
+
+    const meta = completedJobs[key];
+    pendingComplete = {
+      date: meta.date || date,
+      job: code,
+      mode: "photos",
+      returnView: returnView || "allJobsView",
+      key
+    };
+    pendingPhotos = [];
+    el("completeJobTitle").textContent = `Add photos · #${code}`;
+    el("completeJobSummary").textContent =
+      `${formatDate(meta.date || date)} · Add photos now if none were taken when the job was marked complete.`;
+    el("completeJobCrew").innerHTML = "";
+    const existing = el("completeJobExistingPhotos");
+    if (existing) {
+      existing.classList.remove("hidden");
+      renderJobPhotos(existing, meta.date || date, code);
+    }
+    if (el("completeJobPhotoHint")) {
+      el("completeJobPhotoHint").textContent = "Take or upload more site photos. They are saved on this phone.";
+    }
+    if (el("confirmCompleteJobButton")) {
+      el("confirmCompleteJobButton").textContent = "Save photos";
+    }
+    if (el("completeJobPhotos")) el("completeJobPhotos").value = "";
+    if (el("completeJobCamera")) el("completeJobCamera").value = "";
+    el("completeJobStatus").textContent = meta.photoCount
+      ? `${meta.photoCount} photo(s) already saved on this phone.`
+      : "No photos saved yet for this job on this phone.";
     renderPendingPhotoPreview();
     showView("completeJobView");
   }
@@ -1289,8 +1374,54 @@
     renderPendingPhotoPreview();
   }
 
+  async function confirmAddPhotosOnly() {
+    if (!pendingComplete || pendingComplete.mode !== "photos") return;
+    const { date, job, key: knownKey, returnView } = pendingComplete;
+    const key = knownKey || jobKey(date, job);
+    const status = el("completeJobStatus");
+    const button = el("confirmCompleteJobButton");
+
+    if (!pendingPhotos.length) {
+      if (status) status.textContent = "Choose at least one photo to save.";
+      return;
+    }
+
+    if (button) button.disabled = true;
+    if (status) status.textContent = "Saving photos…";
+
+    try {
+      const photoIds = await savePhotosForJob(key, pendingPhotos);
+      if (completedJobs[key]) {
+        completedJobs[key] = {
+          ...completedJobs[key],
+          photoCount: Number(completedJobs[key].photoCount || 0) + photoIds.length
+        };
+        saveAll();
+      }
+
+      pendingComplete = null;
+      pendingPhotos = [];
+      renderAll();
+      showView(returnView || "allJobsView");
+      if (returnView === "calendarView") {
+        window.PMHCalendar?.show?.();
+      }
+      alert(`Saved ${photoIds.length} photo(s) for #${job}.`);
+    } catch (error) {
+      if (status) status.textContent = error.message || "Could not save photos.";
+      alert(error.message || "Could not save photos.");
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   async function confirmCompleteJob() {
     if (!pendingComplete || !currentUserId) return;
+    if (pendingComplete.mode === "photos") {
+      await confirmAddPhotosOnly();
+      return;
+    }
+
     const { date, job } = pendingComplete;
     const key = jobKey(date, job);
     const completer = getCurrentUser();
@@ -1449,8 +1580,10 @@
             `).join("")}
             ${!allCancelled ? `<div class="entry-meta">Your total: ${formatHours(totalHours)} hrs · ${totalMiles.toFixed(0)} miles</div>` : '<div class="entry-meta">Excluded from totals</div>'}
             ${crew.length > 1 ? `<div class="entry-meta">Crew on this job: ${crew.map((row) => `${escapeHtml(row.name)} ${formatHours(row.hours)}h`).join(" · ")}</div>` : ""}
-            ${complete ? `<div class="entry-meta">Completed${completeMeta?.calendarUpdated ? " · calendar updated" : ""}${completeMeta?.photoCount ? ` · ${completeMeta.photoCount} photo(s)` : ""}</div>
-              <div class="job-photo-gallery" data-photo-job="${escapeHtml(job.job)}" data-photo-date="${escapeHtml(job.date)}"></div>` : ""}
+            ${complete ? `<div class="entry-meta">Completed${completeMeta?.calendarUpdated ? " · calendar updated" : ""}${completeMeta?.photoCount ? ` · ${completeMeta.photoCount} photo(s)` : " · no photos yet"}</div>
+              <div class="job-photo-gallery" data-photo-job="${escapeHtml(job.job)}" data-photo-date="${escapeHtml(job.date)}"></div>
+              ${canEditCurrentProfile() ? `<button type="button" class="button subtle small-action add-job-photos" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Add photos</button>` : ""}`
+              : ""}
             ${!allCancelled && !complete && job.job !== "STORE" && canEditCurrentProfile() ? `<button type="button" class="button primary small-action mark-complete-job" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Mark complete</button>` : ""}
           </article>`;
         }).join("")
@@ -1460,6 +1593,10 @@
 
     document.querySelectorAll(".mark-complete-job").forEach((button) => {
       button.addEventListener("click", () => openCompleteJob(button.dataset.date, button.dataset.job));
+    });
+
+    document.querySelectorAll(".add-job-photos").forEach((button) => {
+      button.addEventListener("click", () => openAddPhotosForJob(button.dataset.date, button.dataset.job, "allJobsView"));
     });
 
     document.querySelectorAll(".job-photo-gallery").forEach((gallery) => {
@@ -1761,9 +1898,13 @@
       confirmCompleteJob();
     });
     el("cancelCompleteJobButton")?.addEventListener("click", () => {
+      const returnView = pendingComplete?.returnView || "allJobsView";
       pendingComplete = null;
       pendingPhotos = [];
-      showView("allJobsView");
+      showView(returnView);
+      if (returnView === "calendarView") {
+        window.PMHCalendar?.show?.();
+      }
     });
 
     el("startTime").addEventListener("change", calculateHours);
