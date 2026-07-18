@@ -197,22 +197,6 @@ main { padding: 10px 12px; }
   filter: grayscale(0.35);
 }
 
-/* Scott: gold inner ring + purple outer ring. */
-.robot-avatar.avatar-owner {
-  border-color: var(--gold);
-  box-shadow:
-    0 0 0 3px var(--event-purple),
-    0 0 0 6px rgba(239, 183, 93, 0.22),
-    0 8px 18px rgba(0, 0, 0, 0.35);
-}
-
-.robot-avatar-md.avatar-owner {
-  box-shadow:
-    0 0 0 2px var(--event-purple),
-    0 0 0 5px rgba(239, 183, 93, 0.2),
-    0 4px 10px rgba(0, 0, 0, 0.28);
-}
-
 .change-user-link.hidden,
 .change-user-link[hidden] {
   display: none !important;

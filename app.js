@@ -158,8 +158,7 @@
       logo.alt = "Peterhead Marquees";
     }
     el("summaryView")?.classList.remove("profile-theme-event");
-    el("summaryRobot")?.classList.remove("avatar-event-hire");
-    el("summaryRobot")?.classList.toggle("avatar-owner", Boolean(user && user.id === "scott"));
+    el("summaryRobot")?.classList.remove("avatar-event-hire", "avatar-owner");
   }
 
   function canEditTarget(targetId, actor = getActor()) {
@@ -546,7 +545,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.9.0`;
+    return `${path}?v=1.10.4`;
   }
 
   function renderRobot(target, user) {
@@ -570,7 +569,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.9.0`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.10.4`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -685,7 +684,7 @@
     el("summaryUserName").textContent = user.name;
     el("summaryRole").textContent = user.role;
     renderRobot(el("summaryRobot"), user);
-    el("summaryRobot")?.classList.toggle("avatar-owner", user.id === "scott");
+    el("summaryRobot")?.classList.remove("avatar-owner");
     updateBrandTheme();
 
     updateSwitchProfileVisibility();
@@ -1359,7 +1358,7 @@
     el("crewLeaderboard").innerHTML = leaderboard.map((user, index) => `
       <div class="leaderboard-row ${user.active ? "" : "retired"}">
         <div class="rank">${index + 1}</div>
-        <div class="robot-avatar robot-avatar-md ${user.id === "scott" ? "avatar-owner" : ""} ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
+        <div class="robot-avatar robot-avatar-md ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
         <div class="leaderboard-copy">
           <strong>${escapeHtml(user.name)}${user.role === "Owner" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
           <div class="muted">${user.active ? "All-time total" : "Retired · history kept"}</div>
