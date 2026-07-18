@@ -6,7 +6,7 @@ Mobile-friendly crew timesheet web app for logging job hours, mileage, STORE tim
 
 - **Select team member** on every load (PIN required to open a Profile)
 - **Profile** — monthly hours/mileage, add/edit/cancel entries
-- **All Jobs** — month view with search; cancelled jobs greyed out; STORE entries in teal
+- **My Jobs** — month view with search; cancelled jobs greyed out; STORE entries in teal
 - **Crew** — all-time leaderboard, unique robot avatars, retire (tombstone) + reinstate
 - **Calendar** — rolling list from Google Calendar; dark green for marquee/tent/gazebo/pagoda, purple for other jobs
 - **Cloud sync (Firebase)** — when configured, hours/PINs stay shared and survive clearing site data (see `FIREBASE_SETUP.md`)
