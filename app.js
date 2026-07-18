@@ -195,6 +195,15 @@
     return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
   }
 
+  function canManageCalendarSync(user = getActor()) {
+    // Only Scott/Ronnie connect Google; everyone else just reads the shared schedule.
+    return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
+  }
+
+  window.PMHApp = {
+    canManageCalendarSync: () => canManageCalendarSync()
+  };
+
   function updateSwitchProfileVisibility() {
     const switchButton = el("changeUserButton");
     if (!switchButton) return;

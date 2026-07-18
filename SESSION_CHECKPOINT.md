@@ -21,9 +21,10 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.13.0`**
+Asset cache bust: **`?v=1.14.0`**
 
-**Cloud sync:** Firebase Firestore — fill `firebase-config.js` using `FIREBASE_SETUP.md`. Header shows “Cloud sync on” when live.
+**Cloud sync:** Firebase Firestore for hours + shared calendar feed.  
+Scott/Ronnie Connect Google once and Refresh; crew (Karen/Jason) auto-see the schedule — no Google setup.
 
 **Live URL:** https://scottwallis1.github.io/PMH-Crew-Timesheets/  
 **Go-live blocker:** enable Pages once at  

@@ -296,6 +296,54 @@
     }
   }
 
+  function canManageGoogleSync() {
+    try {
+      return Boolean(window.PMHApp?.canManageCalendarSync?.());
+    } catch {
+      return false;
+    }
+  }
+
+  function applySharedCalendar(payload) {
+    if (!payload || !Array.isArray(payload.events)) return false;
+    const next = payload.events.map(normalizeEvent).filter((event) => event && event.id);
+    const nextSynced = Number(payload.syncedAt || 0);
+    const prevJson = JSON.stringify(events);
+    const nextJson = JSON.stringify(next);
+    if (prevJson === nextJson && syncedAt === nextSynced) return false;
+    events = next;
+    syncedAt = nextSynced || syncedAt || Date.now();
+    persistEvents();
+    if (selectedEventId && !findEvent(selectedEventId)) selectedEventId = "";
+    return true;
+  }
+
+  async function publishSharedCalendar() {
+    if (!window.PMHCloud?.isReady?.()) return;
+    await window.PMHCloud.pushCalendar({
+      events,
+      syncedAt,
+      updatedBy: "google-sync"
+    });
+  }
+
+  async function loadSharedCalendar() {
+    if (!window.PMHCloud?.isReady?.()) return false;
+    const remote = await window.PMHCloud.pullCalendar();
+    if (!remote) return false;
+    return applySharedCalendar(remote);
+  }
+
+  function watchSharedCalendar() {
+    if (!window.PMHCloud?.isReady?.() || !window.PMHCloud.subscribeCalendar) return;
+    window.PMHCloud.subscribeCalendar((payload) => {
+      if (!payload) return;
+      // While Scott is actively Google-connected, local sync wins until disconnect.
+      if (isConnected()) return;
+      if (applySharedCalendar(payload)) render();
+    });
+  }
+
   function setStatus(message) {
     const node = el("calendarStatus");
     if (node) node.textContent = message;
@@ -306,23 +354,21 @@
     const actions = el("calendarActions");
     if (!setup || !actions) return;
 
-    if (!isConfigured()) {
-      setup.classList.remove("hidden");
-      actions.classList.add("hidden");
-      setStatus("Google Client ID not set yet — follow the setup steps below.");
-      return;
-    }
-
+    // Crew never see Google developer setup — schedule comes from shared cloud.
     setup.classList.add("hidden");
-    actions.classList.remove("hidden");
+
+    const manager = canManageGoogleSync();
+    actions.classList.toggle("hidden", !manager);
 
     if (isConnected()) {
       const syncNote = syncedAt ? ` Last sync ${formatSyncedAt(syncedAt)}.` : "";
       setStatus(`Connected to Google Calendar.${syncNote}`);
     } else if (events.length) {
-      setStatus(`Showing saved schedule (last sync ${formatSyncedAt(syncedAt)}). Connect to refresh.`);
+      setStatus(`Team schedule · updated ${formatSyncedAt(syncedAt)}.`);
+    } else if (manager) {
+      setStatus("Connect Google once on this phone to publish the team schedule.");
     } else {
-      setStatus("Ready to connect your Google account.");
+      setStatus("Team schedule will appear here automatically once synced.");
     }
   }
 
@@ -497,7 +543,9 @@
             emptyFilter ||
             (isConnected()
               ? "No upcoming bookings in the synced range yet. Try Refresh after adding jobs in Google Calendar."
-              : "Connect Google once to pull the schedule into this list.")
+              : canManageGoogleSync()
+                ? "No shared schedule yet. Tap Connect Google Calendar to publish bookings for the crew."
+                : "No bookings yet. They’ll show here automatically after the team schedule syncs.")
           }
         </p>
       `;
@@ -526,19 +574,15 @@
     const board = el("calendarBoard");
     if (!board) return;
 
-    if (!isConfigured() && !events.length) {
-      board.innerHTML = '<p class="muted">Calendar connect is waiting on your Google Client ID.</p>';
-      renderDetailPanel();
-      return;
-    }
-
     if (!events.length) {
       board.innerHTML = `
         <p class="muted">
           ${
             isConnected()
               ? "No events in the synced range yet. Try Refresh after adding jobs in Google Calendar."
-              : "Connect Google once to pull the schedule into this app calendar."
+              : canManageGoogleSync()
+                ? "No shared schedule yet. Tap Connect Google Calendar to publish bookings for the crew."
+                : "No bookings yet. They’ll show here automatically after the team schedule syncs."
           }
         </p>
       `;
@@ -557,13 +601,22 @@
     const refreshBtn = el("calendarRefreshButton");
     if (!connectBtn) return;
 
+    const manager = canManageGoogleSync();
     const connected = isConnected();
+
+    if (!manager) {
+      connectBtn.classList.add("hidden");
+      if (disconnectBtn) disconnectBtn.classList.add("hidden");
+      if (refreshBtn) refreshBtn.classList.add("hidden");
+      return;
+    }
+
     connectBtn.disabled = !isConfigured();
     connectBtn.textContent = "Connect Google Calendar";
     connectBtn.classList.toggle("hidden", connected);
     if (disconnectBtn) disconnectBtn.classList.toggle("hidden", !connected);
     if (refreshBtn) {
-      refreshBtn.classList.toggle("hidden", !isConfigured());
+      refreshBtn.classList.remove("hidden");
       refreshBtn.disabled = !connected;
       refreshBtn.textContent = "Refresh Sync";
     }
@@ -611,6 +664,7 @@
       .filter((event) => event && event.id);
     syncedAt = Date.now();
     persistEvents();
+    await publishSharedCalendar();
     if (selectedEventId && !findEvent(selectedEventId)) selectedEventId = "";
     setStatus(`Synced ${events.length} booking${events.length === 1 ? "" : "s"} · ${formatSyncedAt(syncedAt)}`);
     renderBoard();
@@ -708,11 +762,29 @@
       chip.addEventListener("click", () => setCalendarFilter(chip.dataset.calendarFilter));
     });
     render();
+    // Load shared schedule for crew phones; keep listening for updates.
+    loadSharedCalendar()
+      .then((changed) => {
+        if (changed) render();
+        watchSharedCalendar();
+        // If this phone already has a Google sync, publish it for the crew.
+        if (isConnected() && events.length) {
+          return publishSharedCalendar();
+        }
+        return null;
+      })
+      .catch(() => {
+        watchSharedCalendar();
+      });
   }
 
-  function show() {
+  async function show() {
     bind();
     render();
+    if (!isConnected()) {
+      const changed = await loadSharedCalendar();
+      if (changed) render();
+    }
     if (isConfigured() && isConnected()) {
       refresh();
     }
