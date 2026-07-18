@@ -315,7 +315,10 @@
     ].sort();
     const requiredDates = hourDates.length ? hourDates : dates;
     const hasCollection = rows.some(
-      (row) => row.visitType === "collection" || row.visitType === "single"
+      (row) =>
+        row.visitType === "collection" ||
+        row.visitType === "event_operator" ||
+        row.visitType === "single"
     );
     const hasDelivery = rows.some((row) => row.visitType === "delivery");
     // Collection / one-visit completes the whole job. Delivery keeps it open.
@@ -1446,11 +1449,11 @@
     } else if (visitType === "collection") {
       hint.textContent = "Collection: finishes the whole job. All visit hours are consolidated and it moves to Completed.";
       confirmBtn.textContent = "Mark collection complete";
-    } else if (visitType === "single") {
-      hint.textContent = "One visit / whole job: mark this job fully complete now.";
-      confirmBtn.textContent = "Mark job complete";
+    } else if (visitType === "event_operator") {
+      hint.textContent = "Event Operator: on-site cover (e.g. photobooth). Marks this job fully complete.";
+      confirmBtn.textContent = "Mark Event Operator complete";
     } else {
-      hint.textContent = "Choose Delivery, Collection, or One visit first.";
+      hint.textContent = "Choose Delivery, Collection, or Event Operator first.";
       confirmBtn.textContent = "Mark complete";
     }
   }
@@ -1663,8 +1666,8 @@
     const status = el("completeJobStatus");
     const button = el("confirmCompleteJobButton");
 
-    if (!["delivery", "collection", "single"].includes(visitType)) {
-      if (status) status.textContent = "Choose Delivery, Collection, or One visit first.";
+    if (!["delivery", "collection", "event_operator"].includes(visitType)) {
+      if (status) status.textContent = "Choose Delivery, Collection, or Event Operator first.";
       return;
     }
 
@@ -1686,8 +1689,9 @@
       const calendarEvent = window.PMHCalendar?.findEventForJob?.(job, date) || null;
       let calendarUpdated = false;
       let calendarError = "";
+      const finishesJob = visitType === "collection" || visitType === "event_operator";
       const shouldUpdateCalendar =
-        (visitType === "collection" || visitType === "single") &&
+        finishesJob &&
         calendarEvent &&
         window.PMHCalendar?.isConnected?.();
 
@@ -1699,9 +1703,9 @@
         } catch (error) {
           calendarError = error.message || "Calendar update failed.";
         }
-      } else if ((visitType === "collection" || visitType === "single") && !calendarEvent) {
+      } else if (finishesJob && !calendarEvent) {
         calendarError = "No matching calendar booking found for this job number.";
-      } else if ((visitType === "collection" || visitType === "single") && !window.PMHCalendar?.isConnected?.()) {
+      } else if (finishesJob && !window.PMHCalendar?.isConnected?.()) {
         calendarError = "Connect Google Calendar to push hours onto the booking.";
       }
 
@@ -1724,9 +1728,15 @@
 
       if (visitType === "delivery") {
         alert("Delivery marked complete. Job stays open on the calendar until collection is marked complete.");
+      } else if (visitType === "event_operator") {
+        alert(
+          calendarUpdated
+            ? "Event Operator marked complete. Hours were consolidated onto the calendar booking."
+            : `Event Operator marked complete.${calendarError ? ` Calendar note: ${calendarError}` : ""}`
+        );
       } else if (calendarUpdated) {
         alert("Collection marked complete. All visit hours were consolidated onto the calendar booking.");
-      } else if (visitType === "collection" || visitType === "single") {
+      } else if (visitType === "collection") {
         alert(`Job marked complete.${calendarError ? ` Calendar note: ${calendarError}` : ""}`);
       } else {
         alert("Visit marked complete.");
@@ -1811,8 +1821,8 @@
             ? "Delivery done"
             : completeMeta?.visitType === "collection"
               ? "Collection done"
-              : completeMeta?.visitType === "single"
-                ? "Complete"
+              : completeMeta?.visitType === "event_operator" || completeMeta?.visitType === "single"
+                ? "Event Operator done"
                 : "Complete";
           const crew = job.job === "STORE" ? [] : crewHoursForJob(job.date, job.job);
           const site = job.job === "STORE" ? { name: "", address: "" } : jobSiteDetails(job.job, job.date);
