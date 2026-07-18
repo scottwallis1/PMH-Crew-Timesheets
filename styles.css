@@ -725,13 +725,11 @@ textarea {
   font-weight: 600;
 }
 
-.profile-pin-panel,
-.profile-backup-panel {
+.profile-pin-panel {
   margin-top: 14px;
 }
 
-.profile-pin-panel summary,
-.profile-backup-panel summary {
+.profile-pin-panel summary {
   cursor: pointer;
   color: var(--gold);
   font-family: var(--font-display);
@@ -739,28 +737,8 @@ textarea {
   font-size: 14px;
 }
 
-.profile-pin-panel .pin-panel,
-.backup-panel {
+.profile-pin-panel .pin-panel {
   margin-top: 10px;
-}
-
-.backup-help {
-  margin: 0 0 10px;
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.backup-status {
-  margin: 0 0 10px;
-  color: var(--gold-soft);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.restore-backup-label {
-  display: block;
-  text-align: center;
-  cursor: pointer;
 }
 
 .export-note { text-align: center; }

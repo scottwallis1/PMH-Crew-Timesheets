@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.12.0">
+  <link rel="stylesheet" href="styles.css?v=1.11.0">
 </head>
 <body>
   <div class="app">
@@ -130,23 +130,6 @@
               <p id="changePinError" class="pin-error hidden" role="alert"></p>
               <p id="changePinSuccess" class="pin-success hidden" role="status"></p>
               <button id="changePinButton" class="button subtle small-action" type="button">Update PIN</button>
-            </div>
-          </details>
-
-          <details id="backupPanel" class="management-panel profile-backup-panel" open>
-            <summary>Backup &amp; restore</summary>
-            <div class="backup-panel">
-              <p class="muted backup-help">
-                Hours live on this phone. Download a backup file and keep it in Files, iCloud, or Google Drive
-                so an accidental “clear site data” doesn’t wipe the crew’s records.
-              </p>
-              <p id="backupStatus" class="backup-status" role="status">No backup downloaded on this device yet.</p>
-              <button id="downloadBackupButton" class="button primary small-action" type="button">Download backup</button>
-              <button id="shareBackupButton" class="button subtle small-action" type="button">Share backup</button>
-              <label for="restoreBackupInput" class="button subtle small-action restore-backup-label">Restore from file</label>
-              <input id="restoreBackupInput" class="hidden-file-input" type="file" accept="application/json,.json">
-              <p id="backupMessage" class="pin-success hidden" role="status"></p>
-              <p id="backupError" class="pin-error hidden" role="alert"></p>
             </div>
           </details>
         </div>
@@ -305,9 +288,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.12.0"></script>
+  <script src="google-config.js?v=1.11.0"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.12.0"></script>
-  <script src="app.js?v=1.12.0"></script>
+  <script src="calendar.js?v=1.11.0"></script>
+  <script src="app.js?v=1.11.0"></script>
 </body>
 </html>
