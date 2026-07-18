@@ -304,6 +304,14 @@
     }
   }
 
+  function notifyEventsChanged() {
+    try {
+      window.dispatchEvent(new CustomEvent("pmh-calendar-events-changed"));
+    } catch {
+      /* ignore */
+    }
+  }
+
   function applySharedCalendar(payload) {
     if (!payload || !Array.isArray(payload.events)) return false;
     const next = payload.events.map(normalizeEvent).filter((event) => event && event.id);
@@ -315,6 +323,7 @@
     syncedAt = nextSynced || syncedAt || Date.now();
     persistEvents();
     if (selectedEventId && !findEvent(selectedEventId)) selectedEventId = "";
+    notifyEventsChanged();
     return true;
   }
 
@@ -667,6 +676,7 @@
     await publishSharedCalendar();
     if (selectedEventId && !findEvent(selectedEventId)) selectedEventId = "";
     setStatus(`Synced ${events.length} booking${events.length === 1 ? "" : "s"} · ${formatSyncedAt(syncedAt)}`);
+    notifyEventsChanged();
     renderBoard();
   }
 

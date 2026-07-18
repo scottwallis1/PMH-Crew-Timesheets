@@ -540,6 +540,21 @@ textarea {
   gap: 12px;
 }
 
+.job-site-name {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.job-site-address {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .job-person {
   margin-top: 8px;
   padding-top: 8px;
