@@ -14,7 +14,7 @@
   let syncedAt = 0;
   let bound = false;
   let selectedEventId = "";
-  let calendarFilter = "all"; // all | pmh | pev
+  let calendarFilter = "all"; // all | pmh | pev | completed
 
   function config() {
     return window.PMH_GOOGLE_CONFIG || { clientId: "", calendarId: "primary", scopes: "" };
@@ -540,9 +540,7 @@
   function relatedEventsFor(event) {
     const jobCode = eventJobCode(event);
     if (!jobCode) return [event];
-    return sortEventsByStart(
-      events.filter((row) => eventJobCode(row) === jobCode && eventMatchesFilter(row))
-    );
+    return sortEventsByStart(events.filter((row) => eventJobCode(row) === jobCode));
   }
 
   function renderDetailPanel() {
@@ -641,6 +639,11 @@
         </dl>
         <div class="calendar-detail-actions">
           ${
+            complete && jobCode
+              ? `<button type="button" class="button primary" id="calendarAddPhotosButton" data-job="${escapeHtml(jobCode)}" data-date="${escapeHtml(eventDayIso(event))}">Add photos</button>`
+              : ""
+          }
+          ${
             meet
               ? `<a class="button subtle" href="${escapeHtml(meet)}" target="_blank" rel="noopener noreferrer">Open meeting link</a>`
               : ""
@@ -660,14 +663,46 @@
       renderBoard();
       renderDetailPanel();
     });
+    el("calendarAddPhotosButton")?.addEventListener("click", () => {
+      const button = el("calendarAddPhotosButton");
+      const job = button?.dataset?.job || jobCode;
+      const date = button?.dataset?.date || eventDayIso(event);
+      try {
+        window.PMHApp?.openAddPhotosForJob?.(date, job, "calendarView");
+      } catch (error) {
+        console.error("Could not open add photos", error);
+      }
+    });
   }
 
   function eventMatchesFilter(event) {
+    const jobCode = eventJobCode(event);
+    const complete = jobCode ? isJobGroupComplete(jobCode) : isBookingComplete(event);
+
+    if (calendarFilter === "completed") {
+      return complete;
+    }
+
+    // Keep completed jobs on the Completed tab only.
+    if (complete) return false;
+
     if (calendarFilter === "all") return true;
     const isPmh = isStructureJob(event);
     if (calendarFilter === "pmh") return isPmh;
     if (calendarFilter === "pev") return !isPmh;
     return true;
+  }
+
+  function eventsForCurrentFilter() {
+    if (calendarFilter === "completed") {
+      return events
+        .map((event) => ({ event, bounds: eventBounds(event) }))
+        .filter((row) => row.bounds)
+        .filter((row) => eventMatchesFilter(row.event))
+        .sort((a, b) => b.bounds.start - a.bounds.start)
+        .map((row) => row.event);
+    }
+    return sortedUpcomingEvents().filter(eventMatchesFilter);
   }
 
   function updateFilterControls() {
@@ -682,22 +717,25 @@
     if (calendarView) {
       calendarView.classList.toggle("filter-pev", calendarFilter === "pev");
       calendarView.classList.toggle("filter-pmh", calendarFilter === "pmh");
+      calendarView.classList.toggle("filter-completed", calendarFilter === "completed");
     }
     if (boardCard) {
       boardCard.classList.toggle("filter-pev", calendarFilter === "pev");
       boardCard.classList.toggle("filter-pmh", calendarFilter === "pmh");
+      boardCard.classList.toggle("filter-completed", calendarFilter === "completed");
     }
 
     const hint = el("calendarFilterHint");
     if (!hint) return;
-    if (calendarFilter === "pmh") hint.textContent = "Showing PMH bookings only. Tap All to clear.";
-    else if (calendarFilter === "pev") hint.textContent = "Showing PEV bookings only. Tap All to clear.";
-    else hint.textContent = "Showing all bookings. Same job numbers are grouped together.";
+    if (calendarFilter === "pmh") hint.textContent = "Showing open PMH bookings. Completed jobs are under Completed.";
+    else if (calendarFilter === "pev") hint.textContent = "Showing open PEV bookings. Completed jobs are under Completed.";
+    else if (calendarFilter === "completed") hint.textContent = "Showing completed jobs. Tap All to go back to open bookings.";
+    else hint.textContent = "Showing open bookings. Same job numbers are grouped together.";
   }
 
   function setCalendarFilter(nextFilter) {
     const wanted = String(nextFilter || "all").toLowerCase();
-    calendarFilter = ["all", "pmh", "pev"].includes(wanted) ? wanted : "all";
+    calendarFilter = ["all", "pmh", "pev", "completed"].includes(wanted) ? wanted : "all";
     // Clear detail if the open booking no longer matches the filter.
     if (selectedEventId) {
       const open = findEvent(selectedEventId);
@@ -711,20 +749,22 @@
     const board = el("calendarBoard");
     if (!board) return;
 
-    const list = sortedUpcomingEvents().filter(eventMatchesFilter);
+    const list = eventsForCurrentFilter();
     if (!list.length) {
       const emptyFilter =
         calendarFilter === "pmh"
-          ? "No PMH bookings in the synced range."
+          ? "No open PMH bookings in the synced range."
           : calendarFilter === "pev"
-            ? "No PEV bookings in the synced range."
-            : "";
+            ? "No open PEV bookings in the synced range."
+            : calendarFilter === "completed"
+              ? "No completed jobs yet. Mark a job complete in All Jobs and it will move here."
+              : "";
       board.innerHTML = `
         <p class="muted">
           ${
             emptyFilter ||
             (isConnected()
-              ? "No upcoming bookings in the synced range yet. Try Refresh after adding jobs in Google Calendar."
+              ? "No open bookings in the synced range yet. Try Refresh after adding jobs in Google Calendar."
               : canManageGoogleSync()
                 ? "No shared schedule yet. Tap Connect Google Calendar to publish bookings for the crew."
                 : "No bookings yet. They’ll show here automatically after the team schedule syncs.")
