@@ -207,7 +207,8 @@
       isCalendarBookingComplete(eventId, jobCode, date),
     openAddPhotosForJob: (date, jobCode, returnView) => openAddPhotosForJob(date, jobCode, returnView),
     getJobHoursSummary: (jobCode) => getJobHoursSummary(jobCode),
-    formatHours: (value) => formatHours(value)
+    formatHours: (value) => formatHours(value),
+    renderJobPhotosByNumber: (container, jobCode) => renderJobPhotosByNumber(container, jobCode)
   };
 
   function updateSwitchProfileVisibility() {
@@ -1294,6 +1295,52 @@
     }
   }
 
+  function photoKeysForJobNumber(jobCode) {
+    const code = String(jobCode || "").toUpperCase();
+    if (!code || code === "STORE") return [];
+    const keys = new Set();
+    Object.values(completedJobs).forEach((row) => {
+      if (String(row?.job || "").toUpperCase() === code && row?.date) {
+        keys.add(jobKey(row.date, code));
+      }
+    });
+    entries
+      .filter((entry) => String(entry.job || "").toUpperCase() === code)
+      .forEach((entry) => keys.add(jobKey(entry.date, code)));
+    return [...keys];
+  }
+
+  async function listPhotosForJobNumber(jobCode) {
+    const keys = photoKeysForJobNumber(jobCode);
+    const all = [];
+    for (const key of keys) {
+      const photos = await listPhotosForJob(key);
+      all.push(...photos);
+    }
+    all.sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+    return all;
+  }
+
+  async function renderJobPhotosByNumber(container, jobCode) {
+    if (!container) return;
+    try {
+      const photos = await listPhotosForJobNumber(jobCode);
+      if (!photos.length) {
+        container.innerHTML = '<p class="muted">No photos attached yet. Use Add photos to attach site photos from this phone.</p>';
+        return;
+      }
+      container.innerHTML = photos.map((photo) => {
+        const url = URL.createObjectURL(photo.blob);
+        return `<figure class="photo-thumb">
+          <img src="${url}" alt="${escapeHtml(photo.name)}">
+          <a class="button subtle" href="${url}" download="${escapeHtml(photo.name)}">Download</a>
+        </figure>`;
+      }).join("");
+    } catch {
+      container.innerHTML = '<p class="muted">Could not load photos on this device.</p>';
+    }
+  }
+
   function latestCompletedMetaForJob(jobCode) {
     const code = String(jobCode || "").toUpperCase();
     if (!code) return null;
@@ -1400,7 +1447,7 @@
     const existing = el("completeJobExistingPhotos");
     if (existing) {
       existing.classList.remove("hidden");
-      renderJobPhotos(existing, meta.date || date, code);
+      renderJobPhotosByNumber(existing, code);
     }
     if (el("completeJobPhotoHint")) {
       el("completeJobPhotoHint").textContent = "Take or upload more site photos. They are saved on this phone.";
