@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#003b32">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PMH Team">
+  <meta name="application-name" content="PMH Team">
+  <meta name="description" content="Peterhead Marquees Team Manager — crew hours, mileage and job tracking.">
+  <title>Peterhead Marquees Team Manager</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=1.11.0">
+</head>
+<body>
+  <div class="app">
+    <header class="site-header">
+      <img id="brandLogo" src="assets/peterhead-marquees-logo.jpg" alt="Peterhead Marquees">
+      <div>
+        <h1 id="brandTitle">Peterhead Marquees</h1>
+        <p id="brandSubtitle">Team Manager</p>
+      </div>
+    </header>
+
+    <nav id="topNav" class="top-nav hidden">
+      <button data-view="summaryView" class="active">
+        <span class="nav-icon" aria-hidden="true">⌂</span>
+        <span>Profile</span>
+      </button>
+      <button data-view="allJobsView">
+        <span class="nav-icon" aria-hidden="true">▤</span>
+        <span>All Jobs</span>
+      </button>
+      <button data-view="crewView">
+        <span class="nav-icon" aria-hidden="true">●●</span>
+        <span>Crew</span>
+      </button>
+      <button data-view="calendarView">
+        <span class="nav-icon" aria-hidden="true">▦</span>
+        <span>Calendar</span>
+      </button>
+    </nav>
+
+    <main>
+      <section id="loginView" class="view active">
+        <div class="card login-card">
+          <h2 id="loginHeading">Select Team Member</h2>
+          <p id="loginIntro" class="muted">Enter your PIN once on this phone. You’ll stay signed in until you sign out.</p>
+          <label for="loginUser">Team member</label>
+          <select id="loginUser">
+            <option value="scott">Scott (Owner)</option>
+            <option value="ronnie">Ronnie</option>
+            <option value="karen">Karen</option>
+            <option value="jason">Jason</option>
+          </select>
+
+          <div id="pinPanel" class="pin-panel">
+            <p id="pinHelp" class="muted">Enter this profile’s PIN once. This phone will stay signed in.</p>
+            <label for="loginPin" id="loginPinLabel">PIN</label>
+            <input id="loginPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••">
+            <div id="pinConfirmWrap" class="hidden">
+              <label for="loginPinConfirm">Confirm PIN</label>
+              <input id="loginPinConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••">
+            </div>
+            <p id="pinError" class="pin-error hidden" role="alert"></p>
+          </div>
+
+          <button id="continueButton" class="button primary">Enter Profile</button>
+          <button id="cancelSwitchButton" class="button subtle hidden" type="button">Cancel</button>
+        </div>
+      </section>
+
+      <section id="summaryView" class="view">
+        <div class="card summary-card">
+          <div class="profile-row">
+            <div id="summaryRobot" class="robot-avatar"></div>
+            <div class="profile-copy">
+              <h2 id="summaryUserName" class="user-name"></h2>
+              <p id="summaryRole">Team member</p>
+              <div class="profile-actions">
+                <button id="changeUserButton" class="change-user-link hidden" type="button" hidden style="display:none">
+                  <span class="change-user-icon" aria-hidden="true">↻</span>
+                  Switch profile
+                </button>
+                <button id="signOutButton" class="change-user-link sign-out-link" type="button">Sign out</button>
+              </div>
+            </div>
+          </div>
+
+          <p id="viewOnlyBanner" class="view-only-banner hidden" role="status">View only — Scott’s profile can’t be edited.</p>
+
+          <label for="summaryMonth">Month</label>
+          <select id="summaryMonth"></select>
+
+          <div class="summary-grid summary-grid-hours">
+            <div class="stat-card hours-primary">
+              <span>This week</span>
+              <strong id="weeklyHours">0</strong>
+            </div>
+            <div class="stat-card">
+              <span>This month</span>
+              <strong id="monthlyHours">0</strong>
+            </div>
+            <div class="stat-card mileage-stat">
+              <span>Monthly mileage</span>
+              <strong id="monthlyMileage">0 miles</strong>
+            </div>
+          </div>
+
+          <button id="openAddHoursButton" class="button primary">Add Hours</button>
+
+          <details id="changePinPanel" class="management-panel profile-pin-panel">
+            <summary>Change PIN</summary>
+            <div class="pin-panel">
+              <label for="currentPin">Current PIN</label>
+              <input id="currentPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="current-password" placeholder="••••">
+              <label for="newPin">New PIN</label>
+              <input id="newPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" placeholder="••••">
+              <label for="newPinConfirm">Confirm new PIN</label>
+              <input id="newPinConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" placeholder="••••">
+              <p id="changePinError" class="pin-error hidden" role="alert"></p>
+              <p id="changePinSuccess" class="pin-success hidden" role="status"></p>
+              <button id="changePinButton" class="button subtle small-action" type="button">Update PIN</button>
+            </div>
+          </details>
+        </div>
+
+        <div class="card jobs-card">
+          <h3 id="monthlyJobsHeading" class="section-heading">Monthly Jobs</h3>
+          <div id="myEntries"></div>
+        </div>
+      </section>
+
+      <section id="addHoursView" class="view">
+        <div class="card">
+          <h2 id="entryFormTitle">Add Hours</h2>
+          <input id="editingEntryId" type="hidden">
+
+          <label for="entryDate">Date</label>
+          <input id="entryDate" type="date">
+
+          <label for="jobNumber">Job</label>
+          <select id="jobNumber">
+            <option value="">Select a job…</option>
+            <option value="STORE">STORE</option>
+          </select>
+          <p class="muted job-select-hint">Choose an existing job number from the calendar / logged jobs, or STORE.</p>
+
+          <div class="two-column">
+            <div>
+              <label for="startTime">Start</label>
+              <select id="startTime"></select>
+            </div>
+            <div>
+              <label for="finishTime">Finish</label>
+              <select id="finishTime"></select>
+            </div>
+          </div>
+
+          <label for="mileage">Mileage</label>
+          <input id="mileage" type="number" min="0" step="1" placeholder="Miles">
+          <p id="mileageHint" class="muted job-select-hint">Round trip from AB42 1UA is filled when a job postcode is found.</p>
+
+          <label for="notes">Notes <span class="optional">(optional)</span></label>
+          <textarea id="notes" placeholder="Optional notes"></textarea>
+
+          <div class="hours-preview">
+            <span>Calculated hours</span>
+            <strong id="calculatedHours">0.0</strong>
+          </div>
+
+          <button id="saveHoursButton" class="button primary">Save Hours</button>
+          <button id="cancelFormButton" class="button subtle">Cancel</button>
+        </div>
+      </section>
+
+      <section id="allJobsView" class="view">
+        <div class="card compact-top-card">
+          <h2>All Jobs</h2>
+          <p class="muted">Jobs you have added hours to this month.</p>
+          <label for="allJobsMonth">Month</label>
+          <select id="allJobsMonth"></select>
+          <label for="jobSearch">Search jobs</label>
+          <select id="jobSearch">
+            <option value="">All calendar jobs</option>
+          </select>
+          <p id="jobSearchHint" class="muted job-select-hint">Choose a job from the calendar list.</p>
+        </div>
+        <div class="card jobs-card">
+          <div id="allJobsList" class="job-list"></div>
+        </div>
+      </section>
+
+      <section id="completeJobView" class="view">
+        <div class="card">
+          <h2 id="completeJobTitle">Complete job</h2>
+          <p id="completeJobSummary" class="muted"></p>
+          <div id="completeJobCrew" class="complete-crew-list"></div>
+
+          <label>Job photos</label>
+          <p class="muted job-select-hint">Add site photos before marking complete.</p>
+          <div class="photo-source-actions">
+            <button id="takeJobPhotoButton" class="button subtle" type="button">Take photo</button>
+            <button id="pickJobGalleryButton" class="button subtle" type="button">Upload from gallery</button>
+          </div>
+          <input id="completeJobCamera" class="hidden-file-input" type="file" accept="image/*" capture="environment">
+          <input id="completeJobPhotos" class="hidden-file-input" type="file" accept="image/*" multiple>
+          <div id="completeJobPhotoPreview" class="photo-preview-grid"></div>
+          <p id="completeJobStatus" class="muted job-select-hint"></p>
+
+          <button id="confirmCompleteJobButton" class="button primary" type="button">Mark complete & update calendar</button>
+          <button id="cancelCompleteJobButton" class="button subtle" type="button">Cancel</button>
+        </div>
+      </section>
+
+      <section id="crewView" class="view">
+        <div class="card compact-top-card">
+          <h2>Crew</h2>
+          <p class="muted">Ranked by total all-time hours. Retired crew stay listed with a tombstone.</p>
+          <div id="crewLeaderboard"></div>
+
+          <details id="addUserPanel" class="management-panel hidden">
+            <summary>Add User</summary>
+            <label for="newUserName">Name</label>
+            <input id="newUserName" type="text" maxlength="40" placeholder="Enter team member name">
+            <button id="addUserButton" class="button primary small-action">Add User</button>
+          </details>
+
+          <details id="retireUserPanel" class="management-panel hidden">
+            <summary>Retire User</summary>
+            <label for="retireUserSelect">Select active user</label>
+            <select id="retireUserSelect"></select>
+            <button id="retireUserButton" class="button danger">Retire Selected User</button>
+            <p class="muted">They stay on the crew list greyed out and can be reinstated later. Historical entries remain.</p>
+          </details>
+        </div>
+
+        <div class="card">
+          <button id="exportPdfButton" class="button primary">Export All Data to PDF</button>
+          <p class="muted export-note">Uses the browser print dialog so the report can be saved as a PDF.</p>
+        </div>
+      </section>
+
+      <section id="calendarView" class="view">
+        <div class="card compact-top-card">
+          <h2>Calendar</h2>
+          <p class="muted">Upcoming jobs in one list. Dark green = PMH. Purple = PEV. Tap a booking for full details.</p>
+          <p id="calendarStatus" class="calendar-status">Checking setup…</p>
+
+          <div id="calendarSetup" class="calendar-setup">
+            <h3>Setup needed</h3>
+            <ol class="setup-list">
+              <li>Create a Google Cloud project and enable <strong>Google Calendar API</strong>.</li>
+              <li>Create an <strong>OAuth 2.0 Web Client ID</strong>.</li>
+              <li>Add your site URL (and <code>http://localhost:8080</code>) under Authorized JavaScript origins.</li>
+              <li>Paste the Client ID into <code>google-config.js</code>.</li>
+            </ol>
+            <p class="muted">Until that Client ID is set, Connect stays locked. No secrets belong in this frontend file except the public Client ID.</p>
+          </div>
+
+          <div id="calendarActions" class="calendar-actions hidden">
+            <button id="calendarConnectButton" class="button primary" type="button">Connect Google Calendar</button>
+            <button id="calendarRefreshButton" class="button subtle" type="button">Refresh Sync</button>
+            <button id="calendarDisconnectButton" class="button subtle hidden" type="button">Disconnect</button>
+          </div>
+        </div>
+
+        <div class="card jobs-card calendar-board-card">
+          <div class="calendar-legend" role="group" aria-label="Filter calendar by booking type">
+            <button type="button" id="calendarFilterAll" class="legend-chip filter-all is-active" data-calendar-filter="all">All</button>
+            <button type="button" id="calendarFilterPmh" class="legend-chip tone-structure" data-calendar-filter="pmh">PMH</button>
+            <button type="button" id="calendarFilterPev" class="legend-chip tone-other" data-calendar-filter="pev">PEV</button>
+          </div>
+          <p id="calendarFilterHint" class="muted job-select-hint">Showing all bookings. Tap PMH or PEV to filter.</p>
+          <div id="calendarBoard" class="calendar-board"></div>
+          <div id="calendarDetail" class="calendar-detail hidden" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="google-config.js?v=1.11.0"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="calendar.js?v=1.11.0"></script>
+  <script src="app.js?v=1.11.0"></script>
+</body>
+</html>
