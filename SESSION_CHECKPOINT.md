@@ -21,7 +21,7 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.10.4`**
+Asset cache bust: **`?v=1.10.5`**
 
 ## Access model (v1.9)
 
@@ -38,7 +38,6 @@ Asset cache bust: **`?v=1.10.4`**
 
 - Crew hours app: **Profile** / All Jobs / Crew (localStorage hours)
 - **Profile stats:** **This week** hours (Mon–Sun) alongside **This month** hours + monthly mileage
-- **Avatar backgrounds:** Scott = light green left / purple right (no purple outer ring); Karen = purple; everyone else = lighter green
 - Login: names visible; **PIN required** to open a Profile (create 4–6 digit PIN on first entry)
 - **Calendar** tab:
   - Google OAuth connect (Client ID in `google-config.js`)
