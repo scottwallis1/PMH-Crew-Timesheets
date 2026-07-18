@@ -201,7 +201,10 @@
   }
 
   window.PMHApp = {
-    canManageCalendarSync: () => canManageCalendarSync()
+    canManageCalendarSync: () => canManageCalendarSync(),
+    isJobNumberComplete: (jobCode) => isJobNumberComplete(jobCode),
+    isCalendarBookingComplete: (eventId, jobCode, date) =>
+      isCalendarBookingComplete(eventId, jobCode, date)
   };
 
   function updateSwitchProfileVisibility() {
@@ -256,6 +259,25 @@
 
   function isJobComplete(date, job) {
     return Boolean(completedJobs[jobKey(date, job)]);
+  }
+
+  function isJobNumberComplete(jobCode) {
+    const code = String(jobCode || "").toUpperCase();
+    if (!code || code === "STORE") return false;
+    return Object.values(completedJobs).some(
+      (row) => String(row?.job || "").toUpperCase() === code
+    );
+  }
+
+  function isCalendarBookingComplete(eventId, jobCode, date = "") {
+    if (eventId) {
+      const byEvent = Object.values(completedJobs).some(
+        (row) => row?.calendarEventId && row.calendarEventId === eventId
+      );
+      if (byEvent) return true;
+    }
+    if (date && jobCode && isJobComplete(date, jobCode)) return true;
+    return isJobNumberComplete(jobCode);
   }
 
   function openPhotoDb() {
@@ -1503,6 +1525,7 @@
       renderSummary();
       renderAllJobs();
     }
+    window.PMHCalendar?.render?.();
   }
 
   function signOut() {
