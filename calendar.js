@@ -390,6 +390,75 @@
     }
   }
 
+  function eventJobCode(event) {
+    return extractJobNumber(`${event.summary || ""} ${plainText(event.description || "")}`);
+  }
+
+  function eventDayIso(event) {
+    const bounds = eventBounds(event);
+    if (!bounds) return "";
+    const day = startOfDay(bounds.start);
+    const year = day.getFullYear();
+    const month = String(day.getMonth() + 1).padStart(2, "0");
+    const date = String(day.getDate()).padStart(2, "0");
+    return `${year}-${month}-${date}`;
+  }
+
+  function sortEventsByStart(list) {
+    return [...list].sort((a, b) => {
+      const aTime = eventBounds(a)?.start?.getTime() || 0;
+      const bTime = eventBounds(b)?.start?.getTime() || 0;
+      return aTime - bTime;
+    });
+  }
+
+  function isBookingComplete(event) {
+    const jobCode = eventJobCode(event);
+    const day = eventDayIso(event);
+    try {
+      return Boolean(window.PMHApp?.isCalendarBookingComplete?.(event.id, jobCode, day));
+    } catch {
+      return false;
+    }
+  }
+
+  function isJobGroupComplete(jobCode) {
+    try {
+      return Boolean(window.PMHApp?.isJobNumberComplete?.(jobCode));
+    } catch {
+      return false;
+    }
+  }
+
+  function visitLabel(event, index, total) {
+    const text = `${event.summary || ""} ${plainText(event.description || "")}`.toLowerCase();
+    if (/\b(collect(?:ion)?|strike|dismantle|take[\s-]?down)\b/.test(text)) return "Collection";
+    if (/\b(deliver(?:y|ies)?|erect(?:ion)?|install|build|set[\s-]?up)\b/.test(text)) return "Delivery";
+    if (total > 1) return `Visit ${index + 1}`;
+    return "";
+  }
+
+  function sharedJobTitle(events, jobCode) {
+    const cleaned = events
+      .map((event) =>
+        String(event.summary || "")
+          .replace(/\b(deliver(?:y|ies)?|collection|collect|erect(?:ion)?|dismantle|strike|install|build|set[\s-]?up|take[\s-]?down)\b/gi, "")
+          .replace(/\s*[-–—|/]+\s*$/g, "")
+          .replace(/\s*[-–—|/]\s*[-–—|/]+\s*/g, " - ")
+          .replace(/\s{2,}/g, " ")
+          .trim()
+      )
+      .filter(Boolean);
+    if (!cleaned.length) return `#${jobCode}`;
+    cleaned.sort((a, b) => a.length - b.length);
+    return cleaned[0];
+  }
+
+  function completeTickHtml(complete) {
+    if (!complete) return "";
+    return `<span class="calendar-complete-tick" title="Completed" aria-label="Completed">✓</span>`;
+  }
+
   function renderEventBlock(event) {
     const title = escapeHtml(event.summary || "(No title)");
     const when = escapeHtml(formatWhen(event));
@@ -402,12 +471,16 @@
     const selected = selectedEventId && event.id === selectedEventId ? " is-selected" : "";
     const tone = eventToneClass(event);
     const badge = isStructureJob(event) ? "PMH" : "PEV";
+    const complete = isBookingComplete(event);
 
     return `
-      <article class="calendar-event ${tone}${selected}${isNineMetreJob(event) ? " needs-forward-planning" : ""}" data-event-id="${escapeHtml(event.id)}">
+      <article class="calendar-event ${tone}${selected}${complete ? " is-complete" : ""}${isNineMetreJob(event) ? " needs-forward-planning" : ""}" data-event-id="${escapeHtml(event.id)}">
         <div class="calendar-event-top">
           <strong>${title}</strong>
-          <span class="calendar-tone-badge">${badge}</span>
+          <div class="calendar-event-top-right">
+            ${completeTickHtml(complete)}
+            <span class="calendar-tone-badge">${badge}</span>
+          </div>
         </div>
         <div class="entry-meta">${when}</div>
         ${location}
@@ -415,6 +488,61 @@
         ${forwardPlanningNoticeHtml(event)}
       </article>
     `;
+  }
+
+  function renderJobGroupBlock(jobCode, groupEvents) {
+    if (groupEvents.length === 1) {
+      return renderEventBlock(groupEvents[0]);
+    }
+
+    const primary = groupEvents[0];
+    const title = escapeHtml(sharedJobTitle(groupEvents, jobCode));
+    const selected = groupEvents.some((event) => event.id === selectedEventId) ? " is-selected" : "";
+    const isPmh = groupEvents.some((event) => isStructureJob(event));
+    const tone = isPmh ? "tone-structure" : "tone-other";
+    const badge = isPmh ? "PMH" : "PEV";
+    const complete = isJobGroupComplete(jobCode);
+    const needsPlanning = groupEvents.some((event) => isNineMetreJob(event));
+    const location = primary.location
+      ? `<div class="entry-meta">${escapeHtml(primary.location)}</div>`
+      : "";
+
+    const legs = groupEvents
+      .map((event, index) => {
+        const label = visitLabel(event, index, groupEvents.length) || `Visit ${index + 1}`;
+        const when = formatFullWhen(event);
+        const legComplete = isBookingComplete(event);
+        return `
+          <div class="calendar-event-leg${legComplete ? " is-complete" : ""}">
+            <span class="calendar-leg-label">${escapeHtml(label)}${legComplete ? " ✓" : ""}</span>
+            <span class="calendar-leg-when">${escapeHtml(when)}</span>
+          </div>
+        `;
+      })
+      .join("");
+
+    return `
+      <article class="calendar-event calendar-event-group ${tone}${selected}${complete ? " is-complete" : ""}${needsPlanning ? " needs-forward-planning" : ""}" data-event-id="${escapeHtml(primary.id)}" data-job-code="${escapeHtml(jobCode)}">
+        <div class="calendar-event-top">
+          <strong>${title}</strong>
+          <div class="calendar-event-top-right">
+            ${completeTickHtml(complete)}
+            <span class="calendar-tone-badge">${badge}</span>
+          </div>
+        </div>
+        ${location}
+        <div class="calendar-event-legs">${legs}</div>
+        ${needsPlanning ? forwardPlanningNoticeHtml(primary) : ""}
+      </article>
+    `;
+  }
+
+  function relatedEventsFor(event) {
+    const jobCode = eventJobCode(event);
+    if (!jobCode) return [event];
+    return sortEventsByStart(
+      events.filter((row) => eventJobCode(row) === jobCode && eventMatchesFilter(row))
+    );
   }
 
   function renderDetailPanel() {
@@ -428,13 +556,38 @@
       return;
     }
 
+    const related = relatedEventsFor(event);
+    const jobCode = eventJobCode(event);
     const description = plainText(event.description);
     const people = attendeeNames(event);
     const meet = conferenceLink(event);
     const organizer = event.organizer?.displayName || event.organizer?.email || "";
     const status = statusLabel(event);
     const cancelled = String(event.status || "").toLowerCase() === "cancelled";
-    const tone = eventToneClass(event);
+    const tone = related.some((row) => isStructureJob(row)) ? "tone-structure" : eventToneClass(event);
+    const complete = jobCode ? isJobGroupComplete(jobCode) : isBookingComplete(event);
+    const detailTitle =
+      related.length > 1 && jobCode
+        ? sharedJobTitle(related, jobCode)
+        : event.summary || "(No title)";
+
+    const visitsHtml =
+      related.length > 1
+        ? `<div>
+            <dt>Visits</dt>
+            <dd>
+              <ul class="calendar-detail-visits">
+                ${related
+                  .map((row, index) => {
+                    const label = visitLabel(row, index, related.length) || `Visit ${index + 1}`;
+                    const rowComplete = isBookingComplete(row);
+                    return `<li${rowComplete ? ' class="is-complete"' : ""}><strong>${escapeHtml(label)}${rowComplete ? " ✓" : ""}</strong> · ${escapeHtml(formatFullWhen(row))}${row.location ? ` · ${escapeHtml(row.location)}` : ""}</li>`;
+                  })
+                  .join("")}
+              </ul>
+            </dd>
+          </div>`
+        : "";
 
     panel.classList.remove("hidden");
     panel.innerHTML = `
@@ -442,20 +595,29 @@
         <h3>Booking details</h3>
         <button type="button" id="calendarDetailClose" class="change-user-link">Close</button>
       </div>
-      <article class="calendar-detail-body ${tone}${cancelled ? " is-cancelled" : ""}">
-        <strong class="calendar-detail-title">${escapeHtml(event.summary || "(No title)")}</strong>
-        <div class="entry-meta">${escapeHtml(formatFullWhen(event))}</div>
+      <article class="calendar-detail-body ${tone}${cancelled ? " is-cancelled" : ""}${complete ? " is-complete" : ""}">
+        <div class="calendar-detail-title-row">
+          <strong class="calendar-detail-title">${escapeHtml(detailTitle)}</strong>
+          ${completeTickHtml(complete)}
+        </div>
+        <div class="entry-meta">${escapeHtml(related.length > 1 ? `${related.length} linked bookings` : formatFullWhen(event))}</div>
         <dl class="calendar-detail-list">
           <div>
             <dt>Status</dt>
-            <dd>${escapeHtml(status)}</dd>
+            <dd>${complete ? "Completed" : escapeHtml(status)}</dd>
           </div>
           <div>
             <dt>Type</dt>
-            <dd>${isStructureJob(event) ? "PMH" : "PEV"}</dd>
+            <dd>${related.some((row) => isStructureJob(row)) ? "PMH" : "PEV"}</dd>
           </div>
           ${
-            event.location
+            jobCode
+              ? `<div><dt>Job</dt><dd>#${escapeHtml(jobCode)}</dd></div>`
+              : ""
+          }
+          ${visitsHtml}
+          ${
+            event.location && related.length === 1
               ? `<div><dt>Location</dt><dd>${escapeHtml(event.location)}</dd></div>`
               : ""
           }
@@ -470,9 +632,11 @@
               : ""
           }
           ${
-            description
+            description && related.length === 1
               ? `<div class="calendar-detail-notes"><dt>Details</dt><dd>${escapeHtml(description).replaceAll("\n", "<br>")}</dd></div>`
-              : `<div class="calendar-detail-notes"><dt>Details</dt><dd class="muted">No extra notes on this booking.</dd></div>`
+              : related.length === 1
+                ? `<div class="calendar-detail-notes"><dt>Details</dt><dd class="muted">No extra notes on this booking.</dd></div>`
+                : ""
           }
         </dl>
         <div class="calendar-detail-actions">
@@ -487,7 +651,7 @@
               : ""
           }
         </div>
-        ${forwardPlanningNoticeHtml(event)}
+        ${related.some((row) => isNineMetreJob(row)) ? forwardPlanningNoticeHtml(event) : ""}
       </article>
     `;
 
@@ -528,7 +692,7 @@
     if (!hint) return;
     if (calendarFilter === "pmh") hint.textContent = "Showing PMH bookings only. Tap All to clear.";
     else if (calendarFilter === "pev") hint.textContent = "Showing PEV bookings only. Tap All to clear.";
-    else hint.textContent = "Showing all bookings. Tap PMH or PEV to filter.";
+    else hint.textContent = "Showing all bookings. Same job numbers are grouped together.";
   }
 
   function setCalendarFilter(nextFilter) {
@@ -572,12 +736,27 @@
 
     let lastDayKey = "";
     const parts = [];
+    const emittedJobs = new Set();
 
     list.forEach((event) => {
       const bounds = eventBounds(event);
       if (!bounds) return;
       const day = startOfDay(bounds.start);
       const dayKey = day.toISOString().slice(0, 10);
+      const jobCode = eventJobCode(event);
+
+      if (jobCode) {
+        if (emittedJobs.has(jobCode)) return;
+        emittedJobs.add(jobCode);
+        const groupEvents = sortEventsByStart(list.filter((row) => eventJobCode(row) === jobCode));
+        if (dayKey !== lastDayKey) {
+          lastDayKey = dayKey;
+          parts.push(`<h3 class="calendar-day-label">${escapeHtml(formatDayHeading(day))}</h3>`);
+        }
+        parts.push(renderJobGroupBlock(jobCode, groupEvents));
+        return;
+      }
+
       if (dayKey !== lastDayKey) {
         lastDayKey = dayKey;
         parts.push(`<h3 class="calendar-day-label">${escapeHtml(formatDayHeading(day))}</h3>`);

@@ -944,9 +944,84 @@ button.legend-chip {
   gap: 10px;
 }
 
+.calendar-event-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 .calendar-event-top strong {
   font-size: 17px;
   line-height: 1.25;
+}
+
+.calendar-complete-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1f9d55;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px rgba(31, 157, 85, 0.25);
+}
+
+.calendar-event.is-complete {
+  border-color: rgba(31, 157, 85, 0.55);
+}
+
+.calendar-event-legs {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.calendar-event-leg {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.calendar-event-leg.is-complete {
+  border-left: 3px solid #1f9d55;
+}
+
+.calendar-leg-label {
+  font-weight: 700;
+}
+
+.calendar-leg-when {
+  color: inherit;
+  opacity: 0.92;
+}
+
+.calendar-detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.calendar-detail-visits {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 4px;
+}
+
+.calendar-detail-visits li.is-complete {
+  color: #8fd9a8;
 }
 
 .calendar-event .entry-meta {
