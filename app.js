@@ -1336,6 +1336,27 @@
     }
   }
 
+  function jobSiteDetails(jobCode, date = "") {
+    const code = String(jobCode || "").toUpperCase();
+    if (!code || code === "STORE") {
+      return { name: "", address: "" };
+    }
+    const event = window.PMHCalendar?.findEventForJob?.(code, date) || null;
+    if (!event) return { name: "", address: "" };
+
+    const summary = String(event.summary || "").trim();
+    // Titles are usually "#186 - Customer - Place" — strip the leading job number for a cleaner name.
+    let name = summary
+      .replace(new RegExp(`^#?\\s*${code}\\s*[-–—:]\\s*`, "i"), "")
+      .replace(new RegExp(`^job\\s*#?\\s*${code}\\s*[-–—:]\\s*`, "i"), "")
+      .trim();
+    if (!name || name === summary) {
+      name = summary.replace(/^#\d{3,5}\s*[-–—:]?\s*/i, "").trim() || summary;
+    }
+    const address = String(event.location || "").trim();
+    return { name, address };
+  }
+
   function renderAllJobs() {
     const selectedMonth = el("allJobsMonth").value || availableMonths()[0];
     populateMonthSelect(el("allJobsMonth"), selectedMonth);
@@ -1379,10 +1400,16 @@
           const complete = isJobComplete(job.date, job.job);
           const completeMeta = complete ? completedJobs[jobKey(job.date, job.job)] : null;
           const crew = job.job === "STORE" ? [] : crewHoursForJob(job.date, job.job);
+          const site = job.job === "STORE" ? { name: "", address: "" } : jobSiteDetails(job.job, job.date);
+          const siteBits = [
+            site.name ? `<div class="job-site-name">${escapeHtml(site.name)}</div>` : "",
+            site.address ? `<div class="job-site-address">${escapeHtml(site.address)}</div>` : ""
+          ].filter(Boolean).join("");
           return `<article class="job-card ${typeClass}${allCancelled ? " cancelled" : ""}${complete ? " job-complete" : ""}" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">
             <div class="job-header">
               <div>
                 <h3>${label}${allCancelled ? '<span class="status">Cancelled</span>' : ""}${complete ? '<span class="status complete-badge">Complete</span>' : ""}</h3>
+                ${siteBits}
                 <div class="muted">${formatDate(job.date)}</div>
               </div>
               <strong>${allCancelled ? `<s>${formatHours(job.entries.reduce((sum, entry) => sum + Number(entry.hours), 0))} hrs</s>` : `${formatHours(totalHours)} hrs`}</strong>
@@ -1727,6 +1754,10 @@
         if (viewId === "crewView") renderCrew();
         showView(viewId);
       });
+    });
+
+    window.addEventListener("pmh-calendar-events-changed", () => {
+      if (el("allJobsView")?.classList.contains("active")) renderAllJobs();
     });
 
     window.PMHCalendar?.bind?.();
