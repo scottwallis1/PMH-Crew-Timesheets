@@ -488,6 +488,45 @@
     });
   }
 
+  function localDateKey(date) {
+    const d = date instanceof Date ? date : new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function startOfWeekMonday(date = new Date()) {
+    const d = new Date(date);
+    d.setHours(12, 0, 0, 0);
+    const day = d.getDay(); // 0 = Sunday
+    const offset = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + offset);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function endOfWeekSunday(date = new Date()) {
+    const start = startOfWeekMonday(date);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return end;
+  }
+
+  function weekHoursForUser(userId, date = new Date()) {
+    const weekStart = localDateKey(startOfWeekMonday(date));
+    const weekEnd = localDateKey(endOfWeekSunday(date));
+    return entries
+      .filter((entry) =>
+        entry.userId === userId &&
+        !entry.cancelled &&
+        entry.date >= weekStart &&
+        entry.date <= weekEnd
+      )
+      .reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
+  }
+
   function nextAvatarKey() {
     const used = new Set(users.map((user) => user.avatar).filter(Boolean));
     const unused = fallbackAvatars.filter((key) => !used.has(key));
@@ -677,7 +716,9 @@
     const activeEntries = userEntries.filter((entry) => !entry.cancelled);
     const hours = activeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
     const mileage = activeEntries.reduce((sum, entry) => sum + Number(entry.mileage || 0), 0);
+    const weeklyHours = weekHoursForUser(user.id);
 
+    if (el("weeklyHours")) el("weeklyHours").textContent = formatHours(weeklyHours);
     el("monthlyHours").textContent = formatHours(hours);
     el("monthlyMileage").textContent = `${mileage.toFixed(0)} miles`;
     el("monthlyJobsHeading").textContent = `${monthLabel(month)} Jobs`;

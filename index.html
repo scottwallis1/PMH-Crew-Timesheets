@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.10.2">
+  <link rel="stylesheet" href="styles.css?v=1.10.3">
 </head>
 <body>
   <div class="app">
@@ -95,12 +95,16 @@
           <label for="summaryMonth">Month</label>
           <select id="summaryMonth"></select>
 
-          <div class="summary-grid">
+          <div class="summary-grid summary-grid-hours">
             <div class="stat-card hours-primary">
-              <span>Monthly hours</span>
-              <strong id="monthlyHours">0.0</strong>
+              <span>This week</span>
+              <strong id="weeklyHours">0</strong>
             </div>
             <div class="stat-card">
+              <span>This month</span>
+              <strong id="monthlyHours">0</strong>
+            </div>
+            <div class="stat-card mileage-stat">
               <span>Monthly mileage</span>
               <strong id="monthlyMileage">0 miles</strong>
             </div>
@@ -278,9 +282,9 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.10.1"></script>
+  <script src="google-config.js?v=1.10.3"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.10.1"></script>
-  <script src="app.js?v=1.10.1"></script>
+  <script src="calendar.js?v=1.10.3"></script>
+  <script src="app.js?v=1.10.3"></script>
 </body>
 </html>
