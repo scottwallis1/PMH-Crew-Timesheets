@@ -301,8 +301,11 @@
 
   function getJobCompletionStatus(jobCode) {
     const code = String(jobCode || "").toUpperCase();
+    const rows = Object.values(completedJobs).filter(
+      (row) => String(row?.job || "").toUpperCase() === code
+    );
     const dates = visitDatesForJob(code);
-    const completedDates = dates.filter((date) => isJobComplete(date, code));
+    const completedDates = [...new Set(rows.map((row) => row.date).filter(Boolean))].sort();
     const hourDates = [
       ...new Set(
         entries
@@ -310,20 +313,28 @@
           .map((entry) => entry.date)
       )
     ].sort();
-    // Job is fully complete only when every date with logged hours is marked complete.
-    // Calendar-only future visits (no hours yet) do not block partial progress.
     const requiredDates = hourDates.length ? hourDates : dates;
-    const fullyComplete = requiredDates.length
-      ? requiredDates.every((date) => isJobComplete(date, code))
-      : isJobNumberComplete(code);
+    const hasCollection = rows.some(
+      (row) => row.visitType === "collection" || row.visitType === "single"
+    );
+    const hasDelivery = rows.some((row) => row.visitType === "delivery");
+    // Collection / one-visit completes the whole job. Delivery keeps it open.
+    // Legacy records without visitType still require every hour-date marked.
+    const legacyFullyComplete =
+      !rows.some((row) => row.visitType) &&
+      requiredDates.length > 0 &&
+      requiredDates.every((date) => isJobComplete(date, code));
+    const fullyComplete = hasCollection || legacyFullyComplete;
     return {
       job: code,
       dates,
       hourDates,
       requiredDates,
       completedDates,
+      hasDelivery,
+      hasCollection,
       fullyComplete,
-      partial: completedDates.length > 0 && !fullyComplete
+      partial: !fullyComplete && (hasDelivery || completedDates.length > 0)
     };
   }
 
@@ -1417,6 +1428,47 @@
     return "";
   }
 
+  function selectedVisitType() {
+    const active = document.querySelector(".visit-type-button.is-selected");
+    return active?.dataset?.visitType || "";
+  }
+
+  function setVisitTypeSelection(visitType) {
+    document.querySelectorAll(".visit-type-button").forEach((button) => {
+      button.classList.toggle("is-selected", button.dataset.visitType === visitType);
+    });
+    const hint = el("completeVisitTypeHint");
+    const confirmBtn = el("confirmCompleteJobButton");
+    if (!hint || !confirmBtn) return;
+    if (visitType === "delivery") {
+      hint.textContent = "Delivery: this visit is finished. The job stays open on the calendar for collection.";
+      confirmBtn.textContent = "Mark delivery complete";
+    } else if (visitType === "collection") {
+      hint.textContent = "Collection: finishes the whole job. All visit hours are consolidated and it moves to Completed.";
+      confirmBtn.textContent = "Mark collection complete";
+    } else if (visitType === "single") {
+      hint.textContent = "One visit / whole job: mark this job fully complete now.";
+      confirmBtn.textContent = "Mark job complete";
+    } else {
+      hint.textContent = "Choose Delivery, Collection, or One visit first.";
+      confirmBtn.textContent = "Mark complete";
+    }
+  }
+
+  function renderCrewListHtml(crewRows, heading = "") {
+    if (!crewRows.length) return "";
+    const headingHtml = heading ? `<p class="muted job-select-hint">${escapeHtml(heading)}</p>` : "";
+    return `${headingHtml}${crewRows
+      .map(
+        (row) => `
+      <div class="job-person">
+        <span>${escapeHtml(row.name)}</span>
+        <strong>${formatHours(row.hours)} hrs · ${Number(row.mileage || 0).toFixed(0)} miles</strong>
+      </div>`
+      )
+      .join("")}`;
+  }
+
   function openCompleteJob(date, jobCode) {
     if (!canEditCurrentProfile()) {
       alert("You can’t edit this profile.");
@@ -1436,37 +1488,57 @@
       return;
     }
 
+    const summary = getJobHoursSummary(jobCode);
     pendingComplete = {
       date,
       job: String(jobCode).toUpperCase(),
       mode: "complete",
-      returnView: "allJobsView"
+      returnView: "allJobsView",
+      visitType: ""
     };
     pendingPhotos = [];
     el("completeJobTitle").textContent = `Complete #${pendingComplete.job}`;
     el("completeJobSummary").textContent =
-      `${formatDate(date)} · Mark this visit complete. If the job has delivery and collection, mark each visit when that day is finished — the calendar stays as one job card until every visit with hours is complete.`;
-    el("completeJobCrew").innerHTML = crew.map((row) => `
-      <div class="job-person">
-        <span>${escapeHtml(row.name)}</span>
-        <strong>${formatHours(row.hours)} hrs · ${Number(row.mileage || 0).toFixed(0)} miles</strong>
-      </div>
-    `).join("");
+      `${formatDate(date)} · Choose Delivery or Collection. Hours already logged by anyone on this job are kept and consolidated.`;
+    el("completeJobCrew").innerHTML = renderCrewListHtml(
+      crew,
+      "Hours on this visit (today’s date):"
+    );
+    const allCrew = el("completeJobAllCrew");
+    if (allCrew) {
+      if (summary.visits.length > 1) {
+        allCrew.classList.remove("hidden");
+        allCrew.innerHTML = `
+          <p class="muted job-select-hint">All visits so far for #${escapeHtml(pendingComplete.job)} · ${formatHours(summary.totalHours)} hrs total:</p>
+          ${summary.visits
+            .map(
+              (visit) => `
+            <div class="job-person">
+              <span>${escapeHtml(visit.date)}${visit.crew.length ? ` · ${escapeHtml(visit.crew.map((row) => row.name).join(", "))}` : ""}</span>
+              <strong>${formatHours(visit.hours)} hrs</strong>
+            </div>`
+            )
+            .join("")}`;
+      } else {
+        allCrew.classList.add("hidden");
+        allCrew.innerHTML = "";
+      }
+    }
+    const typePanel = el("completeVisitTypePanel");
+    if (typePanel) typePanel.classList.remove("hidden");
+    setVisitTypeSelection("");
     const existing = el("completeJobExistingPhotos");
     if (existing) {
       existing.classList.add("hidden");
       existing.innerHTML = "";
     }
     if (el("completeJobPhotoHint")) {
-      el("completeJobPhotoHint").textContent = "Add site photos before marking complete.";
-    }
-    if (el("confirmCompleteJobButton")) {
-      el("confirmCompleteJobButton").textContent = "Mark complete & update calendar";
+      el("completeJobPhotoHint").textContent = "Add site photos for this visit (optional but recommended).";
     }
     if (el("completeJobPhotos")) el("completeJobPhotos").value = "";
     if (el("completeJobCamera")) el("completeJobCamera").value = "";
     el("completeJobStatus").textContent = window.PMHCalendar?.isConnected?.()
-      ? "Google connected — calendar will be updated on complete."
+      ? "Google connected — collection completion can update the calendar booking with all crew hours."
       : "Google not connected — job can still be completed; connect Calendar to write hours onto the booking.";
     renderPendingPhotoPreview();
     showView("completeJobView");
@@ -1502,6 +1574,13 @@
     el("completeJobSummary").textContent =
       `${formatDate(meta.date || date)} · Add photos now if none were taken when the job was marked complete.`;
     el("completeJobCrew").innerHTML = "";
+    const allCrew = el("completeJobAllCrew");
+    if (allCrew) {
+      allCrew.classList.add("hidden");
+      allCrew.innerHTML = "";
+    }
+    const typePanel = el("completeVisitTypePanel");
+    if (typePanel) typePanel.classList.add("hidden");
     const existing = el("completeJobExistingPhotos");
     if (existing) {
       existing.classList.remove("hidden");
@@ -1578,17 +1657,23 @@
     }
 
     const { date, job } = pendingComplete;
+    const visitType = selectedVisitType() || pendingComplete.visitType || "";
     const key = jobKey(date, job);
     const completer = getCurrentUser();
     const status = el("completeJobStatus");
     const button = el("confirmCompleteJobButton");
 
+    if (!["delivery", "collection", "single"].includes(visitType)) {
+      if (status) status.textContent = "Choose Delivery, Collection, or One visit first.";
+      return;
+    }
+
     if (!pendingPhotos.length) {
       const proceed = window.confirm(
-        "No photos selected. Mark this job complete without photos?"
+        "No photos selected. Continue without photos?"
       );
       if (!proceed) {
-        if (status) status.textContent = "Add photos with the picker above, then mark complete.";
+        if (status) status.textContent = "Add photos with the picker above, then continue.";
         return;
       }
     }
@@ -1601,8 +1686,12 @@
       const calendarEvent = window.PMHCalendar?.findEventForJob?.(job, date) || null;
       let calendarUpdated = false;
       let calendarError = "";
+      const shouldUpdateCalendar =
+        (visitType === "collection" || visitType === "single") &&
+        calendarEvent &&
+        window.PMHCalendar?.isConnected?.();
 
-      if (calendarEvent && window.PMHCalendar?.isConnected?.()) {
+      if (shouldUpdateCalendar) {
         try {
           const block = buildCalendarHoursBlock(date, job, completer?.name || "Crew");
           await window.PMHCalendar.writeCrewHoursToEvent(calendarEvent.id, block);
@@ -1610,15 +1699,16 @@
         } catch (error) {
           calendarError = error.message || "Calendar update failed.";
         }
-      } else if (!calendarEvent) {
+      } else if ((visitType === "collection" || visitType === "single") && !calendarEvent) {
         calendarError = "No matching calendar booking found for this job number.";
-      } else {
+      } else if ((visitType === "collection" || visitType === "single") && !window.PMHCalendar?.isConnected?.()) {
         calendarError = "Connect Google Calendar to push hours onto the booking.";
       }
 
       completedJobs[key] = {
         job,
         date,
+        visitType,
         completedAt: Date.now(),
         completedBy: currentUserId,
         calendarEventId: calendarEvent?.id || "",
@@ -1631,10 +1721,15 @@
       pendingPhotos = [];
       renderAll();
       showView("allJobsView");
-      if (calendarUpdated) {
-        alert("Job marked complete. Crew hours were written to the Google Calendar booking.");
-      } else {
+
+      if (visitType === "delivery") {
+        alert("Delivery marked complete. Job stays open on the calendar until collection is marked complete.");
+      } else if (calendarUpdated) {
+        alert("Collection marked complete. All visit hours were consolidated onto the calendar booking.");
+      } else if (visitType === "collection" || visitType === "single") {
         alert(`Job marked complete.${calendarError ? ` Calendar note: ${calendarError}` : ""}`);
+      } else {
+        alert("Visit marked complete.");
       }
     } catch (error) {
       if (status) status.textContent = error.message || "Could not complete job.";
@@ -1712,6 +1807,13 @@
           const typeClass = job.job === "STORE" ? "store" : "job";
           const complete = isJobComplete(job.date, job.job);
           const completeMeta = complete ? completedJobs[jobKey(job.date, job.job)] : null;
+          const visitBadge = completeMeta?.visitType === "delivery"
+            ? "Delivery done"
+            : completeMeta?.visitType === "collection"
+              ? "Collection done"
+              : completeMeta?.visitType === "single"
+                ? "Complete"
+                : "Complete";
           const crew = job.job === "STORE" ? [] : crewHoursForJob(job.date, job.job);
           const site = job.job === "STORE" ? { name: "", address: "" } : jobSiteDetails(job.job, job.date);
           const siteBits = [
@@ -1721,7 +1823,7 @@
           return `<article class="job-card ${typeClass}${allCancelled ? " cancelled" : ""}${complete ? " job-complete" : ""}" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">
             <div class="job-header">
               <div>
-                <h3>${label}${allCancelled ? '<span class="status">Cancelled</span>' : ""}${complete ? '<span class="status complete-badge">Complete</span>' : ""}</h3>
+                <h3>${label}${allCancelled ? '<span class="status">Cancelled</span>' : ""}${complete ? `<span class="status complete-badge">${escapeHtml(visitBadge)}</span>` : ""}</h3>
                 ${siteBits}
                 <div class="muted">${formatDate(job.date)}</div>
               </div>
@@ -2060,6 +2162,13 @@
       if (returnView === "calendarView") {
         window.PMHCalendar?.show?.();
       }
+    });
+    document.querySelectorAll(".visit-type-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const visitType = button.dataset.visitType || "";
+        if (pendingComplete) pendingComplete.visitType = visitType;
+        setVisitTypeSelection(visitType);
+      });
     });
 
     el("startTime").addEventListener("change", calculateHours);

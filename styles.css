@@ -1249,9 +1249,28 @@ button.legend-chip {
   background: rgba(0, 0, 0, 0.25);
 }
 
-.mark-complete-job,
-.add-job-photos {
-  margin-top: 10px;
+.visit-type-panel {
+  margin: 14px 0 16px;
+}
+
+.visit-type-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.visit-type-button.is-selected {
+  border-color: rgba(239, 183, 93, 0.7);
+  background: rgba(239, 183, 93, 0.2);
+  color: var(--gold);
+  font-weight: 700;
+}
+
+@media (min-width: 520px) {
+  .visit-type-actions {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .profile-actions {
