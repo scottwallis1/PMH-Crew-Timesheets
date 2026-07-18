@@ -1003,9 +1003,10 @@ button.legend-chip {
   line-height: 1.35;
 }
 
-.calendar-hours-breakdown {
-  margin-top: 4px;
-  color: var(--muted);
+.calendar-partial-complete {
+  margin-top: 8px;
+  color: var(--gold);
+  font-weight: 600;
   font-size: 13px;
 }
 

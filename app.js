@@ -203,6 +203,8 @@
   window.PMHApp = {
     canManageCalendarSync: () => canManageCalendarSync(),
     isJobNumberComplete: (jobCode) => isJobNumberComplete(jobCode),
+    isJobNumberFullyComplete: (jobCode) => isJobNumberFullyComplete(jobCode),
+    getJobCompletionStatus: (jobCode) => getJobCompletionStatus(jobCode),
     isCalendarBookingComplete: (eventId, jobCode, date) =>
       isCalendarBookingComplete(eventId, jobCode, date),
     openAddPhotosForJob: (date, jobCode, returnView) => openAddPhotosForJob(date, jobCode, returnView),
@@ -273,6 +275,62 @@
     );
   }
 
+  function visitDatesForJob(jobCode) {
+    const code = String(jobCode || "").toUpperCase();
+    if (!code || code === "STORE") return [];
+    const dates = new Set(
+      entries
+        .filter((entry) => !entry.cancelled && String(entry.job || "").toUpperCase() === code)
+        .map((entry) => entry.date)
+        .filter(Boolean)
+    );
+    try {
+      const calendarEvents = window.PMHCalendar?.getEvents?.() || [];
+      calendarEvents.forEach((event) => {
+        const blob = `${event.summary || ""} ${String(event.description || "").replace(/<[^>]+>/g, " ")}`;
+        if (extractJobNumber(blob) !== code) return;
+        const startRaw = event.start?.dateTime || event.start?.date || "";
+        if (!startRaw) return;
+        dates.add(String(startRaw).slice(0, 10));
+      });
+    } catch {
+      /* ignore */
+    }
+    return [...dates].sort();
+  }
+
+  function getJobCompletionStatus(jobCode) {
+    const code = String(jobCode || "").toUpperCase();
+    const dates = visitDatesForJob(code);
+    const completedDates = dates.filter((date) => isJobComplete(date, code));
+    const hourDates = [
+      ...new Set(
+        entries
+          .filter((entry) => !entry.cancelled && String(entry.job || "").toUpperCase() === code)
+          .map((entry) => entry.date)
+      )
+    ].sort();
+    // Job is fully complete only when every date with logged hours is marked complete.
+    // Calendar-only future visits (no hours yet) do not block partial progress.
+    const requiredDates = hourDates.length ? hourDates : dates;
+    const fullyComplete = requiredDates.length
+      ? requiredDates.every((date) => isJobComplete(date, code))
+      : isJobNumberComplete(code);
+    return {
+      job: code,
+      dates,
+      hourDates,
+      requiredDates,
+      completedDates,
+      fullyComplete,
+      partial: completedDates.length > 0 && !fullyComplete
+    };
+  }
+
+  function isJobNumberFullyComplete(jobCode) {
+    return Boolean(getJobCompletionStatus(jobCode).fullyComplete);
+  }
+
   function isCalendarBookingComplete(eventId, jobCode, date = "") {
     if (eventId) {
       const byEvent = Object.values(completedJobs).some(
@@ -281,7 +339,7 @@
       if (byEvent) return true;
     }
     if (date && jobCode && isJobComplete(date, jobCode)) return true;
-    return isJobNumberComplete(jobCode);
+    return false;
   }
 
   function openPhotoDb() {
@@ -1387,7 +1445,7 @@
     pendingPhotos = [];
     el("completeJobTitle").textContent = `Complete #${pendingComplete.job}`;
     el("completeJobSummary").textContent =
-      `${formatDate(date)} · Add photos, then mark complete to write crew hours onto the Google Calendar booking.`;
+      `${formatDate(date)} · Mark this visit complete. If the job has delivery and collection, mark each visit when that day is finished — the calendar stays as one job card until every visit with hours is complete.`;
     el("completeJobCrew").innerHTML = crew.map((row) => `
       <div class="job-person">
         <span>${escapeHtml(row.name)}</span>

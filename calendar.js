@@ -455,10 +455,27 @@
 
   function isJobGroupComplete(jobCode) {
     try {
-      return Boolean(window.PMHApp?.isJobNumberComplete?.(jobCode));
+      return Boolean(window.PMHApp?.isJobNumberFullyComplete?.(jobCode));
     } catch {
       return false;
     }
+  }
+
+  function jobCompletionMeta(jobCode) {
+    try {
+      return window.PMHApp?.getJobCompletionStatus?.(jobCode) || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function partialCompleteHtml(jobCode) {
+    const meta = jobCompletionMeta(jobCode);
+    if (!meta?.partial) return "";
+    const done = meta.completedDates?.length || 0;
+    const total = meta.requiredDates?.length || meta.dates?.length || 0;
+    if (!done || !total) return "";
+    return `<div class="entry-meta calendar-partial-complete">${done} of ${total} visits marked complete</div>`;
   }
 
   function visitLabel(event, index, total) {
@@ -545,12 +562,13 @@
       ? `<div class="entry-meta">${escapeHtml(location)}</div>`
       : "";
     const hoursHtml = jobHoursSummaryHtml(jobCode);
+    const partialHtml = complete ? "" : partialCompleteHtml(jobCode);
 
     const legRows = legs
       .map((event, index) => {
         const label = visitLabel(event, index, legs.length) || `Visit ${index + 1}`;
         const when = formatFullWhen(event);
-        const legComplete = complete || isBookingComplete(event);
+        const legComplete = isBookingComplete(event);
         return `
           <div class="calendar-event-leg${legComplete ? " is-complete" : ""}">
             <span class="calendar-leg-label">${escapeHtml(label)}${legComplete ? " ✓" : ""}</span>
@@ -571,6 +589,7 @@
         </div>
         ${locationHtml}
         <div class="calendar-event-legs">${legRows}</div>
+        ${partialHtml}
         ${hoursHtml}
         ${needsPlanning ? forwardPlanningNoticeHtml(primary) : ""}
       </article>
@@ -604,6 +623,12 @@
     const cancelled = String(event.status || "").toLowerCase() === "cancelled";
     const tone = related.some((row) => isStructureJob(row)) ? "tone-structure" : eventToneClass(event);
     const complete = jobCode ? isJobGroupComplete(jobCode) : isBookingComplete(event);
+    const completionMeta = jobCode ? jobCompletionMeta(jobCode) : null;
+    const statusText = complete
+      ? "Completed"
+      : completionMeta?.partial
+        ? `${completionMeta.completedDates.length} of ${completionMeta.requiredDates.length} visits complete`
+        : status;
     const detailTitle =
       related.length > 1 && jobCode
         ? sharedJobTitle(related, jobCode)
@@ -618,7 +643,7 @@
                 ${related
                   .map((row, index) => {
                     const label = visitLabel(row, index, related.length) || `Visit ${index + 1}`;
-                    const rowComplete = complete || isBookingComplete(row);
+                    const rowComplete = isBookingComplete(row);
                     return `<li${rowComplete ? ' class="is-complete"' : ""}><strong>${escapeHtml(label)}${rowComplete ? " ✓" : ""}</strong> · ${escapeHtml(formatFullWhen(row))}${row.location ? ` · ${escapeHtml(row.location)}` : ""}</li>`;
                   })
                   .join("")}
@@ -683,7 +708,7 @@
           ${hoursDetailHtml}
           <div>
             <dt>Status</dt>
-            <dd>${complete ? "Completed" : escapeHtml(status)}</dd>
+            <dd>${escapeHtml(statusText)}</dd>
           </div>
           <div>
             <dt>Type</dt>
@@ -717,7 +742,7 @@
         }
         <div class="calendar-detail-actions">
           ${
-            complete && jobCode
+            jobCode && (complete || completionMeta?.partial || completionMeta?.completedDates?.length)
               ? `<button type="button" class="button primary" id="calendarAddPhotosButton" data-job="${escapeHtml(jobCode)}" data-date="${escapeHtml(eventDayIso(event))}">Add photos</button>`
               : ""
           }
