@@ -47,7 +47,7 @@ Asset cache bust: **`?v=1.10.4`**
   - Tap booking → details
   - Events cached in `localStorage` after sync
   - **Connect** only when signed out; **Refresh Sync** while connected
-- Preview URL (may expire): `https://tuition-out-operated-rows.trycloudflare.com`
+- Preview URL (may expire): `https://genetics-checked-mic-crossing.trycloudflare.com`
 
 ## Google Cloud (already set up)
 
