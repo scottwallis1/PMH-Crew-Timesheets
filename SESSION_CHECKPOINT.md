@@ -45,7 +45,7 @@ Asset cache bust: **`?v=1.10.0`**
   - Tap booking → details
   - Events cached in `localStorage` after sync
   - **Connect** only when signed out; **Refresh Sync** while connected
-- Preview URL (may expire): `https://democratic-shows-abilities-exp.trycloudflare.com`
+- Preview URL (may expire): `https://queens-andale-venues-laboratories.trycloudflare.com`
 
 ## Google Cloud (already set up)
 
