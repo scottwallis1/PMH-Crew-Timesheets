@@ -394,6 +394,26 @@
     return extractJobNumber(`${event.summary || ""} ${plainText(event.description || "")}`);
   }
 
+  function allEventsForJob(jobCode) {
+    const code = String(jobCode || "");
+    if (!code) return [];
+    return sortEventsByStart(events.filter((row) => eventJobCode(row) === code));
+  }
+
+  function jobHoursSummaryHtml(jobCode) {
+    try {
+      const summary = window.PMHApp?.getJobHoursSummary?.(jobCode);
+      if (!summary || !summary.visits?.length) return "";
+      const format = window.PMHApp?.formatHours || ((value) => String(value));
+      const visitBits = summary.visits
+        .map((visit) => `${visit.date}: ${format(visit.hours)}h`)
+        .join(" · ");
+      return `<div class="entry-meta calendar-hours-summary">Crew hours · ${escapeHtml(format(summary.totalHours))} hrs across ${summary.visits.length} visit${summary.visits.length === 1 ? "" : "s"}<br>${escapeHtml(visitBits)}</div>`;
+    } catch {
+      return "";
+    }
+  }
+
   function eventDayIso(event) {
     const bounds = eventBounds(event);
     if (!bounds) return "";
@@ -471,7 +491,9 @@
     const selected = selectedEventId && event.id === selectedEventId ? " is-selected" : "";
     const tone = eventToneClass(event);
     const badge = isStructureJob(event) ? "PMH" : "PEV";
-    const complete = isBookingComplete(event);
+    const jobCode = eventJobCode(event);
+    const complete = jobCode ? isJobGroupComplete(jobCode) : isBookingComplete(event);
+    const hoursHtml = jobCode ? jobHoursSummaryHtml(jobCode) : "";
 
     return `
       <article class="calendar-event ${tone}${selected}${complete ? " is-complete" : ""}${isNineMetreJob(event) ? " needs-forward-planning" : ""}" data-event-id="${escapeHtml(event.id)}">
@@ -485,33 +507,38 @@
         <div class="entry-meta">${when}</div>
         ${location}
         ${preview}
+        ${hoursHtml}
         ${forwardPlanningNoticeHtml(event)}
       </article>
     `;
   }
 
   function renderJobGroupBlock(jobCode, groupEvents) {
-    if (groupEvents.length === 1) {
-      return renderEventBlock(groupEvents[0]);
+    const legs = sortEventsByStart(groupEvents);
+    if (!legs.length) return "";
+    if (legs.length === 1) {
+      return renderEventBlock(legs[0]);
     }
 
-    const primary = groupEvents[0];
-    const title = escapeHtml(sharedJobTitle(groupEvents, jobCode));
-    const selected = groupEvents.some((event) => event.id === selectedEventId) ? " is-selected" : "";
-    const isPmh = groupEvents.some((event) => isStructureJob(event));
+    const primary = legs[0];
+    const title = escapeHtml(sharedJobTitle(legs, jobCode));
+    const selected = legs.some((event) => event.id === selectedEventId) ? " is-selected" : "";
+    const isPmh = legs.some((event) => isStructureJob(event));
     const tone = isPmh ? "tone-structure" : "tone-other";
     const badge = isPmh ? "PMH" : "PEV";
     const complete = isJobGroupComplete(jobCode);
-    const needsPlanning = groupEvents.some((event) => isNineMetreJob(event));
-    const location = primary.location
-      ? `<div class="entry-meta">${escapeHtml(primary.location)}</div>`
+    const needsPlanning = legs.some((event) => isNineMetreJob(event));
+    const location = legs.map((event) => event.location).find(Boolean);
+    const locationHtml = location
+      ? `<div class="entry-meta">${escapeHtml(location)}</div>`
       : "";
+    const hoursHtml = jobHoursSummaryHtml(jobCode);
 
-    const legs = groupEvents
+    const legRows = legs
       .map((event, index) => {
-        const label = visitLabel(event, index, groupEvents.length) || `Visit ${index + 1}`;
+        const label = visitLabel(event, index, legs.length) || `Visit ${index + 1}`;
         const when = formatFullWhen(event);
-        const legComplete = isBookingComplete(event);
+        const legComplete = complete || isBookingComplete(event);
         return `
           <div class="calendar-event-leg${legComplete ? " is-complete" : ""}">
             <span class="calendar-leg-label">${escapeHtml(label)}${legComplete ? " ✓" : ""}</span>
@@ -530,8 +557,9 @@
             <span class="calendar-tone-badge">${badge}</span>
           </div>
         </div>
-        ${location}
-        <div class="calendar-event-legs">${legs}</div>
+        ${locationHtml}
+        <div class="calendar-event-legs">${legRows}</div>
+        ${hoursHtml}
         ${needsPlanning ? forwardPlanningNoticeHtml(primary) : ""}
       </article>
     `;
@@ -578,7 +606,7 @@
                 ${related
                   .map((row, index) => {
                     const label = visitLabel(row, index, related.length) || `Visit ${index + 1}`;
-                    const rowComplete = isBookingComplete(row);
+                    const rowComplete = complete || isBookingComplete(row);
                     return `<li${rowComplete ? ' class="is-complete"' : ""}><strong>${escapeHtml(label)}${rowComplete ? " ✓" : ""}</strong> · ${escapeHtml(formatFullWhen(row))}${row.location ? ` · ${escapeHtml(row.location)}` : ""}</li>`;
                   })
                   .join("")}
@@ -586,6 +614,36 @@
             </dd>
           </div>`
         : "";
+
+    let hoursDetailHtml = "";
+    if (jobCode) {
+      try {
+        const summary = window.PMHApp?.getJobHoursSummary?.(jobCode);
+        const format = window.PMHApp?.formatHours || ((value) => String(value));
+        if (summary?.visits?.length) {
+          hoursDetailHtml = `<div>
+            <dt>Crew hours</dt>
+            <dd>
+              <ul class="calendar-detail-visits">
+                ${summary.visits
+                  .map(
+                    (visit) =>
+                      `<li><strong>${escapeHtml(visit.date)}</strong> · ${escapeHtml(format(visit.hours))} hrs${
+                        visit.crew?.length
+                          ? ` · ${escapeHtml(visit.crew.map((row) => `${row.name} ${format(row.hours)}h`).join(", "))}`
+                          : ""
+                      }</li>`
+                  )
+                  .join("")}
+                <li><strong>Total</strong> · ${escapeHtml(format(summary.totalHours))} hrs across ${summary.visits.length} visit${summary.visits.length === 1 ? "" : "s"}</li>
+              </ul>
+            </dd>
+          </div>`;
+        }
+      } catch {
+        hoursDetailHtml = "";
+      }
+    }
 
     panel.classList.remove("hidden");
     panel.innerHTML = `
@@ -614,6 +672,7 @@
               : ""
           }
           ${visitsHtml}
+          ${hoursDetailHtml}
           ${
             event.location && related.length === 1
               ? `<div><dt>Location</dt><dd>${escapeHtml(event.location)}</dd></div>`
@@ -729,8 +788,8 @@
     if (!hint) return;
     if (calendarFilter === "pmh") hint.textContent = "Showing open PMH bookings. Completed jobs are under Completed.";
     else if (calendarFilter === "pev") hint.textContent = "Showing open PEV bookings. Completed jobs are under Completed.";
-    else if (calendarFilter === "completed") hint.textContent = "Showing completed jobs. Tap All to go back to open bookings.";
-    else hint.textContent = "Showing open bookings. Same job numbers are grouped together.";
+    else if (calendarFilter === "completed") hint.textContent = "Showing completed jobs with all linked visits and combined hours. Tap Refresh Sync if older trips are missing.";
+    else hint.textContent = "Showing open bookings. Same job numbers are grouped together, including linked visits.";
   }
 
   function setCalendarFilter(nextFilter) {
@@ -788,7 +847,9 @@
       if (jobCode) {
         if (emittedJobs.has(jobCode)) return;
         emittedJobs.add(jobCode);
-        const groupEvents = sortEventsByStart(list.filter((row) => eventJobCode(row) === jobCode));
+        // Always pull every synced booking for this job number so delivery +
+        // collection (including older completed trips) stay on one card.
+        const groupEvents = allEventsForJob(jobCode);
         if (dayKey !== lastDayKey) {
           lastDayKey = dayKey;
           parts.push(`<h3 class="calendar-day-label">${escapeHtml(formatDayHeading(day))}</h3>`);
@@ -871,7 +932,7 @@
     setStatus("Syncing calendar…");
 
     const calendarId = encodeURIComponent(config().calendarId || "primary");
-    const timeMin = addDays(startOfDay(new Date()), -1).toISOString();
+    const timeMin = addDays(startOfDay(new Date()), -180).toISOString();
     const timeMax = addDays(startOfDay(new Date()), 90).toISOString();
     const params = new URLSearchParams({
       maxResults: "250",

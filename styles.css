@@ -986,10 +986,9 @@ button.legend-chip {
   border-color: rgba(31, 157, 85, 0.55);
 }
 
-.calendar-event-legs {
-  display: grid;
-  gap: 6px;
+.calendar-hours-summary {
   margin-top: 8px;
+  line-height: 1.4;
 }
 
 .calendar-event-leg {
