@@ -205,7 +205,9 @@
     isJobNumberComplete: (jobCode) => isJobNumberComplete(jobCode),
     isCalendarBookingComplete: (eventId, jobCode, date) =>
       isCalendarBookingComplete(eventId, jobCode, date),
-    openAddPhotosForJob: (date, jobCode, returnView) => openAddPhotosForJob(date, jobCode, returnView)
+    openAddPhotosForJob: (date, jobCode, returnView) => openAddPhotosForJob(date, jobCode, returnView),
+    getJobHoursSummary: (jobCode) => getJobHoursSummary(jobCode),
+    formatHours: (value) => formatHours(value)
   };
 
   function updateSwitchProfileVisibility() {
@@ -355,16 +357,64 @@
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  function getJobHoursSummary(jobCode) {
+    const code = String(jobCode || "").toUpperCase();
+    if (!code || code === "STORE") {
+      return { job: code, totalHours: 0, totalMiles: 0, dates: [], visits: [], crew: [] };
+    }
+
+    const jobEntries = entries.filter(
+      (entry) => !entry.cancelled && String(entry.job || "").toUpperCase() === code
+    );
+    const dates = [...new Set(jobEntries.map((entry) => entry.date))].sort();
+    const visits = dates.map((date) => {
+      const crew = crewHoursForJob(date, code);
+      const hours = crew.reduce((sum, row) => sum + Number(row.hours || 0), 0);
+      const mileage = crew.reduce((sum, row) => sum + Number(row.mileage || 0), 0);
+      return { date, hours, mileage, crew };
+    });
+    const byUser = {};
+    jobEntries.forEach((entry) => {
+      if (!byUser[entry.userId]) {
+        byUser[entry.userId] = { userId: entry.userId, hours: 0, mileage: 0 };
+      }
+      byUser[entry.userId].hours += Number(entry.hours) || 0;
+      byUser[entry.userId].mileage += Number(entry.mileage) || 0;
+    });
+    const crew = Object.values(byUser)
+      .map((row) => ({
+        ...row,
+        name: users.find((user) => user.id === row.userId)?.name || "Unknown"
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const totalHours = crew.reduce((sum, row) => sum + Number(row.hours || 0), 0);
+    const totalMiles = crew.reduce((sum, row) => sum + Number(row.mileage || 0), 0);
+    return { job: code, totalHours, totalMiles, dates, visits, crew };
+  }
+
   function buildCalendarHoursBlock(date, jobCode, completedByName) {
-    const crew = crewHoursForJob(date, jobCode);
-    const totalHours = crew.reduce((sum, row) => sum + row.hours, 0);
+    const summary = getJobHoursSummary(jobCode);
     const lines = [
       "--- Crew hours (completed) ---",
-      `Job #${jobCode} · ${date}`,
-      ...crew.map((row) => `${row.name}: ${formatHours(row.hours)} hrs`),
-      `Total: ${formatHours(totalHours)} hrs`,
+      `Job #${jobCode}`,
+      ...summary.visits.map((visit) => {
+        const names = visit.crew.map((row) => `${row.name} ${formatHours(row.hours)}h`).join(", ");
+        return `${visit.date}: ${formatHours(visit.hours)} hrs${names ? ` · ${names}` : ""}`;
+      }),
+      `Total across ${summary.visits.length || 1} visit${summary.visits.length === 1 ? "" : "s"}: ${formatHours(summary.totalHours)} hrs`,
       `Completed by ${completedByName} on ${new Date().toLocaleDateString("en-GB")}`
     ];
+    if (!summary.visits.length) {
+      const crew = crewHoursForJob(date, jobCode);
+      const totalHours = crew.reduce((sum, row) => sum + row.hours, 0);
+      return [
+        "--- Crew hours (completed) ---",
+        `Job #${jobCode} · ${date}`,
+        ...crew.map((row) => `${row.name}: ${formatHours(row.hours)} hrs`),
+        `Total: ${formatHours(totalHours)} hrs`,
+        `Completed by ${completedByName} on ${new Date().toLocaleDateString("en-GB")}`
+      ].join("\n");
+    }
     return lines.join("\n");
   }
 
