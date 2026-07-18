@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.20.0">
+  <link rel="stylesheet" href="styles.css?v=1.21.0">
 </head>
 <body>
   <div class="app">
@@ -206,6 +206,18 @@
           <h2 id="completeJobTitle">Complete job</h2>
           <p id="completeJobSummary" class="muted"></p>
           <div id="completeJobCrew" class="complete-crew-list"></div>
+          <div id="completeJobAllCrew" class="complete-crew-list hidden"></div>
+
+          <div id="completeVisitTypePanel" class="visit-type-panel">
+            <label>What are you completing?</label>
+            <p class="muted job-select-hint">Different people can do delivery and collection — pick the visit you finished today.</p>
+            <div class="visit-type-actions" role="group" aria-label="Visit type">
+              <button type="button" class="button subtle visit-type-button" data-visit-type="delivery">Delivery</button>
+              <button type="button" class="button subtle visit-type-button" data-visit-type="collection">Collection</button>
+              <button type="button" class="button subtle visit-type-button" data-visit-type="single">One visit / whole job</button>
+            </div>
+            <p id="completeVisitTypeHint" class="muted job-select-hint"></p>
+          </div>
 
           <div id="completeJobExistingPhotos" class="job-photo-gallery hidden"></div>
 
@@ -291,14 +303,14 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.20.0"></script>
-  <script src="firebase-config.js?v=1.20.0"></script>
+  <script src="google-config.js?v=1.21.0"></script>
+  <script src="firebase-config.js?v=1.21.0"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.20.0"></script>
-  <script src="cloud-sync.js?v=1.20.0"></script>
-  <script src="app.js?v=1.20.0"></script>
+  <script src="calendar.js?v=1.21.0"></script>
+  <script src="cloud-sync.js?v=1.21.0"></script>
+  <script src="app.js?v=1.21.0"></script>
 </body>
 </html>

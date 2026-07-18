@@ -471,11 +471,17 @@
 
   function partialCompleteHtml(jobCode) {
     const meta = jobCompletionMeta(jobCode);
-    if (!meta?.partial) return "";
-    const done = meta.completedDates?.length || 0;
-    const total = meta.requiredDates?.length || meta.dates?.length || 0;
-    if (!done || !total) return "";
-    return `<div class="entry-meta calendar-partial-complete">${done} of ${total} visits marked complete</div>`;
+    if (!meta || meta.fullyComplete) return "";
+    if (meta.hasDelivery) {
+      return `<div class="entry-meta calendar-partial-complete">Delivery complete · waiting on collection</div>`;
+    }
+    if (meta.partial) {
+      const done = meta.completedDates?.length || 0;
+      const total = meta.requiredDates?.length || meta.dates?.length || 0;
+      if (!done || !total) return "";
+      return `<div class="entry-meta calendar-partial-complete">${done} of ${total} visits marked complete</div>`;
+    }
+    return "";
   }
 
   function visitLabel(event, index, total) {
@@ -568,7 +574,7 @@
       .map((event, index) => {
         const label = visitLabel(event, index, legs.length) || `Visit ${index + 1}`;
         const when = formatFullWhen(event);
-        const legComplete = isBookingComplete(event);
+        const legComplete = complete || isBookingComplete(event);
         return `
           <div class="calendar-event-leg${legComplete ? " is-complete" : ""}">
             <span class="calendar-leg-label">${escapeHtml(label)}${legComplete ? " ✓" : ""}</span>
@@ -626,9 +632,11 @@
     const completionMeta = jobCode ? jobCompletionMeta(jobCode) : null;
     const statusText = complete
       ? "Completed"
-      : completionMeta?.partial
-        ? `${completionMeta.completedDates.length} of ${completionMeta.requiredDates.length} visits complete`
-        : status;
+      : completionMeta?.hasDelivery
+        ? "Delivery complete · waiting on collection"
+        : completionMeta?.partial
+          ? `${completionMeta.completedDates.length} of ${completionMeta.requiredDates.length} visits complete`
+          : status;
     const detailTitle =
       related.length > 1 && jobCode
         ? sharedJobTitle(related, jobCode)
@@ -643,7 +651,7 @@
                 ${related
                   .map((row, index) => {
                     const label = visitLabel(row, index, related.length) || `Visit ${index + 1}`;
-                    const rowComplete = isBookingComplete(row);
+                    const rowComplete = complete || isBookingComplete(row);
                     return `<li${rowComplete ? ' class="is-complete"' : ""}><strong>${escapeHtml(label)}${rowComplete ? " ✓" : ""}</strong> · ${escapeHtml(formatFullWhen(row))}${row.location ? ` · ${escapeHtml(row.location)}` : ""}</li>`;
                   })
                   .join("")}
