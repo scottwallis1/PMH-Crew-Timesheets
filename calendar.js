@@ -400,6 +400,14 @@
     return sortEventsByStart(events.filter((row) => eventJobCode(row) === code));
   }
 
+  function stripCrewHoursBlock(text) {
+    const marker = "--- Crew hours (completed) ---";
+    const raw = String(text || "");
+    const idx = raw.indexOf(marker);
+    if (idx < 0) return raw.trim();
+    return raw.slice(0, idx).trimEnd();
+  }
+
   function jobHoursSummaryHtml(jobCode) {
     try {
       const summary = window.PMHApp?.getJobHoursSummary?.(jobCode);
@@ -408,7 +416,10 @@
       const visitBits = summary.visits
         .map((visit) => `${visit.date}: ${format(visit.hours)}h`)
         .join(" · ");
-      return `<div class="entry-meta calendar-hours-summary">Crew hours · ${escapeHtml(format(summary.totalHours))} hrs across ${summary.visits.length} visit${summary.visits.length === 1 ? "" : "s"}<br>${escapeHtml(visitBits)}</div>`;
+      return `<div class="calendar-hours-summary">
+        <div class="calendar-hours-total">Total crew hours · ${escapeHtml(format(summary.totalHours))} hrs across ${summary.visits.length} visit${summary.visits.length === 1 ? "" : "s"}</div>
+        <div class="calendar-hours-breakdown">${escapeHtml(visitBits)}</div>
+      </div>`;
     } catch {
       return "";
     }
@@ -485,8 +496,9 @@
     const location = event.location
       ? `<div class="entry-meta">${escapeHtml(event.location)}</div>`
       : "";
-    const preview = event.description
-      ? `<div class="entry-meta calendar-desc-preview">${escapeHtml(truncateText(event.description, 140))}</div>`
+    const previewText = stripCrewHoursBlock(plainText(event.description || ""));
+    const preview = previewText
+      ? `<div class="entry-meta calendar-desc-preview">${escapeHtml(truncateText(previewText, 140))}</div>`
       : "";
     const selected = selectedEventId && event.id === selectedEventId ? " is-selected" : "";
     const tone = eventToneClass(event);
@@ -584,7 +596,7 @@
 
     const related = relatedEventsFor(event);
     const jobCode = eventJobCode(event);
-    const description = plainText(event.description);
+    const description = stripCrewHoursBlock(plainText(event.description));
     const people = attendeeNames(event);
     const meet = conferenceLink(event);
     const organizer = event.organizer?.displayName || event.organizer?.email || "";
@@ -621,7 +633,7 @@
         const summary = window.PMHApp?.getJobHoursSummary?.(jobCode);
         const format = window.PMHApp?.formatHours || ((value) => String(value));
         if (summary?.visits?.length) {
-          hoursDetailHtml = `<div>
+          hoursDetailHtml = `<div class="calendar-detail-hours">
             <dt>Crew hours</dt>
             <dd>
               <ul class="calendar-detail-visits">
@@ -635,8 +647,8 @@
                       }</li>`
                   )
                   .join("")}
-                <li><strong>Total</strong> · ${escapeHtml(format(summary.totalHours))} hrs across ${summary.visits.length} visit${summary.visits.length === 1 ? "" : "s"}</li>
               </ul>
+              <div class="calendar-hours-total">Total · ${escapeHtml(format(summary.totalHours))} hrs across ${summary.visits.length} visit${summary.visits.length === 1 ? "" : "s"}</div>
             </dd>
           </div>`;
         }
@@ -644,6 +656,11 @@
         hoursDetailHtml = "";
       }
     }
+
+    const cleanedNotes = description;
+    const notesHtml = cleanedNotes
+      ? `<div class="calendar-detail-notes"><dt>Details</dt><dd>${escapeHtml(cleanedNotes).replaceAll("\n", "<br>")}</dd></div>`
+      : `<div class="calendar-detail-notes"><dt>Details</dt><dd class="muted">No extra notes on this booking.</dd></div>`;
 
     panel.classList.remove("hidden");
     panel.innerHTML = `
@@ -658,6 +675,12 @@
         </div>
         <div class="entry-meta">${escapeHtml(related.length > 1 ? `${related.length} linked bookings` : formatFullWhen(event))}</div>
         <dl class="calendar-detail-list">
+          ${
+            jobCode
+              ? `<div><dt>Job</dt><dd>#${escapeHtml(jobCode)}</dd></div>`
+              : ""
+          }
+          ${hoursDetailHtml}
           <div>
             <dt>Status</dt>
             <dd>${complete ? "Completed" : escapeHtml(status)}</dd>
@@ -666,16 +689,10 @@
             <dt>Type</dt>
             <dd>${related.some((row) => isStructureJob(row)) ? "PMH" : "PEV"}</dd>
           </div>
-          ${
-            jobCode
-              ? `<div><dt>Job</dt><dd>#${escapeHtml(jobCode)}</dd></div>`
-              : ""
-          }
           ${visitsHtml}
-          ${hoursDetailHtml}
           ${
-            event.location && related.length === 1
-              ? `<div><dt>Location</dt><dd>${escapeHtml(event.location)}</dd></div>`
+            event.location || related.some((row) => row.location)
+              ? `<div><dt>Location</dt><dd>${escapeHtml(event.location || related.map((row) => row.location).find(Boolean) || "")}</dd></div>`
               : ""
           }
           ${
@@ -688,14 +705,16 @@
               ? `<div><dt>Attendees</dt><dd>${escapeHtml(people.join(", "))}</dd></div>`
               : ""
           }
-          ${
-            description && related.length === 1
-              ? `<div class="calendar-detail-notes"><dt>Details</dt><dd>${escapeHtml(description).replaceAll("\n", "<br>")}</dd></div>`
-              : related.length === 1
-                ? `<div class="calendar-detail-notes"><dt>Details</dt><dd class="muted">No extra notes on this booking.</dd></div>`
-                : ""
-          }
+          ${notesHtml}
         </dl>
+        ${
+          jobCode
+            ? `<div class="calendar-detail-photos-wrap">
+                <h4 class="calendar-detail-photos-heading">Job photos</h4>
+                <div id="calendarDetailPhotos" class="job-photo-gallery" data-photo-job="${escapeHtml(jobCode)}"></div>
+              </div>`
+            : ""
+        }
         <div class="calendar-detail-actions">
           ${
             complete && jobCode
@@ -732,6 +751,16 @@
         console.error("Could not open add photos", error);
       }
     });
+
+    const photoWrap = el("calendarDetailPhotos");
+    if (photoWrap && jobCode) {
+      try {
+        window.PMHApp?.renderJobPhotosByNumber?.(photoWrap, jobCode);
+      } catch (error) {
+        console.error("Could not load job photos", error);
+        photoWrap.innerHTML = '<p class="muted">Could not load photos on this device.</p>';
+      }
+    }
   }
 
   function eventMatchesFilter(event) {
