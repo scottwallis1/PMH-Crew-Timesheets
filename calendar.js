@@ -816,7 +816,7 @@
           : calendarFilter === "pev"
             ? "No open PEV bookings in the synced range."
             : calendarFilter === "completed"
-              ? "No completed jobs yet. Mark a job complete in All Jobs and it will move here."
+              ? "No completed jobs yet. Mark a job complete in My Jobs and it will move here."
               : "";
       board.innerHTML = `
         <p class="muted">

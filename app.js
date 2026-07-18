@@ -1984,7 +1984,7 @@
       try {
         renderAllJobs();
       } catch (error) {
-        console.error("Failed to refresh All Jobs", error);
+        console.error("Failed to refresh My Jobs", error);
       }
     });
 
