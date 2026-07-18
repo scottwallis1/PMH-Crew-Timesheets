@@ -2,6 +2,7 @@
   "use strict";
 
   const DOC_PATH = ["pmhCrew", "main", "data", "state"];
+  const CALENDAR_DOC_PATH = ["pmhCrew", "main", "data", "calendar"];
   const STATUS = {
     disabled: "Cloud sync off",
     connecting: "Connecting…",
@@ -27,6 +28,8 @@
   let pushTimer = null;
   let lastPushedJson = "";
   let started = false;
+  let calendarUnsub = null;
+  let lastCalendarJson = "";
 
   function config() {
     return window.PMH_FIREBASE_CONFIG || {};
@@ -56,6 +59,11 @@
   function docRef() {
     return db.collection(DOC_PATH[0]).doc(DOC_PATH[1])
       .collection(DOC_PATH[2]).doc(DOC_PATH[3]);
+  }
+
+  function calendarDocRef() {
+    return db.collection(CALENDAR_DOC_PATH[0]).doc(CALENDAR_DOC_PATH[1])
+      .collection(CALENDAR_DOC_PATH[2]).doc(CALENDAR_DOC_PATH[3]);
   }
 
   function statePayload(state) {
@@ -250,11 +258,93 @@
     }
   }
 
+  async function pushCalendar(payload = {}) {
+    if (!isConfigured() || !ready) return false;
+    const body = {
+      events: Array.isArray(payload.events) ? payload.events : [],
+      syncedAt: Number(payload.syncedAt || Date.now()),
+      updatedAt: Date.now(),
+      updatedBy: payload.updatedBy || "crew"
+    };
+    const json = JSON.stringify({ events: body.events, syncedAt: body.syncedAt });
+    if (json === lastCalendarJson) return true;
+    try {
+      await calendarDocRef().set(body, { merge: false });
+      lastCalendarJson = json;
+      return true;
+    } catch (error) {
+      console.warn("Cloud calendar push failed", error);
+      return false;
+    }
+  }
+
+  async function pullCalendar() {
+    if (!isConfigured() || !ready) return null;
+    try {
+      const snap = await calendarDocRef().get();
+      if (!snap.exists) return null;
+      const data = snap.data() || {};
+      lastCalendarJson = JSON.stringify({
+        events: data.events || [],
+        syncedAt: Number(data.syncedAt || 0)
+      });
+      return {
+        events: Array.isArray(data.events) ? data.events : [],
+        syncedAt: Number(data.syncedAt || 0),
+        updatedAt: Number(data.updatedAt || 0),
+        updatedBy: data.updatedBy || ""
+      };
+    } catch (error) {
+      console.warn("Cloud calendar pull failed", error);
+      return null;
+    }
+  }
+
+  function subscribeCalendar(onData) {
+    if (!isConfigured() || !ready || typeof onData !== "function") return () => {};
+    if (calendarUnsub) {
+      calendarUnsub();
+      calendarUnsub = null;
+    }
+    calendarUnsub = calendarDocRef().onSnapshot(
+      (snap) => {
+        if (!snap.exists) {
+          onData(null);
+          return;
+        }
+        const data = snap.data() || {};
+        const payload = {
+          events: Array.isArray(data.events) ? data.events : [],
+          syncedAt: Number(data.syncedAt || 0),
+          updatedAt: Number(data.updatedAt || 0),
+          updatedBy: data.updatedBy || ""
+        };
+        lastCalendarJson = JSON.stringify({
+          events: payload.events,
+          syncedAt: payload.syncedAt
+        });
+        onData(payload);
+      },
+      (error) => {
+        console.warn("Cloud calendar listener failed", error);
+      }
+    );
+    return () => {
+      if (calendarUnsub) {
+        calendarUnsub();
+        calendarUnsub = null;
+      }
+    };
+  }
+
   window.PMHCloud = {
     isConfigured,
     isReady: () => ready,
     start,
     pushState,
+    pushCalendar,
+    pullCalendar,
+    subscribeCalendar,
     getStatus: () => ({ status, error: lastError, configured: isConfigured(), ready })
   };
 })();

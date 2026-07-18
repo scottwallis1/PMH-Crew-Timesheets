@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.13.0">
+  <link rel="stylesheet" href="styles.css?v=1.14.0">
 </head>
 <body>
   <div class="app">
@@ -255,9 +255,9 @@
         <div class="card compact-top-card">
           <h2>Calendar</h2>
           <p class="muted">Upcoming jobs in one list. Dark green = PMH. Purple = PEV. Tap a booking for full details.</p>
-          <p id="calendarStatus" class="calendar-status">Checking setup…</p>
+          <p id="calendarStatus" class="calendar-status">Loading team schedule…</p>
 
-          <div id="calendarSetup" class="calendar-setup">
+          <div id="calendarSetup" class="calendar-setup hidden">
             <h3>Setup needed</h3>
             <ol class="setup-list">
               <li>Create a Google Cloud project and enable <strong>Google Calendar API</strong>.</li>
@@ -265,7 +265,6 @@
               <li>Add your site URL (and <code>http://localhost:8080</code>) under Authorized JavaScript origins.</li>
               <li>Paste the Client ID into <code>google-config.js</code>.</li>
             </ol>
-            <p class="muted">Until that Client ID is set, Connect stays locked. No secrets belong in this frontend file except the public Client ID.</p>
           </div>
 
           <div id="calendarActions" class="calendar-actions hidden">
@@ -289,14 +288,14 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.13.0"></script>
-  <script src="firebase-config.js?v=1.13.0"></script>
+  <script src="google-config.js?v=1.14.0"></script>
+  <script src="firebase-config.js?v=1.14.0"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.13.0"></script>
-  <script src="cloud-sync.js?v=1.13.0"></script>
-  <script src="app.js?v=1.13.0"></script>
+  <script src="calendar.js?v=1.14.0"></script>
+  <script src="cloud-sync.js?v=1.14.0"></script>
+  <script src="app.js?v=1.14.0"></script>
 </body>
 </html>
