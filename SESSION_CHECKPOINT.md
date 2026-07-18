@@ -24,7 +24,9 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 Asset cache bust: **`?v=1.11.0`**
 
 **Live URL:** https://scottwallis1.github.io/PMH-Crew-Timesheets/  
-(Add Google JS origin `https://scottwallis1.github.io` — see `GO_LIVE.md`)
+**Go-live blocker:** enable Pages once at  
+https://github.com/scottwallis1/PMH-Crew-Timesheets/settings/pages → Source: **GitHub Actions**, then re-run deploy workflow.  
+Then add Google JS origin `https://scottwallis1.github.io` — see `GO_LIVE.md`.
 
 ## Access model (v1.9)
 
