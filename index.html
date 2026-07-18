@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.22.0">
+  <link rel="stylesheet" href="styles.css?v=1.23.0">
 </head>
 <body>
   <div class="app">
@@ -282,9 +282,9 @@
           </div>
 
           <div id="calendarActions" class="calendar-actions hidden">
-            <button id="calendarConnectButton" class="button primary" type="button">Connect Google Calendar</button>
-            <button id="calendarRefreshButton" class="button subtle" type="button">Refresh Sync</button>
-            <button id="calendarDisconnectButton" class="button subtle hidden" type="button">Disconnect</button>
+            <button id="calendarConnectButton" class="button calendar-sync-btn" type="button">Connect Google</button>
+            <button id="calendarRefreshButton" class="button calendar-sync-btn subtle" type="button">Refresh</button>
+            <button id="calendarDisconnectButton" class="button calendar-sync-btn subtle hidden" type="button">Disconnect</button>
           </div>
         </div>
 
@@ -303,14 +303,14 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.22.0"></script>
-  <script src="firebase-config.js?v=1.22.0"></script>
+  <script src="google-config.js?v=1.23.0"></script>
+  <script src="firebase-config.js?v=1.23.0"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="calendar.js?v=1.22.0"></script>
-  <script src="cloud-sync.js?v=1.22.0"></script>
-  <script src="app.js?v=1.22.0"></script>
+  <script src="calendar.js?v=1.23.0"></script>
+  <script src="cloud-sync.js?v=1.23.0"></script>
+  <script src="app.js?v=1.23.0"></script>
 </body>
 </html>

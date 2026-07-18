@@ -816,9 +816,34 @@ textarea {
 }
 
 .calendar-actions {
-  display: grid;
-  gap: 8px;
-  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.calendar-actions .calendar-sync-btn {
+  width: auto;
+  margin-top: 0;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+}
+
+.calendar-actions .calendar-sync-btn.primary,
+.calendar-actions #calendarConnectButton:not(.subtle) {
+  background: rgba(239, 183, 93, 0.18);
+  color: var(--gold);
+  border: 1px solid rgba(239, 183, 93, 0.35);
+}
+
+.calendar-actions .calendar-sync-btn.subtle {
+  background: transparent;
+  color: rgba(244, 236, 214, 0.72);
+  border: 1px solid rgba(244, 236, 214, 0.18);
 }
 
 .calendar-board-card {
