@@ -722,7 +722,7 @@ textarea {
   border: 1px solid transparent;
   border-radius: 11px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -1231,7 +1231,7 @@ button.legend-chip {
   .robot-avatar-md { width: 64px; height: 64px; flex-basis: 64px; }
 
   .top-nav button {
-    font-size: 10px;
+    font-size: 13px;
     min-height: 64px;
   }
 }
