@@ -21,9 +21,7 @@ git checkout backup/crew-hours-v1.1-calendar-pause
 
 ## App version
 
-Asset cache bust: **`?v=1.12.0`**
-
-**Backup:** Profile → Backup & restore — download/share JSON backup (hours, PINs, completed jobs, photos, calendar cache). Reminder every 7 days if data exists.
+Asset cache bust: **`?v=1.11.0`**
 
 **Live URL:** https://scottwallis1.github.io/PMH-Crew-Timesheets/  
 **Go-live blocker:** enable Pages once at  

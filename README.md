@@ -10,7 +10,6 @@ Mobile-friendly crew timesheet web app for logging job hours, mileage, STORE tim
 - **Crew** — all-time leaderboard, unique robot avatars, retire (tombstone) + reinstate
 - **Calendar** — rolling list from Google Calendar; dark green for marquee/tent/gazebo/pagoda, purple for other jobs
 - Data stored in the browser (`localStorage`) — no backend required for hours; synced calendar events are cached locally after connect
-- **Backup & restore** on Profile — download/share a JSON backup so hours survive clearing site data; restore from that file after a reset
 
 ## Project files
 
