@@ -46,7 +46,7 @@ Asset cache bust: **`?v=1.10.5`**
   - Tap booking → details
   - Events cached in `localStorage` after sync
   - **Connect** only when signed out; **Refresh Sync** while connected
-- Preview URL (may expire): `https://genetics-checked-mic-crossing.trycloudflare.com`
+- Preview URL (may expire): `https://retain-miniature-stevens-important.trycloudflare.com`
 
 ## Google Cloud (already set up)
 
