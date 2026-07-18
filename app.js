@@ -7,8 +7,14 @@
     currentUser: "pm_current_user_v8",
     sessionActor: "pm_session_actor_v8",
     pins: "pm_pins_v2",
-    completedJobs: "pm_completed_jobs_v3"
+    completedJobs: "pm_completed_jobs_v3",
+    lastBackupAt: "pm_last_backup_at_v1",
+    backupReminderAt: "pm_backup_reminder_at_v1"
   };
+
+  const BACKUP_FORMAT = "pmh-crew-backup";
+  const BACKUP_VERSION = 1;
+  const BACKUP_REMINDER_DAYS = 7;
 
   const memoryStorage = {};
 
@@ -112,6 +118,267 @@
     storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
     storageSet(STORAGE.sessionActor, sessionActorId || "");
     storageSet(STORAGE.currentUser, currentUserId || "");
+  }
+
+  function setBackupMessage(text, isError = false) {
+    const ok = el("backupMessage");
+    const err = el("backupError");
+    if (ok) {
+      ok.textContent = isError ? "" : text;
+      ok.classList.toggle("hidden", isError || !text);
+    }
+    if (err) {
+      err.textContent = isError ? text : "";
+      err.classList.toggle("hidden", !isError || !text);
+    }
+  }
+
+  function lastBackupTimestamp() {
+    return Number(storageGet(STORAGE.lastBackupAt) || 0);
+  }
+
+  function markBackupDownloaded() {
+    storageSet(STORAGE.lastBackupAt, String(Date.now()));
+    updateBackupStatus();
+  }
+
+  function updateBackupStatus() {
+    const status = el("backupStatus");
+    if (!status) return;
+    const at = lastBackupTimestamp();
+    if (!at) {
+      status.textContent = "No backup downloaded on this device yet.";
+      return;
+    }
+    const when = new Date(at).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    const entryCount = entries.filter((entry) => !entry.cancelled).length;
+    status.textContent = `Last backup downloaded: ${when} · ${entryCount} active hour entries on this phone.`;
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error("Could not read photo."));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    const [header, data] = String(dataUrl || "").split(",");
+    const mime = (header.match(/data:(.*?);/) || [])[1] || "application/octet-stream";
+    const binary = atob(data || "");
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  async function exportAllPhotos() {
+    try {
+      const db = await openPhotoDb();
+      const rows = await new Promise((resolve, reject) => {
+        const tx = db.transaction("photos", "readonly");
+        const request = tx.objectStore("photos").getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      const photos = [];
+      for (const row of rows) {
+        if (!row?.blob) continue;
+        photos.push({
+          id: row.id,
+          jobKey: row.jobKey,
+          name: row.name || "photo.jpg",
+          type: row.type || row.blob.type || "image/jpeg",
+          createdAt: row.createdAt || Date.now(),
+          dataUrl: await blobToDataUrl(row.blob)
+        });
+      }
+      return photos;
+    } catch {
+      return [];
+    }
+  }
+
+  async function importPhotos(photoRows) {
+    if (!Array.isArray(photoRows) || !photoRows.length) return 0;
+    const db = await openPhotoDb();
+    let count = 0;
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("photos", "readwrite");
+      const store = tx.objectStore("photos");
+      store.clear();
+      photoRows.forEach((row) => {
+        if (!row?.dataUrl || !row.id) return;
+        store.put({
+          id: row.id,
+          jobKey: row.jobKey || "",
+          name: row.name || "photo.jpg",
+          type: row.type || "image/jpeg",
+          createdAt: row.createdAt || Date.now(),
+          blob: dataUrlToBlob(row.dataUrl)
+        });
+        count += 1;
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+    return count;
+  }
+
+  async function buildBackupPayload() {
+    const photos = await exportAllPhotos();
+    return {
+      format: BACKUP_FORMAT,
+      version: BACKUP_VERSION,
+      exportedAt: new Date().toISOString(),
+      app: "Peterhead Marquees Team Manager",
+      data: {
+        users,
+        entries,
+        pins,
+        completedJobs,
+        calendarEvents: load("pm_calendar_events_v1", []) || [],
+        calendarSyncedAt: Number(storageGet("pm_calendar_synced_at_v1") || 0),
+        photos
+      }
+    };
+  }
+
+  function backupFileName() {
+    const stamp = new Date().toISOString().slice(0, 10);
+    return `pmh-crew-backup-${stamp}.json`;
+  }
+
+  async function downloadBackupFile() {
+    setBackupMessage("");
+    try {
+      const payload = await buildBackupPayload();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = backupFileName();
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      markBackupDownloaded();
+      const photoCount = payload.data.photos?.length || 0;
+      setBackupMessage(
+        `Backup downloaded (${payload.data.entries.length} entries` +
+        `${photoCount ? `, ${photoCount} photos` : ""}). Keep this file safe off the phone browser.`
+      );
+      return payload;
+    } catch (error) {
+      setBackupMessage(error.message || "Could not create backup.", true);
+      return null;
+    }
+  }
+
+  async function shareBackupFile() {
+    setBackupMessage("");
+    try {
+      const payload = await buildBackupPayload();
+      const file = new File(
+        [JSON.stringify(payload, null, 2)],
+        backupFileName(),
+        { type: "application/json" }
+      );
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: "PMH Crew backup",
+          text: "Peterhead Marquees crew hours backup",
+          files: [file]
+        });
+        markBackupDownloaded();
+        setBackupMessage("Backup shared. Save it to Files, iCloud, or Drive.");
+        return;
+      }
+      await downloadBackupFile();
+      setBackupMessage("Share isn’t available here — backup file downloaded instead.");
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      setBackupMessage(error.message || "Could not share backup.", true);
+    }
+  }
+
+  async function restoreBackupFromFile(file) {
+    setBackupMessage("");
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      if (!payload || payload.format !== BACKUP_FORMAT) {
+        throw new Error("That file isn’t a PMH crew backup.");
+      }
+      const data = payload.data || {};
+      if (!Array.isArray(data.users) || !Array.isArray(data.entries)) {
+        throw new Error("Backup file is missing crew hours data.");
+      }
+      const entryCount = data.entries.length;
+      const photoCount = Array.isArray(data.photos) ? data.photos.length : 0;
+      const ok = window.confirm(
+        `Replace all hours on this phone with this backup?\n\n` +
+        `${data.users.length} people · ${entryCount} hour entries` +
+        `${photoCount ? ` · ${photoCount} photos` : ""}\n\n` +
+        `Exported: ${payload.exportedAt || "unknown"}\n\n` +
+        `This cannot be undone unless you have another backup file.`
+      );
+      if (!ok) return;
+
+      users = data.users;
+      entries = data.entries;
+      pins = data.pins && typeof data.pins === "object" ? data.pins : {};
+      completedJobs = data.completedJobs && typeof data.completedJobs === "object" ? data.completedJobs : {};
+      saveAll();
+
+      if (Array.isArray(data.calendarEvents)) {
+        storageSet("pm_calendar_events_v1", JSON.stringify(data.calendarEvents));
+      }
+      if (data.calendarSyncedAt) {
+        storageSet("pm_calendar_synced_at_v1", String(data.calendarSyncedAt));
+      }
+
+      const restoredPhotos = await importPhotos(data.photos || []);
+      markBackupDownloaded();
+      renderAll();
+      setBackupMessage(
+        `Restore complete — ${entryCount} entries` +
+        `${restoredPhotos ? `, ${restoredPhotos} photos` : ""} loaded.`
+      );
+      alert("Backup restored on this phone.");
+    } catch (error) {
+      setBackupMessage(error.message || "Could not restore that backup file.", true);
+    }
+  }
+
+  function maybeRemindBackup() {
+    if (!entries.some((entry) => !entry.cancelled)) return;
+    const last = lastBackupTimestamp();
+    const now = Date.now();
+    const due = !last || (now - last) > BACKUP_REMINDER_DAYS * 24 * 60 * 60 * 1000;
+    if (!due) return;
+    const reminded = Number(storageGet(STORAGE.backupReminderAt) || 0);
+    if (reminded && (now - reminded) < 24 * 60 * 60 * 1000) return;
+    storageSet(STORAGE.backupReminderAt, String(now));
+    const days = last ? Math.floor((now - last) / (24 * 60 * 60 * 1000)) : null;
+    const message = last
+      ? `Backup reminder: last download was ${days} day${days === 1 ? "" : "s"} ago. Download a fresh backup to Profile → Backup & restore?`
+      : "Backup reminder: download a backup file so hours aren’t lost if site data is cleared. Open Profile → Backup & restore?";
+    if (window.confirm(message)) {
+      showView("summaryView");
+      el("backupPanel")?.setAttribute("open", "");
+      downloadBackupFile();
+    }
   }
 
   function getActor() {
@@ -673,6 +940,7 @@
   function renderSummary() {
     const user = getCurrentUser();
     if (!user) return;
+    updateBackupStatus();
 
     const editable = canEditCurrentProfile();
     const actor = getActor();
@@ -1104,6 +1372,7 @@
     resetEntryForm();
     renderAll();
     showView("summaryView");
+    maybeRemindBackup();
   }
 
   function renderPendingPhotoPreview() {
@@ -1256,6 +1525,7 @@
       } else {
         alert(`Job marked complete.${calendarError ? ` Calendar note: ${calendarError}` : ""}`);
       }
+      maybeRemindBackup();
     } catch (error) {
       if (status) status.textContent = error.message || "Could not complete job.";
       alert(error.message || "Could not complete job.");
@@ -1582,6 +1852,18 @@
         el("changePinError")?.classList.add("hidden");
         el("changePinSuccess")?.classList.add("hidden");
       });
+    });
+
+    el("downloadBackupButton")?.addEventListener("click", () => {
+      downloadBackupFile();
+    });
+    el("shareBackupButton")?.addEventListener("click", () => {
+      shareBackupFile();
+    });
+    el("restoreBackupInput")?.addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (file) restoreBackupFromFile(file);
     });
 
     el("openAddHoursButton")?.addEventListener("click", () => {
