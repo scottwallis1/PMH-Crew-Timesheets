@@ -1002,11 +1002,17 @@
       ? userEntries.map((entry) => {
           const label = entry.job === "STORE" ? "STORE" : `#${entry.job}`;
           const typeClass = entry.job === "STORE" ? "store" : "job";
+          const site = entry.job === "STORE" ? { name: "", address: "" } : jobSiteDetails(entry.job, entry.date);
+          const siteBits = [
+            site.name ? `<div class="job-site-name">${escapeHtml(site.name)}</div>` : "",
+            site.address ? `<div class="job-site-address">${escapeHtml(site.address)}</div>` : ""
+          ].filter(Boolean).join("");
           if (entry.cancelled) {
             return `<article class="entry ${typeClass} cancelled">
               <div class="entry-head">
                 <div>
                   <strong>${label}<span class="status">Cancelled</span></strong>
+                  ${siteBits}
                   <div class="entry-meta">${formatDate(entry.date)} · ${entry.start}–${entry.finish}</div>
                   ${entry.notes ? `<div class="entry-notes">${escapeHtml(entry.notes)}</div>` : ""}
                 </div>
@@ -1020,6 +1026,7 @@
             <div class="entry-head">
               <div>
                 <strong>${label}</strong>
+                ${siteBits}
                 <div class="entry-meta">${formatDate(entry.date)} · ${entry.start}–${entry.finish}</div>
                 ${entry.notes ? `<div class="entry-notes">${escapeHtml(entry.notes)}</div>` : ""}
               </div>
