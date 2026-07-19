@@ -1,5 +1,5 @@
 (() => {
-  const RUNNING_VERSION = "1.30.0";
+  const RUNNING_VERSION = "1.31.0";
   const banner = document.getElementById("appUpdateBanner");
   const refreshButton = document.getElementById("appUpdateRefreshButton");
   let waitingWorker = null;

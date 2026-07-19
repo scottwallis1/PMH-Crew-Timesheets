@@ -90,6 +90,7 @@
   let cloudRenderTimer = null;
   let jobsViewDirty = true;
   let uiBound = false;
+  let entryFormReturnView = "summaryView";
 
   // Fresh roster for the access model — no legacy demo users carried over.
   if (!Array.isArray(users) || users.length === 0) {
@@ -872,7 +873,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.30.0`;
+    return `${path}?v=1.31.0`;
   }
 
   function renderRobot(target, user) {
@@ -896,7 +897,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.30.0`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.31.0`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -1462,19 +1463,27 @@
     el("notes").value = "";
     setMileageHint("Round trip from AB42 1UA is filled when a job postcode is found.");
     calculateHours();
+    entryFormReturnView = "summaryView";
     renderAlsoAssignPanel();
   }
 
-  function renderAlsoAssignPanel(editing = false) {
+  function renderAlsoAssignPanel() {
     const panel = el("alsoAssignPanel");
     const list = el("alsoAssignList");
+    const hint = panel?.querySelector(".job-select-hint");
     if (!panel || !list) return;
 
-    const show = canAssignHoursForOthers() && !editing && canEditCurrentProfile();
+    const show = canAssignHoursForOthers() && canEditCurrentProfile();
     panel.classList.toggle("hidden", !show);
     if (!show) {
       list.innerHTML = "";
       return;
+    }
+
+    if (hint) {
+      hint.textContent = el("editingEntryId")?.value
+        ? "Also create matching entries for other crew from this edit."
+        : "Copies the same hours, mileage and notes onto their Profile and My Jobs.";
     }
 
     const others = users
@@ -1502,13 +1511,14 @@
       .filter(Boolean);
   }
 
-  function openEditEntry(entryId) {
+  function openEditEntry(entryId, returnView = "summaryView") {
     if (!canEditCurrentProfile()) {
       alert("You can’t edit this profile.");
       return;
     }
     const entry = entries.find((item) => item.id === entryId && item.userId === currentUserId);
     if (!entry) return;
+    entryFormReturnView = returnView || "summaryView";
     el("editingEntryId").value = entry.id;
     el("entryFormTitle").textContent = "Edit Entry";
     el("entryDate").value = entry.date;
@@ -1519,7 +1529,7 @@
     el("notes").value = entry.notes || "";
     setMileageHint("Saved mileage shown. Change job to recalculate from AB42 1UA.");
     calculateHours();
-    renderAlsoAssignPanel(true);
+    renderAlsoAssignPanel();
     showView("addHoursView");
   }
 
@@ -1553,7 +1563,6 @@
       return;
     }
 
-    const isEditing = Boolean(el("editingEntryId").value);
     const shared = {
       date: el("entryDate").value,
       job: jobValue,
@@ -1575,7 +1584,7 @@
     if (existingIndex >= 0) entries[existingIndex] = entry;
     else entries.push(entry);
 
-    const copyIds = !isEditing && canAssignHoursForOthers() ? selectedAlsoAssignUserIds() : [];
+    const copyIds = canAssignHoursForOthers() ? selectedAlsoAssignUserIds() : [];
     const copiedNames = [];
     copyIds.forEach((userId) => {
       if (userId === currentUserId) return;
@@ -1589,10 +1598,11 @@
       copiedNames.push(person.name);
     });
 
+    const returnView = entryFormReturnView || "summaryView";
     saveAll();
     resetEntryForm();
     renderAll();
-    showView("summaryView");
+    showView(returnView);
     if (copiedNames.length) {
       alert(`Also saved for ${copiedNames.join(", ")}.`);
     }
@@ -1780,30 +1790,41 @@
     pendingPhotos = [];
     el("completeJobTitle").textContent = `Complete #${pendingComplete.job}`;
     el("completeJobSummary").textContent =
-      `${formatDate(date)} · Choose Delivery or Collection. Hours already logged by anyone on this job are kept and consolidated.`;
+      `${formatDate(date)} · Choose Delivery or Collection. Every crew member’s hours on this job number (including copies Scott/Ronnie added for others) are consolidated when Collection or Event Operator is marked complete.`;
     el("completeJobCrew").innerHTML = renderCrewListHtml(
       crew,
-      "Hours on this visit (today’s date):"
+      "Hours on this visit (this date):"
     );
     const allCrew = el("completeJobAllCrew");
     if (allCrew) {
-      if (summary.visits.length > 1) {
-        allCrew.classList.remove("hidden");
-        allCrew.innerHTML = `
-          <p class="muted job-select-hint">All visits so far for #${escapeHtml(pendingComplete.job)} · ${formatHours(summary.totalHours)} hrs total:</p>
-          ${summary.visits
+      allCrew.classList.remove("hidden");
+      const crewRows = summary.crew.length
+        ? summary.crew
             .map(
-              (visit) => `
+              (row) => `
             <div class="job-person">
-              <span>${escapeHtml(visit.date)}${visit.crew.length ? ` · ${escapeHtml(visit.crew.map((row) => row.name).join(", "))}` : ""}</span>
-              <strong>${formatHours(visit.hours)} hrs</strong>
+              <span>${escapeHtml(row.name)}</span>
+              <strong>${formatHours(row.hours)} hrs</strong>
             </div>`
             )
-            .join("")}`;
-      } else {
-        allCrew.classList.add("hidden");
-        allCrew.innerHTML = "";
-      }
+            .join("")
+        : '<p class="muted">No crew hours on this job number yet.</p>';
+      const visitRows =
+        summary.visits.length > 1
+          ? `<p class="muted job-select-hint">By visit date:</p>${summary.visits
+              .map(
+                (visit) => `
+            <div class="job-person">
+              <span>${escapeHtml(visit.date)}${visit.crew.length ? ` · ${escapeHtml(visit.crew.map((row) => `${row.name} ${formatHours(row.hours)}h`).join(", "))}` : ""}</span>
+              <strong>${formatHours(visit.hours)} hrs</strong>
+            </div>`
+              )
+              .join("")}`
+          : "";
+      allCrew.innerHTML = `
+          <p class="muted job-select-hint">All crew on #${escapeHtml(pendingComplete.job)} · ${formatHours(summary.totalHours)} hrs total:</p>
+          ${crewRows}
+          ${visitRows}`;
     }
     const typePanel = el("completeVisitTypePanel");
     if (typePanel) typePanel.classList.remove("hidden");
@@ -2125,6 +2146,10 @@
               <div class="job-person ${entry.cancelled ? "cancelled" : ""}">
                 <span>${entry.cancelled ? "Cancelled" : `${entry.start}–${entry.finish}`}${entry.notes ? ` · ${escapeHtml(entry.notes)}` : ""}</span>
                 <strong>${entry.cancelled ? `<s>${formatHours(entry.hours)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles</s>` : `${formatHours(entry.hours)} hrs · ${Number(entry.mileage || 0).toFixed(0)} miles`}</strong>
+                ${!entry.cancelled && canEditCurrentProfile() ? `<div class="entry-actions">
+                  <button type="button" class="button subtle small-action edit-job-entry" data-id="${escapeHtml(entry.id)}">Edit</button>
+                  <button type="button" class="button subtle small-action cancel-job-entry" data-id="${escapeHtml(entry.id)}">Cancel Entry</button>
+                </div>` : ""}
               </div>
             `).join("")}
             ${!allCancelled ? `<div class="entry-meta">Your total: ${formatHours(totalHours)} hrs · ${totalMiles.toFixed(0)} miles</div>` : '<div class="entry-meta">Excluded from totals</div>'}
@@ -2142,6 +2167,14 @@
 
     document.querySelectorAll(".mark-complete-job").forEach((button) => {
       button.addEventListener("click", () => openCompleteJob(button.dataset.date, button.dataset.job));
+    });
+
+    document.querySelectorAll(".edit-job-entry").forEach((button) => {
+      button.addEventListener("click", () => openEditEntry(button.dataset.id, "allJobsView"));
+    });
+
+    document.querySelectorAll(".cancel-job-entry").forEach((button) => {
+      button.addEventListener("click", () => cancelEntry(button.dataset.id));
     });
 
     document.querySelectorAll(".add-job-photos").forEach((button) => {
@@ -2469,8 +2502,9 @@
       showView("addHoursView");
     });
     el("cancelFormButton")?.addEventListener("click", () => {
+      const returnView = entryFormReturnView || "summaryView";
       resetEntryForm();
-      showView("summaryView");
+      showView(returnView);
     });
 
     el("jobNumber").addEventListener("change", () => {
