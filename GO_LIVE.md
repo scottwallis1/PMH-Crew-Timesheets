@@ -69,6 +69,8 @@ https://scottwallis1.github.io
 
 - **iPhone:** Safari → Share → **Add to Home Screen**  
 - **Android:** Chrome → menu → **Install app** / **Add to Home screen**  
+- **Updates:** when a new version is live, phones show **Update available → Tap to refresh**. No need to delete the app.  
+  (First time after this feature ships, one force-close/reopen may still be needed so the phone picks up the updater.)
 - PIN for everyone (demo): `0000` (change on Profile)
 
 ---

@@ -27,7 +27,7 @@ jobs:
       - name: Build static site folder
         run: |
           mkdir _site
-          cp index.html app.js styles.css calendar.js google-config.js firebase-config.js cloud-sync.js manifest.webmanifest .nojekyll _site/
+          cp index.html app.js styles.css calendar.js google-config.js firebase-config.js cloud-sync.js update.js sw.js version.json manifest.webmanifest .nojekyll _site/
           cp -R assets _site/assets
 
       - name: Setup Pages
