@@ -42,13 +42,33 @@
     ronnie: "assets/avatars/ronnie.png",
     karen: "assets/avatars/karen.png",
     jason: "assets/avatars/jason.png",
+    jerald: "assets/avatars/jerald.png",
+    caden: "assets/avatars/caden.png",
+    luke: "assets/avatars/luke.png",
+    josh: "assets/avatars/josh.png",
+    kadek: "assets/avatars/kadek.png",
+    nathan: "assets/avatars/nathan.png",
     spare1: "assets/avatars/spare1.png",
     spare2: "assets/avatars/spare2.png",
     spare3: "assets/avatars/spare3.png",
     spare4: "assets/avatars/spare4.png"
   };
 
-  const fallbackAvatars = Object.keys(avatarFiles);
+  // Scott’s Terminator portrait is reserved — other crew get robot avatars only.
+  const crewAvatarKeys = Object.keys(avatarFiles).filter((key) => key !== "scott");
+  const fallbackAvatars = crewAvatarKeys;
+  const NAME_AVATAR_ALIASES = {
+    scott: "scott",
+    ronnie: "ronnie",
+    karen: "karen",
+    jason: "jason",
+    jerald: "jerald",
+    caden: "caden",
+    luke: "luke",
+    josh: "josh",
+    kadek: "kadek",
+    nathan: "nathan"
+  };
   const CANONICAL_ROLES = {
     scott: "Owner",
     ronnie: "Team member",
@@ -97,12 +117,32 @@
   }
 
   function normalizeUsers(list) {
+    const used = new Set();
     return (Array.isArray(list) ? list : []).map((user, index) => {
-      const avatarKey = avatarFiles[user.avatar]
-        ? user.avatar
-        : avatarFiles[user.id]
-          ? user.id
-          : fallbackAvatars[index % fallbackAvatars.length];
+      const nameKey = String(user.name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "");
+      const preferredByName = NAME_AVATAR_ALIASES[nameKey] || "";
+      let avatarKey = "";
+      if (user.id === "scott") {
+        avatarKey = "scott";
+      } else if (preferredByName && preferredByName !== "scott" && avatarFiles[preferredByName]) {
+        avatarKey = preferredByName;
+      } else if (user.avatar && user.avatar !== "scott" && avatarFiles[user.avatar]) {
+        avatarKey = user.avatar;
+      } else if (user.id !== "scott" && avatarFiles[user.id] && user.id !== "scott") {
+        avatarKey = user.id;
+      } else {
+        const unused = fallbackAvatars.filter((key) => !used.has(key));
+        avatarKey = unused[0] || fallbackAvatars[index % fallbackAvatars.length];
+      }
+      // Never leave a non-Scott user on Scott’s Terminator portrait.
+      if (user.id !== "scott" && avatarKey === "scott") {
+        const unused = fallbackAvatars.filter((key) => !used.has(key));
+        avatarKey = unused[0] || fallbackAvatars[index % fallbackAvatars.length];
+      }
+      used.add(avatarKey);
       return {
         ...user,
         role: CANONICAL_ROLES[user.id] || user.role || "Team member",
@@ -169,6 +209,21 @@
     storageSet(STORAGE.pins, JSON.stringify(pins));
     storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
     jobsViewDirty = true;
+
+    // Push avatar repairs (e.g. Jerald stuck on Scott’s portrait) so all phones stay consistent.
+    const repairedAvatar = nextUsers.some((fixed) => {
+      const raw = (Array.isArray(state.users) ? state.users : []).find((row) => row.id === fixed.id);
+      return raw && raw.avatar !== fixed.avatar;
+    });
+    if (repairedAvatar) {
+      window.PMHCloud?.pushState?.({
+        users,
+        entries,
+        pins,
+        completedJobs,
+        updatedBy: "avatar-repair"
+      });
+    }
 
     scheduleRenderAll();
     if (!sessionActorId && !el("loginView")?.classList.contains("active")) {
@@ -238,6 +293,11 @@
 
   function canMarkJobsComplete(user = getActor()) {
     // Only Scott and Ronnie mark jobs complete; crew just log hours.
+    return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
+  }
+
+  function canAssignHoursForOthers(user = getActor()) {
+    // Scott and Ronnie can copy an hours entry onto other crew profiles.
     return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
   }
 
@@ -785,11 +845,19 @@
       .reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
   }
 
-  function nextAvatarKey() {
+  function nextAvatarKey(preferredName = "") {
+    const nameKey = String(preferredName || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "");
+    const preferred = NAME_AVATAR_ALIASES[nameKey];
     const used = new Set(users.map((user) => user.avatar).filter(Boolean));
+    if (preferred && preferred !== "scott" && avatarFiles[preferred] && !used.has(preferred)) {
+      return preferred;
+    }
     const unused = fallbackAvatars.filter((key) => !used.has(key));
     if (unused.length) return unused[0];
-    // Fall back to least-used avatar so new users still get a matching robot icon.
+    // Fall back to least-used robot avatar so new users still get a matching icon.
     const counts = Object.fromEntries(fallbackAvatars.map((key) => [key, 0]));
     users.forEach((user) => {
       if (counts[user.avatar] !== undefined) counts[user.avatar] += 1;
@@ -804,7 +872,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.29.0`;
+    return `${path}?v=1.30.0`;
   }
 
   function renderRobot(target, user) {
@@ -828,7 +896,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.29.0`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.30.0`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -1394,6 +1462,44 @@
     el("notes").value = "";
     setMileageHint("Round trip from AB42 1UA is filled when a job postcode is found.");
     calculateHours();
+    renderAlsoAssignPanel();
+  }
+
+  function renderAlsoAssignPanel(editing = false) {
+    const panel = el("alsoAssignPanel");
+    const list = el("alsoAssignList");
+    if (!panel || !list) return;
+
+    const show = canAssignHoursForOthers() && !editing && canEditCurrentProfile();
+    panel.classList.toggle("hidden", !show);
+    if (!show) {
+      list.innerHTML = "";
+      return;
+    }
+
+    const others = users
+      .filter((user) => isUserActive(user) && user.id !== currentUserId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (!others.length) {
+      list.innerHTML = '<p class="muted">No other active crew to copy onto.</p>';
+      return;
+    }
+
+    list.innerHTML = others
+      .map(
+        (user) => `<label class="also-assign-option">
+          <input type="checkbox" name="alsoAssignUser" value="${escapeHtml(user.id)}">
+          <span>${escapeHtml(user.name)}</span>
+        </label>`
+      )
+      .join("");
+  }
+
+  function selectedAlsoAssignUserIds() {
+    return [...document.querySelectorAll('#alsoAssignList input[name="alsoAssignUser"]:checked')]
+      .map((input) => input.value)
+      .filter(Boolean);
   }
 
   function openEditEntry(entryId) {
@@ -1413,6 +1519,7 @@
     el("notes").value = entry.notes || "";
     setMileageHint("Saved mileage shown. Change job to recalculate from AB42 1UA.");
     calculateHours();
+    renderAlsoAssignPanel(true);
     showView("addHoursView");
   }
 
@@ -1446,9 +1553,8 @@
       return;
     }
 
-    const entry = {
-      id: el("editingEntryId").value || uid("entry"),
-      userId: currentUserId,
+    const isEditing = Boolean(el("editingEntryId").value);
+    const shared = {
       date: el("entryDate").value,
       job: jobValue,
       start: el("startTime").value,
@@ -1459,14 +1565,37 @@
       cancelled: false
     };
 
+    const entry = {
+      id: el("editingEntryId").value || uid("entry"),
+      userId: currentUserId,
+      ...shared
+    };
+
     const existingIndex = entries.findIndex((item) => item.id === entry.id);
     if (existingIndex >= 0) entries[existingIndex] = entry;
     else entries.push(entry);
+
+    const copyIds = !isEditing && canAssignHoursForOthers() ? selectedAlsoAssignUserIds() : [];
+    const copiedNames = [];
+    copyIds.forEach((userId) => {
+      if (userId === currentUserId) return;
+      const person = findActiveUser(userId);
+      if (!person) return;
+      entries.push({
+        id: uid("entry"),
+        userId,
+        ...shared
+      });
+      copiedNames.push(person.name);
+    });
 
     saveAll();
     resetEntryForm();
     renderAll();
     showView("summaryView");
+    if (copiedNames.length) {
+      alert(`Also saved for ${copiedNames.join(", ")}.`);
+    }
   }
 
   function renderPendingPhotoPreview() {
@@ -2155,7 +2284,7 @@
     }
 
     const id = uid("user");
-    const avatar = nextAvatarKey();
+    const avatar = nextAvatarKey(name);
     users.push({
       id,
       name,
