@@ -1251,6 +1251,46 @@ button.legend-chip {
   margin: 12px 0 16px;
 }
 
+.also-assign-panel {
+  margin: 14px 0 4px;
+  padding: 12px;
+  border: 1px solid rgba(239, 183, 93, 0.22);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.also-assign-panel > label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.also-assign-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.also-assign-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.also-assign-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+}
+
 .photo-preview-grid,
 .job-photo-gallery {
   display: grid;
