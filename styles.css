@@ -1316,6 +1316,36 @@ button.legend-chip {
   font-size: 14px;
 }
 
+.app-update-banner {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, #1a5c4f, #0f3f36);
+  border-bottom: 1px solid rgba(239, 183, 93, 0.45);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.app-update-banner.hidden,
+.app-update-banner[hidden] {
+  display: none !important;
+}
+
+.app-update-banner .button {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+}
+
 .photo-source-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1343,7 +1373,8 @@ button.legend-chip {
 
 @media print {
   #completeJobView,
-  .mark-complete-job {
+  .mark-complete-job,
+  .app-update-banner {
     display: none !important;
   }
 
