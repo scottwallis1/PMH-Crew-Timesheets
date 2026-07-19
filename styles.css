@@ -219,6 +219,59 @@ main { padding: 10px 12px; }
   filter: grayscale(0.35);
 }
 
+button.crew-avatar-button {
+  display: block;
+  padding: 0;
+  margin: 0;
+  width: 72px;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  color: inherit;
+  background: #050708;
+}
+
+button.crew-avatar-button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+button.crew-avatar-button.is-jumpable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+button.crew-avatar-button.is-jumpable:hover,
+button.crew-avatar-button.is-jumpable:focus-visible {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow:
+    0 0 0 3px rgba(239, 183, 93, 0.28),
+    0 6px 14px rgba(0, 0, 0, 0.34);
+  outline: none;
+}
+
+.crew-name-button {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(239, 183, 93, 0.45);
+  text-underline-offset: 3px;
+}
+
+.crew-name-button:hover,
+.crew-name-button:focus-visible {
+  color: var(--gold);
+  outline: none;
+}
+
 .change-user-link.hidden,
 .change-user-link[hidden] {
   display: none !important;

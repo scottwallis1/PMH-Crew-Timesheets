@@ -873,7 +873,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.32.0`;
+    return `${path}?v=1.33.0`;
   }
 
   function renderRobot(target, user) {
@@ -897,7 +897,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.32.0`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.33.0`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -2188,6 +2188,7 @@
 
   function renderCrew() {
     const ownerActor = isOwner();
+    const canJump = canSwitchProfiles();
     const leaderboard = users
       .map((user) => {
         const recordedHours = entries
@@ -2203,19 +2204,30 @@
     el("crewLeaderboard").innerHTML = leaderboard.map((user, index) => `
       <div class="leaderboard-row ${user.active ? "" : "retired"}">
         <div class="rank">${index + 1}</div>
-        <div class="robot-avatar robot-avatar-md ${user.active ? "" : "tombstone"}" data-user-id="${escapeHtml(user.id)}"></div>
+        <button type="button" class="robot-avatar robot-avatar-md crew-avatar-button ${user.active ? "" : "tombstone"}${canJump && user.active ? " is-jumpable" : ""}" data-user-id="${escapeHtml(user.id)}" ${canJump && user.active ? `aria-label="Open ${escapeHtml(user.name)}’s profile"` : "disabled tabindex=\"-1\""} ${canJump && user.active ? "" : 'aria-disabled="true"'}></button>
         <div class="leaderboard-copy">
-          <strong>${escapeHtml(user.name)}${user.role === "Owner" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
-          <div class="muted">${user.active ? "All-time total" : "Retired · history kept"}</div>
+          <strong>${canJump && user.active ? `<button type="button" class="crew-name-button" data-user-id="${escapeHtml(user.id)}">${escapeHtml(user.name)}</button>` : escapeHtml(user.name)}${user.role === "Owner" ? ` · ${escapeHtml(user.role)}` : ""}${user.active ? "" : '<span class="retired-badge">Retired</span>'}</strong>
+          <div class="muted">${user.active ? (canJump ? "Tap to open profile" : "All-time total") : "Retired · history kept"}</div>
           ${user.active || !ownerActor ? "" : `<button type="button" class="button subtle reinstate-user" data-id="${escapeHtml(user.id)}">Reinstate</button>`}
         </div>
         <div class="leaderboard-hours">${formatHours(user.allTimeHours)}<span>hrs</span></div>
       </div>
     `).join("");
 
+    const crewIntro = el("crewIntro");
+    if (crewIntro) {
+      crewIntro.textContent = canJump
+        ? "Ranked by total all-time hours. Tap a crew avatar or name to open their profile."
+        : "Ranked by total all-time hours. Retired crew stay listed with a tombstone.";
+    }
+
     document.querySelectorAll("#crewLeaderboard .robot-avatar").forEach((avatar) => {
       const user = users.find((item) => item.id === avatar.dataset.userId);
       if (user) renderRobot(avatar, user);
+    });
+
+    document.querySelectorAll("#crewLeaderboard .crew-avatar-button.is-jumpable, #crewLeaderboard .crew-name-button").forEach((button) => {
+      button.addEventListener("click", () => openCrewProfile(button.dataset.userId));
     });
 
     document.querySelectorAll(".reinstate-user").forEach((button) => {
@@ -2288,6 +2300,25 @@
     loginMode = "switch";
     renderLogin();
     showView("loginView");
+  }
+
+  function openCrewProfile(userId) {
+    if (!canSwitchProfiles()) return;
+    const target = findActiveUser(userId);
+    if (!target) {
+      alert("That crew member isn’t active.");
+      return;
+    }
+    if (!sessionActorId) {
+      openProfileSwitcher();
+      return;
+    }
+    currentUserId = target.id;
+    persistSession();
+    loginMode = "auth";
+    jobsViewDirty = true;
+    renderAll();
+    showView("summaryView");
   }
 
   function cancelProfileSwitch() {
