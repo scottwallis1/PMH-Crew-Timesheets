@@ -236,6 +236,11 @@
     return Boolean(user && user.id === "scott");
   }
 
+  function canMarkJobsComplete(user = getActor()) {
+    // Only Scott and Ronnie mark jobs complete; crew just log hours.
+    return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
+  }
+
   window.PMHApp = {
     canManageCalendarSync: () => canManageCalendarSync(),
     isJobNumberComplete: (jobCode) => isJobNumberComplete(jobCode),
@@ -1606,6 +1611,10 @@
   }
 
   function openCompleteJob(date, jobCode) {
+    if (!canMarkJobsComplete()) {
+      alert("Only Scott or Ronnie can mark jobs complete.");
+      return;
+    }
     if (!canEditCurrentProfile()) {
       alert("You can’t edit this profile.");
       return;
@@ -1789,6 +1798,10 @@
     if (!pendingComplete || !currentUserId) return;
     if (pendingComplete.mode === "photos") {
       await confirmAddPhotosOnly();
+      return;
+    }
+    if (!canMarkJobsComplete()) {
+      alert("Only Scott or Ronnie can mark jobs complete.");
       return;
     }
 
@@ -1984,7 +1997,7 @@
               <div class="job-photo-gallery" data-photo-job="${escapeHtml(job.job)}" data-photo-date="${escapeHtml(job.date)}"></div>
               ${canEditCurrentProfile() ? `<button type="button" class="button subtle small-action add-job-photos" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Add photos</button>` : ""}`
               : ""}
-            ${!allCancelled && !complete && job.job !== "STORE" && canEditCurrentProfile() ? `<button type="button" class="button primary small-action mark-complete-job" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Mark complete</button>` : ""}
+            ${!allCancelled && !complete && job.job !== "STORE" && canEditCurrentProfile() && canMarkJobsComplete() ? `<button type="button" class="button primary small-action mark-complete-job" data-job="${escapeHtml(job.job)}" data-date="${escapeHtml(job.date)}">Mark complete</button>` : ""}
           </article>`;
         }).join("")
       : jobFilter
