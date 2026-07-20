@@ -157,20 +157,9 @@
     return /\b9(?:\.0+)?\s*-?\s*m(?:etre|eter)?s?\b/i.test(haystack);
   }
 
-  function hasInstallNoteNeeding(event) {
-    // Match in the booking heading only — any casing/spacing of "install note".
-    const heading = String(event.summary || "");
-    return /\binstall[\s_-]*notes?\b/i.test(heading);
-  }
-
   function forwardPlanningNoticeHtml(event) {
     if (!isNineMetreJob(event)) return "";
     return `<div class="forward-planning-notice" role="status">FORWARD PLANNING REQUIRED</div>`;
-  }
-
-  function installPlanningNoticeHtml(event) {
-    if (!hasInstallNoteNeeding(event)) return "";
-    return `<div class="forward-planning-notice install-planning-notice" role="status">INSTALL PLANNING — review schedule</div>`;
   }
 
   function eventToneClass(event) {
@@ -542,9 +531,8 @@
     const complete = jobCode ? isJobGroupComplete(jobCode) : isBookingComplete(event);
     const hoursHtml = jobCode ? jobHoursSummaryHtml(jobCode) : "";
 
-    const installPlanning = hasInstallNoteNeeding(event);
     return `
-      <article class="calendar-event ${tone}${selected}${complete ? " is-complete" : ""}${isNineMetreJob(event) ? " needs-forward-planning" : ""}${installPlanning ? " needs-install-planning" : ""}" data-event-id="${escapeHtml(event.id)}">
+      <article class="calendar-event ${tone}${selected}${complete ? " is-complete" : ""}${isNineMetreJob(event) ? " needs-forward-planning" : ""}" data-event-id="${escapeHtml(event.id)}">
         <div class="calendar-event-top">
           <strong>${title}</strong>
           <div class="calendar-event-top-right">
@@ -556,7 +544,6 @@
         ${location}
         ${preview}
         ${hoursHtml}
-        ${installPlanningNoticeHtml(event)}
         ${forwardPlanningNoticeHtml(event)}
       </article>
     `;
@@ -577,8 +564,6 @@
     const badge = isPmh ? "PMH" : "PEV";
     const complete = isJobGroupComplete(jobCode);
     const needsPlanning = legs.some((event) => isNineMetreJob(event));
-    const needsInstallPlanning = legs.some((event) => hasInstallNoteNeeding(event));
-    const installPlanningEvent = legs.find((event) => hasInstallNoteNeeding(event)) || primary;
     const location = legs.map((event) => event.location).find(Boolean);
     const locationHtml = location
       ? `<div class="entry-meta">${escapeHtml(location)}</div>`
@@ -601,7 +586,7 @@
       .join("");
 
     return `
-      <article class="calendar-event calendar-event-group ${tone}${selected}${complete ? " is-complete" : ""}${needsPlanning ? " needs-forward-planning" : ""}${needsInstallPlanning ? " needs-install-planning" : ""}" data-event-id="${escapeHtml(primary.id)}" data-job-code="${escapeHtml(jobCode)}">
+      <article class="calendar-event calendar-event-group ${tone}${selected}${complete ? " is-complete" : ""}${needsPlanning ? " needs-forward-planning" : ""}" data-event-id="${escapeHtml(primary.id)}" data-job-code="${escapeHtml(jobCode)}">
         <div class="calendar-event-top">
           <strong>${title}</strong>
           <div class="calendar-event-top-right">
@@ -613,7 +598,6 @@
         <div class="calendar-event-legs">${legRows}</div>
         ${partialHtml}
         ${hoursHtml}
-        ${needsInstallPlanning ? installPlanningNoticeHtml(installPlanningEvent) : ""}
         ${needsPlanning ? forwardPlanningNoticeHtml(primary) : ""}
       </article>
     `;
@@ -714,9 +698,6 @@
       ? `<div class="calendar-detail-notes"><dt>Details</dt><dd>${escapeHtml(cleanedNotes).replaceAll("\n", "<br>")}</dd></div>`
       : `<div class="calendar-detail-notes"><dt>Details</dt><dd class="muted">No extra notes on this booking.</dd></div>`;
 
-    const needsInstallPlanning = related.some((row) => hasInstallNoteNeeding(row));
-    const installPlanningEvent = related.find((row) => hasInstallNoteNeeding(row)) || event;
-
     panel.classList.remove("hidden");
     boardCard?.classList.add("is-showing-detail");
     panel.innerHTML = `
@@ -724,7 +705,7 @@
         <button type="button" id="calendarDetailClose" class="button subtle calendar-detail-back">← Back</button>
         <h3>Booking details</h3>
       </div>
-      <article class="calendar-detail-body ${tone}${cancelled ? " is-cancelled" : ""}${complete ? " is-complete" : ""}${needsInstallPlanning ? " needs-install-planning" : ""}">
+      <article class="calendar-detail-body ${tone}${cancelled ? " is-cancelled" : ""}${complete ? " is-complete" : ""}">
         <div class="calendar-detail-title-row">
           <strong class="calendar-detail-title">${escapeHtml(detailTitle)}</strong>
           ${completeTickHtml(complete)}
@@ -788,7 +769,6 @@
               : ""
           }
         </div>
-        ${needsInstallPlanning ? installPlanningNoticeHtml(installPlanningEvent) : ""}
         ${related.some((row) => isNineMetreJob(row)) ? forwardPlanningNoticeHtml(event) : ""}
       </article>
     `;
