@@ -1230,12 +1230,30 @@ button.legend-chip {
   border-top: 1px solid rgba(239, 183, 93, 0.18);
 }
 
+.calendar-board-card.is-showing-detail .calendar-legend,
+.calendar-board-card.is-showing-detail #calendarFilterHint,
+.calendar-board-card.is-showing-detail #calendarBoard {
+  display: none !important;
+}
+
+.calendar-board-card.is-showing-detail .calendar-detail {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .calendar-detail-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.calendar-detail-back {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 14px;
 }
 
 .calendar-detail-header h3 {
