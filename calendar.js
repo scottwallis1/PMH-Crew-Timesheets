@@ -157,9 +157,9 @@
   }
 
   function hasInstallNoteNeeding(event) {
-    const haystack = `${event.summary || ""} ${plainText(event.description || "")} ${event.location || ""}`;
-    // Booking "Needing" value — flag for crew to review install planning.
-    return /\bneeding\s*:?\s*install\s+note\b/i.test(haystack) || /\binstall\s+note\b/i.test(haystack);
+    // Match in the booking heading only — any casing/spacing of "install note".
+    const heading = String(event.summary || "");
+    return /\binstall[\s_-]*notes?\b/i.test(heading);
   }
 
   function forwardPlanningNoticeHtml(event) {
