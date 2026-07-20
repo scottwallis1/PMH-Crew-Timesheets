@@ -15,6 +15,7 @@
   let bound = false;
   let selectedEventId = "";
   let calendarFilter = "all"; // all | pmh | pev | completed
+  let boardScrollY = 0;
 
   function config() {
     return window.PMH_GOOGLE_CONFIG || { clientId: "", calendarId: "primary", scopes: "" };
@@ -628,10 +629,12 @@
     const panel = el("calendarDetail");
     if (!panel) return;
 
+    const boardCard = document.querySelector(".calendar-board-card");
     const event = selectedEventId ? findEvent(selectedEventId) : null;
     if (!event) {
       panel.classList.add("hidden");
       panel.innerHTML = "";
+      boardCard?.classList.remove("is-showing-detail");
       return;
     }
 
@@ -715,10 +718,11 @@
     const installPlanningEvent = related.find((row) => hasInstallNoteNeeding(row)) || event;
 
     panel.classList.remove("hidden");
+    boardCard?.classList.add("is-showing-detail");
     panel.innerHTML = `
       <div class="calendar-detail-header">
+        <button type="button" id="calendarDetailClose" class="button subtle calendar-detail-back">← Back</button>
         <h3>Booking details</h3>
-        <button type="button" id="calendarDetailClose" class="change-user-link">Close</button>
       </div>
       <article class="calendar-detail-body ${tone}${cancelled ? " is-cancelled" : ""}${complete ? " is-complete" : ""}${needsInstallPlanning ? " needs-install-planning" : ""}">
         <div class="calendar-detail-title-row">
@@ -790,9 +794,7 @@
     `;
 
     el("calendarDetailClose")?.addEventListener("click", () => {
-      selectedEventId = "";
-      renderBoard();
-      renderDetailPanel();
+      closeBookingDetail();
     });
     el("calendarAddPhotosButton")?.addEventListener("click", () => {
       const button = el("calendarAddPhotosButton");
@@ -1120,14 +1122,36 @@
     }
   }
 
+  function closeBookingDetail() {
+    selectedEventId = "";
+    renderBoard();
+    renderDetailPanel();
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: boardScrollY, behavior: "auto" });
+    });
+  }
+
+  function openBookingDetail(id) {
+    boardScrollY = window.scrollY || window.pageYOffset || 0;
+    selectedEventId = id;
+    renderBoard();
+    renderDetailPanel();
+    requestAnimationFrame(() => {
+      const card = document.querySelector(".calendar-board-card");
+      card?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
+  }
+
   function onBoardClick(event) {
     const booking = event.target.closest("[data-event-id]");
     if (!booking) return;
     const id = booking.getAttribute("data-event-id");
     if (!id) return;
-    selectedEventId = selectedEventId === id ? "" : id;
-    renderBoard();
-    el("calendarDetail")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (selectedEventId === id) {
+      closeBookingDetail();
+      return;
+    }
+    openBookingDetail(id);
   }
 
   function bind() {
