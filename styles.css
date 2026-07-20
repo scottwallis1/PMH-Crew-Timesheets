@@ -1193,37 +1193,6 @@ button.legend-chip {
   border-color: rgba(220, 38, 38, 0.4);
 }
 
-.calendar-event.needs-install-planning,
-.calendar-detail-body.needs-install-planning {
-  background: #7a1515;
-  border-color: #6b1212;
-  color: #ffffff;
-}
-
-.calendar-event.needs-install-planning .calendar-event-leg {
-  background: rgba(0, 0, 0, 0.22);
-}
-
-.calendar-event.needs-install-planning .calendar-hours-total {
-  border-color: rgba(255, 255, 255, 0.35);
-  background: rgba(0, 0, 0, 0.2);
-  color: #ffe8e8;
-}
-
-.calendar-event.needs-install-planning .calendar-partial-complete {
-  color: #ffe8e8;
-}
-
-.calendar-event.needs-install-planning .calendar-tone-badge {
-  background: rgba(0, 0, 0, 0.35);
-}
-
-.calendar-detail-body.needs-install-planning .calendar-hours-total {
-  border-color: rgba(255, 255, 255, 0.35);
-  background: rgba(0, 0, 0, 0.2);
-  color: #ffe8e8;
-}
-
 .calendar-detail {
   margin-top: 14px;
   padding-top: 14px;
