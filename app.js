@@ -333,7 +333,7 @@
 
   function setUserPaidForMonth(userId, month, paid) {
     if (!canManagePay()) {
-      alert("Only Scott or Ronnie can mark pay.");
+      alert("Only Scott can mark pay.");
       return false;
     }
     const user = findActiveUser(userId);
@@ -2356,32 +2356,37 @@
     if (!payMonthSelect || !payList || !payPanel) return;
 
     const canEditPay = canManagePay();
+    // Monthly pay is private to Scott — hide the whole section from everyone else.
+    payPanel.classList.toggle("hidden", !canEditPay);
+    if (!canEditPay) {
+      payList.innerHTML = "";
+      return;
+    }
+
     const selectedMonth = payMonthSelect.value || availablePayMonths()[0];
     populatePayMonthSelect(payMonthSelect, selectedMonth);
     const month = payMonthSelect.value;
 
-    const activeCrew = users
+    const payableCrew = users
       .filter((user) => isUserActive(user))
-      .slice()
-      .sort((a, b) => a.name.localeCompare(b.name, "en-GB"));
+      .map((user) => ({ user, hours: monthHoursForUser(user.id, month) }))
+      .filter((row) => row.hours > 0)
+      .sort((a, b) => a.user.name.localeCompare(b.user.name, "en-GB"));
 
-    const paidCount = activeCrew.filter((user) => isUserPaidForMonth(user.id, month)).length;
+    const paidCount = payableCrew.filter((row) => isUserPaidForMonth(row.user.id, month)).length;
     const payIntro = el("payIntro");
     if (payIntro) {
-      payIntro.textContent = canEditPay
-        ? `${monthLabel(month)}: ${paidCount} of ${activeCrew.length} paid. Use Mark paid on each person.`
-        : `${monthLabel(month)}: ${paidCount} of ${activeCrew.length} paid. Ask Scott or Ronnie to update pay.`;
+      payIntro.textContent = payableCrew.length
+        ? `${monthLabel(month)}: ${paidCount} of ${payableCrew.length} with hours paid.`
+        : `${monthLabel(month)}: nobody has hours logged yet.`;
     }
 
-    payList.innerHTML = activeCrew.length
-      ? activeCrew.map((user) => {
+    payList.innerHTML = payableCrew.length
+      ? payableCrew.map(({ user, hours }) => {
           const paid = isUserPaidForMonth(user.id, month);
-          const hours = monthHoursForUser(user.id, month);
-          const action = canEditPay
-            ? (paid
-              ? `<button type="button" class="button subtle small-action pay-toggle" data-user-id="${escapeHtml(user.id)}" data-paid="0">Mark unpaid</button>`
-              : `<button type="button" class="button primary small-action pay-toggle" data-user-id="${escapeHtml(user.id)}" data-paid="1">Mark paid</button>`)
-            : "";
+          const action = paid
+            ? `<button type="button" class="button subtle small-action pay-toggle" data-user-id="${escapeHtml(user.id)}" data-paid="0">Mark unpaid</button>`
+            : `<button type="button" class="button primary small-action pay-toggle" data-user-id="${escapeHtml(user.id)}" data-paid="1">Mark paid</button>`;
           return `
             <div class="pay-row ${paid ? "is-paid" : "is-unpaid"}" data-user-id="${escapeHtml(user.id)}">
               <span class="pay-row-avatar robot-avatar robot-avatar-sm" data-user-id="${escapeHtml(user.id)}"></span>
@@ -2396,7 +2401,7 @@
             </div>
           `;
         }).join("")
-      : '<p class="muted">No active crew to show.</p>';
+      : '<p class="muted">No crew with hours for this month.</p>';
 
     payList.querySelectorAll(".robot-avatar").forEach((avatar) => {
       const user = users.find((item) => item.id === avatar.dataset.userId);
