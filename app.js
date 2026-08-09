@@ -7,7 +7,8 @@
     currentUser: "pm_current_user_v8",
     sessionActor: "pm_session_actor_v8",
     pins: "pm_pins_v2",
-    completedJobs: "pm_completed_jobs_v3"
+    completedJobs: "pm_completed_jobs_v3",
+    payments: "pm_payments_v1"
   };
 
   const memoryStorage = {};
@@ -84,6 +85,8 @@
   if (!pins || typeof pins !== "object" || Array.isArray(pins)) pins = {};
   let completedJobs = load(STORAGE.completedJobs, {}) || {};
   if (!completedJobs || typeof completedJobs !== "object" || Array.isArray(completedJobs)) completedJobs = {};
+  let payments = load(STORAGE.payments, {}) || {};
+  if (!payments || typeof payments !== "object" || Array.isArray(payments)) payments = {};
   let pendingComplete = null;
   let pendingPhotos = [];
   let loginMode = "auth"; // "auth" | "switch"
@@ -91,6 +94,7 @@
   let jobsViewDirty = true;
   let uiBound = false;
   let entryFormReturnView = "summaryView";
+  let selectedPayUserId = "";
 
   // Fresh roster for the access model — no legacy demo users carried over.
   if (!Array.isArray(users) || users.length === 0) {
@@ -168,6 +172,7 @@
     storageSet(STORAGE.entries, JSON.stringify(entries));
     storageSet(STORAGE.pins, JSON.stringify(pins));
     storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
+    storageSet(STORAGE.payments, JSON.stringify(payments));
     storageSet(STORAGE.sessionActor, sessionActorId || "");
     storageSet(STORAGE.currentUser, currentUserId || "");
     jobsViewDirty = true;
@@ -176,6 +181,7 @@
       entries,
       pins,
       completedJobs,
+      payments,
       updatedBy: sessionActorId || currentUserId || "crew"
     });
   }
@@ -190,6 +196,9 @@
     if (state.pins && typeof state.pins === "object") pins = state.pins;
     if (state.completedJobs && typeof state.completedJobs === "object") {
       completedJobs = state.completedJobs;
+    }
+    if (state.payments && typeof state.payments === "object") {
+      payments = state.payments;
     }
 
     // Only force sign-out if this actor was explicitly retired — never on soft/empty sync.
@@ -209,6 +218,7 @@
     storageSet(STORAGE.entries, JSON.stringify(entries));
     storageSet(STORAGE.pins, JSON.stringify(pins));
     storageSet(STORAGE.completedJobs, JSON.stringify(completedJobs));
+    storageSet(STORAGE.payments, JSON.stringify(payments));
     jobsViewDirty = true;
 
     // Push avatar repairs (e.g. Jerald stuck on Scott’s portrait) so all phones stay consistent.
@@ -222,6 +232,7 @@
         entries,
         pins,
         completedJobs,
+        payments,
         updatedBy: "avatar-repair"
       });
     }
@@ -265,8 +276,89 @@
       entries,
       pins,
       completedJobs,
+      payments,
       updatedBy: sessionActorId || currentUserId || "crew"
     });
+  }
+
+  function canManagePay(user = getActor()) {
+    // Scott and Ronnie mark end-of-month pay for the crew.
+    return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
+  }
+
+  function paymentKey(userId, month) {
+    return `${userId}_${month}`;
+  }
+
+  function getPayment(userId, month) {
+    if (!userId || !month) return null;
+    const row = payments[paymentKey(userId, month)];
+    return row && typeof row === "object" ? row : null;
+  }
+
+  function isUserPaidForMonth(userId, month) {
+    return Boolean(getPayment(userId, month)?.paid);
+  }
+
+  function monthHoursForUser(userId, month) {
+    return entries
+      .filter((entry) => entry.userId === userId && !entry.cancelled && entry.date.startsWith(month))
+      .reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
+  }
+
+  function availablePayMonths() {
+    const monthSet = new Set(availableMonths());
+    Object.values(payments).forEach((row) => {
+      if (row && row.month) monthSet.add(String(row.month));
+    });
+    // Always offer the last 12 months so quiet months can still be marked paid.
+    const now = new Date();
+    for (let i = 0; i < 12; i += 1) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthSet.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
+    }
+    return [...monthSet].sort().reverse();
+  }
+
+  function populatePayMonthSelect(select, selected) {
+    if (!select) return;
+    const months = availablePayMonths();
+    const existing = [...select.options].map((option) => option.value).join("|");
+    const next = months.join("|");
+    if (existing !== next) {
+      select.innerHTML = months.map((month) => `<option value="${month}">${monthLabel(month)}</option>`).join("");
+    }
+    select.value = months.includes(selected) ? selected : months[0] || "";
+  }
+
+  function setUserPaidForMonth(userId, month, paid) {
+    if (!canManagePay()) {
+      alert("Only Scott or Ronnie can mark pay.");
+      return false;
+    }
+    const user = findActiveUser(userId);
+    if (!user) {
+      alert("That crew member isn’t active.");
+      return false;
+    }
+    if (!month) {
+      alert("Select a month first.");
+      return false;
+    }
+    const key = paymentKey(userId, month);
+    if (paid) {
+      payments[key] = {
+        userId,
+        month,
+        paid: true,
+        paidAt: Date.now(),
+        paidBy: sessionActorId || currentUserId || ""
+      };
+    } else if (payments[key]) {
+      delete payments[key];
+    }
+    saveAll();
+    return true;
   }
 
   function getActor() {
@@ -1066,6 +1158,14 @@
     el("monthlyHours").textContent = formatHours(hours);
     el("monthlyMileage").textContent = `${mileage.toFixed(0)} miles`;
     el("monthlyJobsHeading").textContent = `${monthLabel(month)} Jobs`;
+
+    const summaryPayStatus = el("summaryPayStatus");
+    if (summaryPayStatus) {
+      const paid = isUserPaidForMonth(user.id, month);
+      summaryPayStatus.textContent = paid ? `Paid for ${monthLabel(month)}` : `Unpaid for ${monthLabel(month)}`;
+      summaryPayStatus.classList.toggle("paid", paid);
+      summaryPayStatus.classList.toggle("unpaid", !paid);
+    }
 
     el("myEntries").innerHTML = userEntries.length
       ? userEntries.map((entry) => {
@@ -2245,6 +2345,103 @@
         ? retireable.map((user) => `<option value="${user.id}">${escapeHtml(user.name)}</option>`).join("")
         : '<option value="" disabled selected>No active users to retire</option>';
     }
+
+    renderPay();
+  }
+
+  function renderPay() {
+    const payMonthSelect = el("payMonth");
+    const payList = el("payCrewList");
+    const payDetail = el("payDetail");
+    const payPanel = el("payPanel");
+    if (!payMonthSelect || !payList || !payDetail || !payPanel) return;
+
+    const canEditPay = canManagePay();
+    const selectedMonth = payMonthSelect.value || availablePayMonths()[0];
+    populatePayMonthSelect(payMonthSelect, selectedMonth);
+    const month = payMonthSelect.value;
+
+    const activeCrew = users
+      .filter((user) => isUserActive(user))
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, "en-GB"));
+
+    if (selectedPayUserId && !activeCrew.some((user) => user.id === selectedPayUserId)) {
+      selectedPayUserId = "";
+    }
+
+    const paidCount = activeCrew.filter((user) => isUserPaidForMonth(user.id, month)).length;
+    const payIntro = el("payIntro");
+    if (payIntro) {
+      payIntro.textContent = canEditPay
+        ? `Tap a name, then mark them paid for ${monthLabel(month)}. ${paidCount} of ${activeCrew.length} paid.`
+        : `${monthLabel(month)}: ${paidCount} of ${activeCrew.length} paid. Ask Scott or Ronnie to update pay.`;
+    }
+
+    payList.innerHTML = activeCrew.length
+      ? activeCrew.map((user) => {
+          const paid = isUserPaidForMonth(user.id, month);
+          const hours = monthHoursForUser(user.id, month);
+          const selected = selectedPayUserId === user.id;
+          return `
+            <button type="button" class="pay-row ${paid ? "is-paid" : "is-unpaid"}${selected ? " is-selected" : ""}" data-user-id="${escapeHtml(user.id)}">
+              <span class="pay-row-avatar robot-avatar robot-avatar-sm" data-user-id="${escapeHtml(user.id)}"></span>
+              <span class="pay-row-copy">
+                <strong>${escapeHtml(user.name)}</strong>
+                <span class="muted">${formatHours(hours)} hrs this month</span>
+              </span>
+              <span class="pay-status-badge ${paid ? "paid" : "unpaid"}">${paid ? "Paid" : "Unpaid"}</span>
+            </button>
+          `;
+        }).join("")
+      : '<p class="muted">No active crew to show.</p>';
+
+    payList.querySelectorAll(".robot-avatar").forEach((avatar) => {
+      const user = users.find((item) => item.id === avatar.dataset.userId);
+      if (user) renderRobot(avatar, user);
+    });
+
+    payList.querySelectorAll(".pay-row").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedPayUserId = button.dataset.userId || "";
+        renderPay();
+      });
+    });
+
+    const selectedUser = selectedPayUserId
+      ? activeCrew.find((user) => user.id === selectedPayUserId) || null
+      : null;
+
+    if (!selectedUser) {
+      payDetail.classList.add("hidden");
+      return;
+    }
+
+    const paid = isUserPaidForMonth(selectedUser.id, month);
+    const hours = monthHoursForUser(selectedUser.id, month);
+    const payment = getPayment(selectedUser.id, month);
+    const paidByUser = payment?.paidBy
+      ? users.find((user) => user.id === payment.paidBy)
+      : null;
+
+    payDetail.classList.remove("hidden");
+    if (el("payDetailName")) el("payDetailName").textContent = selectedUser.name;
+    if (el("payDetailMeta")) {
+      el("payDetailMeta").textContent = paid
+        ? `${monthLabel(month)} · ${formatHours(hours)} hrs · Paid${paidByUser ? ` by ${paidByUser.name}` : ""}`
+        : `${monthLabel(month)} · ${formatHours(hours)} hrs · Not paid yet`;
+    }
+
+    const markPaidButton = el("markPaidButton");
+    const markUnpaidButton = el("markUnpaidButton");
+    if (markPaidButton) {
+      markPaidButton.classList.toggle("hidden", !canEditPay || paid);
+      markPaidButton.disabled = !canEditPay;
+    }
+    if (markUnpaidButton) {
+      markUnpaidButton.classList.toggle("hidden", !canEditPay || !paid);
+      markUnpaidButton.disabled = !canEditPay;
+    }
   }
 
   function renderAll() {
@@ -2422,7 +2619,7 @@
     if (window.PMHCloud?.start) {
       try {
         await window.PMHCloud.start({
-          getState: () => ({ users, entries, pins, completedJobs }),
+          getState: () => ({ users, entries, pins, completedJobs, payments }),
           setState: (state) => applyCloudState(state),
           onStatus: updateCloudStatus
         });
@@ -2591,6 +2788,30 @@
       jobsViewDirty = false;
     });
     el("exportPdfButton").addEventListener("click", () => window.print());
+    el("payMonth")?.addEventListener("change", () => {
+      renderPay();
+    });
+    el("markPaidButton")?.addEventListener("click", () => {
+      const month = el("payMonth")?.value || "";
+      if (!selectedPayUserId) {
+        alert("Select a crew member first.");
+        return;
+      }
+      if (setUserPaidForMonth(selectedPayUserId, month, true)) {
+        renderPay();
+      }
+    });
+    el("markUnpaidButton")?.addEventListener("click", () => {
+      const month = el("payMonth")?.value || "";
+      if (!selectedPayUserId) {
+        alert("Select a crew member first.");
+        return;
+      }
+      if (!confirm("Mark this person as unpaid for this month?")) return;
+      if (setUserPaidForMonth(selectedPayUserId, month, false)) {
+        renderPay();
+      }
+    });
 
     document.querySelectorAll("#topNav button").forEach((button) => {
       button.addEventListener("click", () => {

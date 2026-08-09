@@ -66,12 +66,23 @@
       .collection(CALENDAR_DOC_PATH[2]).doc(CALENDAR_DOC_PATH[3]);
   }
 
-  function statePayload(state) {
+  function normalizeObjectMap(value) {
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  }
+
+  function stateBody(state) {
     return {
       users: state.users || [],
       entries: state.entries || [],
-      pins: state.pins || {},
-      completedJobs: state.completedJobs || {},
+      pins: normalizeObjectMap(state.pins),
+      completedJobs: normalizeObjectMap(state.completedJobs),
+      payments: normalizeObjectMap(state.payments)
+    };
+  }
+
+  function statePayload(state) {
+    return {
+      ...stateBody(state),
       updatedAt: Date.now(),
       updatedBy: state.updatedBy || "crew"
     };
@@ -105,6 +116,20 @@
     return true;
   }
 
+  function remoteAppState(remote) {
+    const next = {
+      users: Array.isArray(remote.users) ? remote.users : [],
+      entries: Array.isArray(remote.entries) ? remote.entries : [],
+      pins: normalizeObjectMap(remote.pins),
+      completedJobs: normalizeObjectMap(remote.completedJobs)
+    };
+    // Older cloud docs may omit payments — leave local marks alone until a new client writes them.
+    if (Object.prototype.hasOwnProperty.call(remote, "payments")) {
+      next.payments = normalizeObjectMap(remote.payments);
+    }
+    return next;
+  }
+
   async function pullAndSeed() {
     const snap = await docRef().get();
     const local = hooks.getState?.();
@@ -112,32 +137,15 @@
       if (local) {
         const payload = statePayload(local);
         await docRef().set(payload, { merge: false });
-        lastPushedJson = JSON.stringify({
-          users: payload.users,
-          entries: payload.entries,
-          pins: payload.pins,
-          completedJobs: payload.completedJobs
-        });
+        lastPushedJson = JSON.stringify(stateBody(payload));
       }
       return;
     }
     const remote = snap.data() || {};
     applyingRemote = true;
     try {
-      hooks.setState?.({
-        users: Array.isArray(remote.users) ? remote.users : [],
-        entries: Array.isArray(remote.entries) ? remote.entries : [],
-        pins: remote.pins && typeof remote.pins === "object" ? remote.pins : {},
-        completedJobs: remote.completedJobs && typeof remote.completedJobs === "object"
-          ? remote.completedJobs
-          : {}
-      }, { fromCloud: true });
-      lastPushedJson = JSON.stringify({
-        users: remote.users || [],
-        entries: remote.entries || [],
-        pins: remote.pins || {},
-        completedJobs: remote.completedJobs || {}
-      });
+      hooks.setState?.(remoteAppState(remote), { fromCloud: true });
+      lastPushedJson = JSON.stringify(stateBody(remote));
     } finally {
       applyingRemote = false;
     }
@@ -152,26 +160,14 @@
           return;
         }
         const remote = snap.data() || {};
-        const remoteJson = JSON.stringify({
-          users: remote.users || [],
-          entries: remote.entries || [],
-          pins: remote.pins || {},
-          completedJobs: remote.completedJobs || {}
-        });
+        const remoteJson = JSON.stringify(stateBody(remote));
         if (remoteJson === lastPushedJson) {
           setStatus(navigator.onLine ? STATUS.synced : STATUS.offline);
           return;
         }
         applyingRemote = true;
         try {
-          hooks.setState?.({
-            users: Array.isArray(remote.users) ? remote.users : [],
-            entries: Array.isArray(remote.entries) ? remote.entries : [],
-            pins: remote.pins && typeof remote.pins === "object" ? remote.pins : {},
-            completedJobs: remote.completedJobs && typeof remote.completedJobs === "object"
-              ? remote.completedJobs
-              : {}
-          }, { fromCloud: true });
+          hooks.setState?.(remoteAppState(remote), { fromCloud: true });
           lastPushedJson = remoteJson;
           setStatus(navigator.onLine ? STATUS.synced : STATUS.offline);
         } catch (error) {
@@ -189,12 +185,7 @@
   async function pushState(state, immediate = false) {
     if (!isConfigured() || !ready || applyingRemote) return;
     const payload = statePayload(state);
-    const bodyJson = JSON.stringify({
-      users: payload.users,
-      entries: payload.entries,
-      pins: payload.pins,
-      completedJobs: payload.completedJobs
-    });
+    const bodyJson = JSON.stringify(stateBody(payload));
     if (bodyJson === lastPushedJson) return;
 
     const run = async () => {
