@@ -346,6 +346,21 @@
       .reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
   }
 
+  function monthOwnVehicleMilesForUser(userId, month) {
+    return entries
+      .filter((entry) => (
+        entry.userId === userId
+        && !entry.cancelled
+        && entry.ownVehicle
+        && entry.date.startsWith(month)
+      ))
+      .reduce((sum, entry) => sum + Number(entry.mileage || 0), 0);
+  }
+
+  function ownVehicleLabel(entry) {
+    return entry?.ownVehicle ? '<span class="own-vehicle-badge">Own vehicle</span>' : "";
+  }
+
   function availablePayMonths() {
     const monthSet = new Set(availableMonths());
     Object.values(payments).forEach((row) => {
@@ -1191,20 +1206,26 @@
 
     const activeEntries = userEntries.filter((entry) => !entry.cancelled);
     const hours = activeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
-    const mileage = activeEntries.reduce((sum, entry) => sum + Number(entry.mileage || 0), 0);
+    const ownVehicleMiles = monthOwnVehicleMilesForUser(user.id, month);
     const weeklyHours = weekHoursForUser(user.id);
 
     if (el("weeklyHours")) el("weeklyHours").textContent = formatHours(weeklyHours);
     el("monthlyHours").textContent = formatHours(hours);
-    el("monthlyMileage").textContent = `${mileage.toFixed(0)} miles`;
+    el("monthlyMileage").textContent = `${ownVehicleMiles.toFixed(0)} miles`;
     el("monthlyJobsHeading").textContent = `${monthLabel(month)} Jobs`;
 
     const summaryPayStatus = el("summaryPayStatus");
     if (summaryPayStatus) {
-      const paid = isUserPaidForMonth(user.id, month);
-      summaryPayStatus.textContent = paid ? `Paid for ${monthLabel(month)}` : `Unpaid for ${monthLabel(month)}`;
-      summaryPayStatus.classList.toggle("paid", paid);
-      summaryPayStatus.classList.toggle("unpaid", !paid);
+      // Pay status on profiles is owner-only — same privacy as the Monthly pay section.
+      if (!canManagePay()) {
+        summaryPayStatus.classList.add("hidden");
+      } else {
+        const paid = isUserPaidForMonth(user.id, month);
+        summaryPayStatus.classList.remove("hidden");
+        summaryPayStatus.textContent = paid ? `Paid for ${monthLabel(month)}` : `Unpaid for ${monthLabel(month)}`;
+        summaryPayStatus.classList.toggle("paid", paid);
+        summaryPayStatus.classList.toggle("unpaid", !paid);
+      }
     }
 
     el("myEntries").innerHTML = userEntries.length
@@ -1216,32 +1237,33 @@
             site.name ? `<div class="job-site-name">${escapeHtml(site.name)}</div>` : "",
             site.address ? `<div class="job-site-address">${escapeHtml(site.address)}</div>` : ""
           ].filter(Boolean).join("");
+          const milesLine = `Mileage: ${Number(entry.mileage || 0).toFixed(0)} miles${entry.ownVehicle ? " · own vehicle" : ""}`;
           if (entry.cancelled) {
             return `<article class="entry ${typeClass} cancelled">
               <div class="entry-head">
                 <div>
-                  <strong>${label}<span class="status">Cancelled</span></strong>
+                  <strong>${label}<span class="status">Cancelled</span>${ownVehicleLabel(entry)}</strong>
                   ${siteBits}
                   <div class="entry-meta">${formatDate(entry.date)} · ${entry.start}–${entry.finish}</div>
                   ${entry.notes ? `<div class="entry-notes">${escapeHtml(entry.notes)}</div>` : ""}
                 </div>
                 <strong class="entry-hours"><s>${formatHours(entry.hours)} hrs</s></strong>
               </div>
-              <div class="entry-meta"><s>Mileage: ${Number(entry.mileage || 0).toFixed(0)} miles</s></div>
+              <div class="entry-meta"><s>${milesLine}</s></div>
               <div class="entry-meta">Excluded from totals</div>
             </article>`;
           }
           return `<article class="entry ${typeClass}">
             <div class="entry-head">
               <div>
-                <strong>${label}</strong>
+                <strong>${label}${ownVehicleLabel(entry)}</strong>
                 ${siteBits}
                 <div class="entry-meta">${formatDate(entry.date)} · ${entry.start}–${entry.finish}</div>
                 ${entry.notes ? `<div class="entry-notes">${escapeHtml(entry.notes)}</div>` : ""}
               </div>
               <strong class="entry-hours">${formatHours(entry.hours)} hrs</strong>
             </div>
-            <div class="entry-meta">Mileage: ${Number(entry.mileage || 0).toFixed(0)} miles</div>
+            <div class="entry-meta">${milesLine}</div>
             ${editable ? `<div class="entry-actions">
               <button class="button subtle edit-entry" data-id="${entry.id}">Edit</button>
               <button class="button subtle cancel-entry" data-id="${entry.id}">Cancel Entry</button>
@@ -1600,6 +1622,7 @@
     el("startTime").value = "08:00";
     el("finishTime").value = "17:00";
     el("mileage").value = "";
+    if (el("ownVehicle")) el("ownVehicle").checked = false;
     el("notes").value = "";
     setMileageHint("Round trip from AB42 1UA is filled when a job postcode is found.");
     calculateHours();
@@ -1623,7 +1646,7 @@
     if (hint) {
       hint.textContent = el("editingEntryId")?.value
         ? "Also create matching entries for other crew from this edit."
-        : "Copies the same hours, mileage and notes onto their Profile and My Jobs.";
+        : "Copies the same hours, mileage, own-vehicle flag and notes onto their Profile and My Jobs.";
     }
 
     const others = users
@@ -1666,6 +1689,7 @@
     el("startTime").value = entry.start;
     el("finishTime").value = entry.finish;
     el("mileage").value = entry.mileage || "";
+    if (el("ownVehicle")) el("ownVehicle").checked = Boolean(entry.ownVehicle);
     el("notes").value = entry.notes || "";
     setMileageHint("Saved mileage shown. Change job to recalculate from AB42 1UA.");
     calculateHours();
@@ -1703,13 +1727,21 @@
       return;
     }
 
+    const ownVehicle = Boolean(el("ownVehicle")?.checked);
+    const mileage = Number(el("mileage").value || 0);
+    if (ownVehicle && mileage <= 0) {
+      alert("Enter the mileage for your own vehicle, or untick Used own vehicle.");
+      return;
+    }
+
     const shared = {
       date: el("entryDate").value,
       job: jobValue,
       start: el("startTime").value,
       finish: el("finishTime").value,
       hours,
-      mileage: Number(el("mileage").value || 0),
+      mileage,
+      ownVehicle,
       notes: el("notes").value.trim(),
       cancelled: false
     };
@@ -2256,6 +2288,9 @@
           const allCancelled = activeEntries.length === 0 && cancelledEntries.length > 0;
           const totalHours = activeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
           const totalMiles = activeEntries.reduce((sum, entry) => sum + Number(entry.mileage || 0), 0);
+          const ownVehicleMiles = activeEntries
+            .filter((entry) => entry.ownVehicle)
+            .reduce((sum, entry) => sum + Number(entry.mileage || 0), 0);
           const label = job.job === "STORE" ? "STORE" : `#${job.job}`;
           const typeClass = job.job === "STORE" ? "store" : "job";
           const complete = isJobComplete(job.date, job.job);

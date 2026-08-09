@@ -10,17 +10,17 @@
   <meta name="apple-mobile-web-app-title" content="PMH Team">
   <meta name="application-name" content="PMH Team">
   <meta name="description" content="Peterhead Marquees Team Manager — crew hours, mileage and job tracking.">
-  <meta name="app-version" content="1.39.5">
+  <meta name="app-version" content="1.39.6">
   <title>Peterhead Marquees Team Manager</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="assets/icons/favicon.ico?v=1.39.5" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png?v=1.39.5">
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png?v=1.39.5">
-  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png?v=1.39.5">
+  <link rel="icon" href="assets/icons/favicon.ico?v=1.39.6" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png?v=1.39.6">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png?v=1.39.6">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png?v=1.39.6">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.39.5">
+  <link rel="stylesheet" href="styles.css?v=1.39.6">
 </head>
 <body>
   <div id="appUpdateBanner" class="app-update-overlay hidden" hidden role="alertdialog" aria-modal="true" aria-labelledby="appUpdateTitle" aria-describedby="appUpdateCopy">
@@ -121,7 +121,7 @@
               <strong id="monthlyHours">0</strong>
             </div>
             <div class="stat-card mileage-stat">
-              <span>Monthly mileage</span>
+              <span>Own vehicle miles</span>
               <strong id="monthlyMileage">0 miles</strong>
             </div>
           </div>
@@ -179,6 +179,11 @@
           <label for="mileage">Mileage</label>
           <input id="mileage" type="number" min="0" step="1" placeholder="Miles">
           <p id="mileageHint" class="muted job-select-hint">Round trip from AB42 1UA is filled when a job postcode is found.</p>
+          <label class="own-vehicle-option" for="ownVehicle">
+            <input id="ownVehicle" type="checkbox">
+            <span>Used own vehicle</span>
+          </label>
+          <p class="muted job-select-hint">Tick this if these miles should be reimbursed. Leave unticked for company van.</p>
 
           <label for="notes">Notes <span class="optional">(optional)</span></label>
           <textarea id="notes" placeholder="Optional notes"></textarea>
@@ -325,15 +330,15 @@
     </main>
   </div>
 
-  <script src="google-config.js?v=1.39.5"></script>
-  <script src="firebase-config.js?v=1.39.5"></script>
+  <script src="google-config.js?v=1.39.6"></script>
+  <script src="firebase-config.js?v=1.39.6"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="update.js?v=1.39.5"></script>
-  <script src="calendar.js?v=1.39.5"></script>
-  <script src="cloud-sync.js?v=1.39.5"></script>
-  <script src="app.js?v=1.39.5"></script>
+  <script src="update.js?v=1.39.6"></script>
+  <script src="calendar.js?v=1.39.6"></script>
+  <script src="cloud-sync.js?v=1.39.6"></script>
+  <script src="app.js?v=1.39.6"></script>
 </body>
 </html>
