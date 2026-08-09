@@ -767,24 +767,10 @@ textarea {
   width: 100%;
   margin: 0;
   padding: 12px;
-  text-align: left;
   color: inherit;
   background: rgba(0, 0, 0, 0.16);
   border: 1px solid rgba(239, 183, 93, 0.18);
   border-radius: 12px;
-  cursor: pointer;
-}
-
-.pay-row:hover,
-.pay-row:focus-visible {
-  border-color: rgba(239, 183, 93, 0.45);
-  outline: none;
-}
-
-.pay-row.is-selected {
-  border-color: var(--gold);
-  background: rgba(239, 183, 93, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(239, 183, 93, 0.28);
 }
 
 .pay-row-copy {
@@ -799,6 +785,21 @@ textarea {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 700;
+}
+
+.pay-row-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.pay-row-actions .pay-toggle {
+  width: auto;
+  min-width: 7.5rem;
+  margin: 0;
+  padding: 8px 12px;
 }
 
 .pay-status-badge {
@@ -820,31 +821,6 @@ textarea {
   color: #f0d4d2;
   background: rgba(138, 69, 65, 0.55);
   border: 1px solid rgba(240, 212, 210, 0.28);
-}
-
-.pay-detail {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.pay-detail h3 {
-  margin: 0 0 4px;
-  font-family: var(--font-display);
-  font-size: 22px;
-  color: var(--gold);
-}
-
-.pay-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.pay-actions .button {
-  width: auto;
-  min-width: 140px;
 }
 
 .summary-pay-status {
@@ -1654,7 +1630,7 @@ button.legend-chip {
   .management-panel,
   #exportPdfButton,
   .export-note,
-  .pay-actions {
+  .pay-toggle {
     display: none !important;
   }
 

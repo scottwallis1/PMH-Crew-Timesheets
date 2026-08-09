@@ -2352,9 +2352,8 @@
   function renderPay() {
     const payMonthSelect = el("payMonth");
     const payList = el("payCrewList");
-    const payDetail = el("payDetail");
     const payPanel = el("payPanel");
-    if (!payMonthSelect || !payList || !payDetail || !payPanel) return;
+    if (!payMonthSelect || !payList || !payPanel) return;
 
     const canEditPay = canManagePay();
     const selectedMonth = payMonthSelect.value || availablePayMonths()[0];
@@ -2366,15 +2365,11 @@
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name, "en-GB"));
 
-    if (selectedPayUserId && !activeCrew.some((user) => user.id === selectedPayUserId)) {
-      selectedPayUserId = "";
-    }
-
     const paidCount = activeCrew.filter((user) => isUserPaidForMonth(user.id, month)).length;
     const payIntro = el("payIntro");
     if (payIntro) {
       payIntro.textContent = canEditPay
-        ? `Tap a name, then mark them paid for ${monthLabel(month)}. ${paidCount} of ${activeCrew.length} paid.`
+        ? `${monthLabel(month)}: ${paidCount} of ${activeCrew.length} paid. Use Mark paid on each person.`
         : `${monthLabel(month)}: ${paidCount} of ${activeCrew.length} paid. Ask Scott or Ronnie to update pay.`;
     }
 
@@ -2382,16 +2377,23 @@
       ? activeCrew.map((user) => {
           const paid = isUserPaidForMonth(user.id, month);
           const hours = monthHoursForUser(user.id, month);
-          const selected = selectedPayUserId === user.id;
+          const action = canEditPay
+            ? (paid
+              ? `<button type="button" class="button subtle small-action pay-toggle" data-user-id="${escapeHtml(user.id)}" data-paid="0">Mark unpaid</button>`
+              : `<button type="button" class="button primary small-action pay-toggle" data-user-id="${escapeHtml(user.id)}" data-paid="1">Mark paid</button>`)
+            : "";
           return `
-            <button type="button" class="pay-row ${paid ? "is-paid" : "is-unpaid"}${selected ? " is-selected" : ""}" data-user-id="${escapeHtml(user.id)}">
+            <div class="pay-row ${paid ? "is-paid" : "is-unpaid"}" data-user-id="${escapeHtml(user.id)}">
               <span class="pay-row-avatar robot-avatar robot-avatar-sm" data-user-id="${escapeHtml(user.id)}"></span>
               <span class="pay-row-copy">
                 <strong>${escapeHtml(user.name)}</strong>
                 <span class="muted">${formatHours(hours)} hrs this month</span>
               </span>
-              <span class="pay-status-badge ${paid ? "paid" : "unpaid"}">${paid ? "Paid" : "Unpaid"}</span>
-            </button>
+              <span class="pay-row-actions">
+                <span class="pay-status-badge ${paid ? "paid" : "unpaid"}">${paid ? "Paid" : "Unpaid"}</span>
+                ${action}
+              </span>
+            </div>
           `;
         }).join("")
       : '<p class="muted">No active crew to show.</p>';
@@ -2401,47 +2403,17 @@
       if (user) renderRobot(avatar, user);
     });
 
-    payList.querySelectorAll(".pay-row").forEach((button) => {
+    payList.querySelectorAll(".pay-toggle").forEach((button) => {
       button.addEventListener("click", () => {
-        selectedPayUserId = button.dataset.userId || "";
-        renderPay();
+        const userId = button.dataset.userId || "";
+        const markPaid = button.dataset.paid === "1";
+        if (!markPaid && !confirm("Mark this person as unpaid for this month?")) return;
+        if (setUserPaidForMonth(userId, month, markPaid)) {
+          selectedPayUserId = userId;
+          renderPay();
+        }
       });
     });
-
-    const selectedUser = selectedPayUserId
-      ? activeCrew.find((user) => user.id === selectedPayUserId) || null
-      : null;
-
-    if (!selectedUser) {
-      payDetail.classList.add("hidden");
-      return;
-    }
-
-    const paid = isUserPaidForMonth(selectedUser.id, month);
-    const hours = monthHoursForUser(selectedUser.id, month);
-    const payment = getPayment(selectedUser.id, month);
-    const paidByUser = payment?.paidBy
-      ? users.find((user) => user.id === payment.paidBy)
-      : null;
-
-    payDetail.classList.remove("hidden");
-    if (el("payDetailName")) el("payDetailName").textContent = selectedUser.name;
-    if (el("payDetailMeta")) {
-      el("payDetailMeta").textContent = paid
-        ? `${monthLabel(month)} · ${formatHours(hours)} hrs · Paid${paidByUser ? ` by ${paidByUser.name}` : ""}`
-        : `${monthLabel(month)} · ${formatHours(hours)} hrs · Not paid yet`;
-    }
-
-    const markPaidButton = el("markPaidButton");
-    const markUnpaidButton = el("markUnpaidButton");
-    if (markPaidButton) {
-      markPaidButton.classList.toggle("hidden", !canEditPay || paid);
-      markPaidButton.disabled = !canEditPay;
-    }
-    if (markUnpaidButton) {
-      markUnpaidButton.classList.toggle("hidden", !canEditPay || !paid);
-      markUnpaidButton.disabled = !canEditPay;
-    }
   }
 
   function renderAll() {
@@ -2790,27 +2762,6 @@
     el("exportPdfButton").addEventListener("click", () => window.print());
     el("payMonth")?.addEventListener("change", () => {
       renderPay();
-    });
-    el("markPaidButton")?.addEventListener("click", () => {
-      const month = el("payMonth")?.value || "";
-      if (!selectedPayUserId) {
-        alert("Select a crew member first.");
-        return;
-      }
-      if (setUserPaidForMonth(selectedPayUserId, month, true)) {
-        renderPay();
-      }
-    });
-    el("markUnpaidButton")?.addEventListener("click", () => {
-      const month = el("payMonth")?.value || "";
-      if (!selectedPayUserId) {
-        alert("Select a crew member first.");
-        return;
-      }
-      if (!confirm("Mark this person as unpaid for this month?")) return;
-      if (setUserPaidForMonth(selectedPayUserId, month, false)) {
-        renderPay();
-      }
     });
 
     document.querySelectorAll("#topNav button").forEach((button) => {
