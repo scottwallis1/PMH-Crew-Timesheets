@@ -846,6 +846,43 @@ textarea {
   border: 1px solid rgba(240, 212, 210, 0.28);
 }
 
+.own-vehicle-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 4px;
+  padding: 12px;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(239, 183, 93, 0.28);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.own-vehicle-option input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--gold);
+}
+
+.own-vehicle-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: rgba(239, 183, 93, 0.2);
+  border: 1px solid rgba(239, 183, 93, 0.45);
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .top-nav {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
