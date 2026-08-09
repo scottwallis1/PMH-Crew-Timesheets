@@ -282,8 +282,8 @@
   }
 
   function canManagePay(user = getActor()) {
-    // Scott and Ronnie mark end-of-month pay for the crew.
-    return Boolean(user && (user.id === "scott" || user.id === "ronnie"));
+    // Only Scott marks end-of-month pay for the crew.
+    return Boolean(user && (user.id === "scott" || user.role === "Owner"));
   }
 
   function paymentKey(userId, month) {
