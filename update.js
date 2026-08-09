@@ -1,7 +1,9 @@
 (() => {
-  const RUNNING_VERSION = "1.38.0";
   const banner = document.getElementById("appUpdateBanner");
   const refreshButton = document.getElementById("appUpdateRefreshButton");
+  const RUNNING_VERSION =
+    document.querySelector('meta[name="app-version"]')?.getAttribute("content")?.trim() ||
+    "0";
   let waitingWorker = null;
   let reloadArmed = false;
 
@@ -10,12 +12,16 @@
     banner.hidden = false;
     banner.classList.remove("hidden");
     banner.dataset.reason = reason || "version";
+    document.body.classList.add("update-prompt-open");
+    // Pull focus to the update action so it can’t be missed on phones.
+    window.setTimeout(() => refreshButton?.focus?.(), 50);
   }
 
   function hideUpdateBanner() {
     if (!banner) return;
     banner.hidden = true;
     banner.classList.add("hidden");
+    document.body.classList.remove("update-prompt-open");
   }
 
   function applyUpdate() {
