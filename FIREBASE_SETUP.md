@@ -77,6 +77,7 @@ Authentication → Settings → **Authorized domains** — add:
 - Hours & mileage entries  
 - PINs  
 - Completed-job flags  
+- Monthly pay status (who was paid for which month)  
 
 Still local for now: job photos (on-device only) and Google Calendar connection cache.
 
