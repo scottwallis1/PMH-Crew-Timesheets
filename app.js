@@ -77,6 +77,13 @@
     jason: "Team member"
   };
 
+  // Permanently dropped from the crew — strip from sync so old phones can’t reintroduce them.
+  const REMOVED_CREW_IDS = new Set([
+    "user_1784912933681_55909", // Calvin
+    "user_1786135918592_91582" // Steven Wilson
+  ]);
+  const REMOVED_CREW_NAMES = new Set(["calvin", "steven wilson"]);
+
   let users = load(STORAGE.users, null);
   let entries = load(STORAGE.entries, null);
   let sessionActorId = storageGet(STORAGE.sessionActor) || "";
@@ -106,8 +113,15 @@
     storageSet(STORAGE.entries, JSON.stringify(entries));
   }
 
+  const usersBeforePurge = Array.isArray(users) ? users.length : 0;
   users = normalizeUsers(users);
   storageSet(STORAGE.users, JSON.stringify(users));
+  if (usersBeforePurge && users.length < usersBeforePurge) {
+    Object.keys(pins || {}).forEach((id) => {
+      if (REMOVED_CREW_IDS.has(id)) delete pins[id];
+    });
+    storageSet(STORAGE.pins, JSON.stringify(pins));
+  }
 
   const el = (id) => document.getElementById(id);
 
@@ -121,9 +135,18 @@
     }
   }
 
+  function isRemovedCrewMember(user) {
+    if (!user) return false;
+    if (REMOVED_CREW_IDS.has(String(user.id || ""))) return true;
+    const name = String(user.name || "").trim().toLowerCase();
+    return REMOVED_CREW_NAMES.has(name);
+  }
+
   function normalizeUsers(list) {
     const used = new Set();
-    return (Array.isArray(list) ? list : []).map((user, index) => {
+    return (Array.isArray(list) ? list : [])
+      .filter((user) => !isRemovedCrewMember(user))
+      .map((user, index) => {
       const nameKey = String(user.name || "")
         .trim()
         .toLowerCase()
@@ -187,7 +210,9 @@
   }
 
   function applyCloudState(state) {
-    const nextUsers = normalizeUsers(state.users);
+    const rawUsers = Array.isArray(state.users) ? state.users : [];
+    const nextUsers = normalizeUsers(rawUsers);
+    const strippedRemovedCrew = rawUsers.some((user) => isRemovedCrewMember(user));
     // Never replace a good local roster with an empty cloud payload.
     if (nextUsers.length) {
       users = nextUsers;
@@ -201,6 +226,17 @@
       payments = state.payments;
     }
 
+    // Drop login/pay leftovers for permanently removed crew.
+    Object.keys(pins || {}).forEach((id) => {
+      if (REMOVED_CREW_IDS.has(id)) delete pins[id];
+    });
+    Object.keys(payments || {}).forEach((key) => {
+      const row = payments[key];
+      if (REMOVED_CREW_IDS.has(String(row?.userId || "")) || [...REMOVED_CREW_IDS].some((id) => key.startsWith(`${id}_`))) {
+        delete payments[key];
+      }
+    });
+
     // Only force sign-out if this actor was explicitly retired — never on soft/empty sync.
     if (sessionActorId && users.length) {
       const actor = users.find((user) => user.id === sessionActorId);
@@ -210,6 +246,10 @@
         persistSession();
       } else if (actor && currentUserId && !users.some((user) => user.id === currentUserId)) {
         currentUserId = sessionActorId;
+        persistSession();
+      } else if (REMOVED_CREW_IDS.has(sessionActorId)) {
+        sessionActorId = "";
+        currentUserId = "";
         persistSession();
       }
     }
@@ -223,17 +263,17 @@
 
     // Push avatar repairs (e.g. Jerald stuck on Scott’s portrait) so all phones stay consistent.
     const repairedAvatar = nextUsers.some((fixed) => {
-      const raw = (Array.isArray(state.users) ? state.users : []).find((row) => row.id === fixed.id);
+      const raw = rawUsers.find((row) => row.id === fixed.id);
       return raw && raw.avatar !== fixed.avatar;
     });
-    if (repairedAvatar) {
+    if (repairedAvatar || strippedRemovedCrew) {
       window.PMHCloud?.pushState?.({
         users,
         entries,
         pins,
         completedJobs,
         payments,
-        updatedBy: "avatar-repair"
+        updatedBy: strippedRemovedCrew ? "removed-crew-purge" : "avatar-repair"
       });
     }
 
