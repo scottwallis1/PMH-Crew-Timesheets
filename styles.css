@@ -127,10 +127,16 @@ main { padding: 10px 12px; }
   padding-bottom: 13px;
 }
 
+.summary-card:has(.has-santa-hat) {
+  padding-top: 28px;
+  overflow: visible;
+}
+
 .profile-row {
   display: flex;
   align-items: center;
   gap: 16px;
+  overflow: visible;
 }
 
 .profile-copy { flex: 1; min-width: 0; }
@@ -287,6 +293,35 @@ button.crew-avatar-button.is-jumpable:focus-visible {
   height: 100%;
   object-fit: cover;
   object-position: center;
+}
+
+.robot-avatar.has-santa-hat {
+  overflow: visible;
+}
+
+.robot-avatar .santa-hat {
+  position: absolute;
+  left: 6%;
+  top: -22%;
+  width: 86%;
+  height: 58%;
+  pointer-events: none;
+  z-index: 3;
+  transform: rotate(-16deg);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+
+.robot-avatar .santa-hat svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.robot-avatar-sm .santa-hat {
+  top: -24%;
+  width: 90%;
+  height: 62%;
 }
 
 .tombstone-svg {
@@ -669,8 +704,9 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 0;
+  padding: 18px 0 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: visible;
 }
 
 .leaderboard-row:first-child { border-top: 0; }
