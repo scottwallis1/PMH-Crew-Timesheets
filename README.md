@@ -70,6 +70,10 @@ Square PNG icons are generated from the Marquees logo:
 8. Reload → **Calendar** tab → **Connect Google Calendar**
 9. Browse **Week** / **Day** views; synced events stay available after disconnect until the next refresh
 
+### Google Maps mileage
+
+For driving round-trip miles on open jobs, also enable **Maps JavaScript API** and **Directions API**, create a browser API key (HTTP referrer restricted), and paste it as `mapsApiKey` in `google-config.js`. See `GOOGLE_CALENDAR_SETUP.md`.
+
 See `GOOGLE_CALENDAR_SETUP.md` for the checklist of values to provide.
 
 ## Notes

@@ -1289,8 +1289,11 @@
   }
 
   const BASE_POSTCODE = "AB42 1UA";
+  const METERS_PER_MILE = 1609.344;
   const geoCache = {};
+  const drivingMilesCache = {};
   let mileageRequestId = 0;
+  let mapsApiPromise = null;
 
   function extractJobNumber(text) {
     const raw = String(text || "");
@@ -1313,6 +1316,10 @@
 
   function normalizePostcodeKey(postcode) {
     return String(postcode || "").toUpperCase().replace(/\s+/g, "");
+  }
+
+  function mapsApiKey() {
+    return String(window.PMH_GOOGLE_CONFIG?.mapsApiKey || "").trim();
   }
 
   function haversineMiles(lat1, lon1, lat2, lon2) {
@@ -1343,6 +1350,111 @@
     return coords;
   }
 
+  function loadGoogleMapsApi() {
+    const key = mapsApiKey();
+    if (!key) return Promise.reject(new Error("MISSING_MAPS_API_KEY"));
+    if (window.google?.maps?.DirectionsService) {
+      return Promise.resolve(window.google.maps);
+    }
+    if (mapsApiPromise) return mapsApiPromise;
+
+    mapsApiPromise = new Promise((resolve, reject) => {
+      const callbackName = `__pmhMapsReady_${Date.now()}`;
+      let settled = false;
+      const finish = (fn, value) => {
+        if (settled) return;
+        settled = true;
+        try {
+          delete window[callbackName];
+        } catch {
+          /* ignore */
+        }
+        fn(value);
+      };
+
+      window[callbackName] = () => {
+        if (window.google?.maps?.DirectionsService) {
+          finish(resolve, window.google.maps);
+          return;
+        }
+        mapsApiPromise = null;
+        finish(reject, new Error("MAPS_API_UNAVAILABLE"));
+      };
+
+      const script = document.createElement("script");
+      script.async = true;
+      script.defer = true;
+      script.src =
+        `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}` +
+        `&callback=${callbackName}&loading=async`;
+      script.onerror = () => {
+        mapsApiPromise = null;
+        finish(reject, new Error("MAPS_SCRIPT_FAILED"));
+      };
+      document.head.appendChild(script);
+    });
+
+    return mapsApiPromise;
+  }
+
+  function metersToMiles(meters) {
+    return Number(meters || 0) / METERS_PER_MILE;
+  }
+
+  async function googleMapsRoundTripMiles(originPostcode, destinationPostcode) {
+    const cacheKey = `${normalizePostcodeKey(originPostcode)}>${normalizePostcodeKey(destinationPostcode)}>RT`;
+    if (drivingMilesCache[cacheKey] != null) return drivingMilesCache[cacheKey];
+
+    const maps = await loadGoogleMapsApi();
+    const service = new maps.DirectionsService();
+
+    const result = await new Promise((resolve, reject) => {
+      service.route(
+        {
+          origin: originPostcode,
+          destination: originPostcode,
+          waypoints: [{ location: destinationPostcode, stopover: true }],
+          travelMode: maps.TravelMode.DRIVING,
+          unitSystem: maps.UnitSystem.IMPERIAL,
+          region: "uk"
+        },
+        (response, status) => {
+          if (status === "OK" && response?.routes?.length) {
+            resolve(response);
+            return;
+          }
+          reject(new Error(status || "DIRECTIONS_FAILED"));
+        }
+      );
+    });
+
+    const legs = result.routes[0]?.legs || [];
+    const totalMeters = legs.reduce((sum, leg) => sum + Number(leg?.distance?.value || 0), 0);
+    if (!(totalMeters > 0)) throw new Error("ZERO_DISTANCE");
+    const miles = Math.round(metersToMiles(totalMeters));
+    drivingMilesCache[cacheKey] = miles;
+    return miles;
+  }
+
+  async function straightLineRoundTripMiles(originPostcode, destinationPostcode) {
+    const [base, destination] = await Promise.all([
+      lookupPostcode(originPostcode),
+      lookupPostcode(destinationPostcode)
+    ]);
+    if (!base || !destination) return null;
+    const oneWay = haversineMiles(
+      base.latitude,
+      base.longitude,
+      destination.latitude,
+      destination.longitude
+    );
+    return {
+      miles: Math.round(oneWay * 2),
+      basePostcode: base.postcode,
+      destinationPostcode: destination.postcode
+    };
+  }
+
   function setMileageHint(message) {
     const hint = el("mileageHint");
     if (hint) hint.textContent = message;
@@ -1371,16 +1483,24 @@
   async function applyAutoMileage(jobCode) {
     const requestId = ++mileageRequestId;
     const code = String(jobCode || "").toUpperCase();
+    const editing = Boolean(el("editingEntryId")?.value);
 
     if (!code) {
       el("mileage").value = "";
-      setMileageHint("Round trip from AB42 1UA is filled when a job postcode is found.");
+      setMileageHint("Google Maps driving round trip from AB42 1UA is filled for open jobs when a postcode is found.");
       return;
     }
 
     if (code === "STORE") {
       el("mileage").value = "0";
       setMileageHint("STORE — no site travel (0 miles).");
+      return;
+    }
+
+    // Closed (fully complete) jobs keep saved/manual mileage — no auto rewrite.
+    if (isJobNumberFullyComplete(code)) {
+      if (!editing) el("mileage").value = "";
+      setMileageHint(`#${code} is closed. Enter mileage manually if needed.`);
       return;
     }
 
@@ -1391,28 +1511,38 @@
       return;
     }
 
-    setMileageHint(`Calculating round trip AB42 1UA ↔ ${jobPostcode}…`);
+    setMileageHint(`Google Maps: calculating driving round trip AB42 1UA → ${jobPostcode} → AB42 1UA…`);
     try {
-      const [base, destination] = await Promise.all([
-        lookupPostcode(BASE_POSTCODE),
-        lookupPostcode(jobPostcode)
-      ]);
+      if (mapsApiKey()) {
+        try {
+          const roundTrip = await googleMapsRoundTripMiles(BASE_POSTCODE, jobPostcode);
+          if (requestId !== mileageRequestId) return;
+          el("mileage").value = String(roundTrip);
+          setMileageHint(
+            `Google Maps ${roundTrip} miles driving round trip (out + return): ${BASE_POSTCODE} ↔ ${jobPostcode} (you can edit).`
+          );
+          return;
+        } catch (mapsError) {
+          console.warn("Google Maps mileage failed; falling back to straight-line estimate.", mapsError);
+        }
+      }
+
+      const estimate = await straightLineRoundTripMiles(BASE_POSTCODE, jobPostcode);
       if (requestId !== mileageRequestId) return;
-      if (!base || !destination) {
+      if (!estimate) {
         el("mileage").value = "";
-        setMileageHint(`Could not look up ${jobPostcode}. Enter mileage manually.`);
+        setMileageHint(
+          mapsApiKey()
+            ? `Could not calculate driving miles for ${jobPostcode}. Enter mileage manually.`
+            : `Add mapsApiKey in google-config.js for Google Maps driving miles. No lookup for ${jobPostcode} — enter manually.`
+        );
         return;
       }
-      const oneWay = haversineMiles(
-        base.latitude,
-        base.longitude,
-        destination.latitude,
-        destination.longitude
-      );
-      const roundTrip = Math.round(oneWay * 2);
-      el("mileage").value = String(roundTrip);
+      el("mileage").value = String(estimate.miles);
       setMileageHint(
-        `Auto ${roundTrip} miles round trip: ${base.postcode} ↔ ${destination.postcode} (you can edit).`
+        mapsApiKey()
+          ? `Maps unavailable — estimate ${estimate.miles} miles straight-line round trip: ${estimate.basePostcode} ↔ ${estimate.destinationPostcode} (you can edit).`
+          : `Add mapsApiKey in google-config.js for Google Maps. Estimate ${estimate.miles} miles straight-line round trip: ${estimate.basePostcode} ↔ ${estimate.destinationPostcode} (you can edit).`
       );
     } catch {
       if (requestId !== mileageRequestId) return;
@@ -1691,7 +1821,7 @@
     el("mileage").value = entry.mileage || "";
     if (el("ownVehicle")) el("ownVehicle").checked = Boolean(entry.ownVehicle);
     el("notes").value = entry.notes || "";
-    setMileageHint("Saved mileage shown. Change job to recalculate from AB42 1UA.");
+    setMileageHint("Saved mileage shown. Change job to recalculate Google Maps driving round trip from AB42 1UA.");
     calculateHours();
     renderAlsoAssignPanel();
     showView("addHoursView");
