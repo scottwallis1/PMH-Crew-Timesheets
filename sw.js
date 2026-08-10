@@ -1,5 +1,5 @@
 /* PMH Team Manager — keeps phones on the latest build without reinstalling. */
-const APP_VERSION = "1.39.8";
+const APP_VERSION = "1.39.9";
 const CACHE_NAME = `pmh-team-${APP_VERSION}`;
 const PRECACHE = [
   "./",
@@ -95,6 +95,30 @@ self.addEventListener("fetch", (event) => {
   // Never cache the service worker script itself.
   if (url.pathname.endsWith("/sw.js") || url.pathname.endsWith("sw.js")) {
     event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
+
+  // App code + avatars: network first so portrait updates (e.g. Joshua’s santa hat) show up.
+  const path = url.pathname;
+  const networkFirst =
+    path.endsWith(".js") ||
+    path.endsWith(".css") ||
+    path.includes("/assets/avatars/");
+  if (networkFirst) {
+    event.respondWith(
+      (async () => {
+        try {
+          const fresh = await fetch(request, { cache: "no-store" });
+          if (fresh && fresh.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(request, fresh.clone());
+          }
+          return fresh;
+        } catch {
+          return (await caches.match(request)) || Response.error();
+        }
+      })()
+    );
     return;
   }
 

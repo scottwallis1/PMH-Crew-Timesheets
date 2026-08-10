@@ -46,7 +46,7 @@
     jerald: "assets/avatars/jerald.png",
     caden: "assets/avatars/caden.png",
     luke: "assets/avatars/luke.png",
-    josh: "assets/avatars/josh.png",
+    josh: "assets/avatars/josh-santa.png",
     kadek: "assets/avatars/kadek.png",
     nathan: "assets/avatars/nathan.png",
     spare1: "assets/avatars/spare1.png",
@@ -196,6 +196,10 @@
       // Joshua always keeps the santa-hat portrait, even if cloud data had a spare avatar.
       if (isJoshuaCrewName(user.name) && avatarFiles.josh) {
         avatarKey = "josh";
+      } else if (avatarKey === "josh" && !isJoshuaCrewName(user.name)) {
+        // Free the santa-hat slot if another crew member was left on it (e.g. Sagoon).
+        const unused = fallbackAvatars.filter((key) => key !== "josh" && !used.has(key));
+        avatarKey = unused[0] || "spare4";
       }
       used.add(avatarKey);
       return {
@@ -1047,7 +1051,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.39.8`;
+    return `${path}?v=1.39.9`;
   }
 
   function renderRobot(target, user) {
@@ -1072,7 +1076,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.39.8`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.39.9`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
