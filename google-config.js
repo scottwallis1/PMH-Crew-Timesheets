@@ -5,5 +5,9 @@ window.PMH_GOOGLE_CONFIG = {
   // Use "primary" for the signed-in user's main calendar, or a shared calendar ID later.
   calendarId: "primary",
   // Read + create/update events on the selected calendar.
-  scopes: "https://www.googleapis.com/auth/calendar.events"
+  scopes: "https://www.googleapis.com/auth/calendar.events",
+  // Browser Maps JavaScript API key (HTTP-referrer restricted). Used for driving
+  // mileage: depot → job → depot. Enable Maps JavaScript API + Directions API in
+  // Cloud Console, then paste the key here. Leave blank to fall back to straight-line estimate.
+  mapsApiKey: ""
 };

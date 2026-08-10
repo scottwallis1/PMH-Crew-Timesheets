@@ -40,3 +40,20 @@ If you see `Error 400: origin_mismatch`, add the URL from the browser address ba
 
 - Currently: `primary` (signed-in Google account’s main calendar)
 - Optional later: shared team calendar ID
+
+## Google Maps mileage (driving round trip)
+
+Auto mileage for **open** (not fully complete) jobs uses Google Maps driving directions:
+
+`AB42 1UA → job postcode → AB42 1UA` (out + return), rounded to the nearest mile.
+
+Setup:
+
+1. In the same Google Cloud project, enable **Maps JavaScript API** and **Directions API** (billing required by Google).
+2. Create an **API key** → Application restrictions: **HTTP referrers**, add:
+   - `http://localhost:8080/*`
+   - `https://scottwallis1.github.io/*`
+3. API restriction: allow **Maps JavaScript API** and **Directions API**.
+4. Paste the key into `google-config.js` as `mapsApiKey`.
+
+Closed jobs are not auto-recalculated. If the key is missing or Maps fails, the app falls back to a straight-line estimate and says so in the mileage hint.
