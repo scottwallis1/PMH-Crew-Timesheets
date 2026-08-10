@@ -67,6 +67,7 @@
     caden: "caden",
     luke: "luke",
     josh: "josh",
+    joshua: "josh",
     kadek: "kadek",
     nathan: "nathan"
   };
@@ -142,16 +143,38 @@
     return REMOVED_CREW_NAMES.has(name);
   }
 
+  function crewNameKey(name) {
+    return String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "");
+  }
+
+  function crewFirstNameKey(name) {
+    const first = String(name || "").trim().toLowerCase().split(/\s+/)[0] || "";
+    return first.replace(/[^a-z0-9]+/g, "");
+  }
+
+  // Joshua’s portrait includes a santa hat — keep him on the josh avatar.
+  function isJoshuaCrewName(name) {
+    const first = crewFirstNameKey(name);
+    const full = crewNameKey(name);
+    return first === "josh" || first === "joshua" || full === "josh" || full === "joshua";
+  }
+
+  function preferredAvatarForName(name) {
+    if (isJoshuaCrewName(name)) return "josh";
+    const nameKey = crewNameKey(name);
+    const firstKey = crewFirstNameKey(name);
+    return NAME_AVATAR_ALIASES[nameKey] || NAME_AVATAR_ALIASES[firstKey] || "";
+  }
+
   function normalizeUsers(list) {
     const used = new Set();
     return (Array.isArray(list) ? list : [])
       .filter((user) => !isRemovedCrewMember(user))
       .map((user, index) => {
-      const nameKey = String(user.name || "")
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "");
-      const preferredByName = NAME_AVATAR_ALIASES[nameKey] || "";
+      const preferredByName = preferredAvatarForName(user.name);
       let avatarKey = "";
       if (user.id === "scott") {
         avatarKey = "scott";
@@ -169,6 +192,10 @@
       if (user.id !== "scott" && avatarKey === "scott") {
         const unused = fallbackAvatars.filter((key) => !used.has(key));
         avatarKey = unused[0] || fallbackAvatars[index % fallbackAvatars.length];
+      }
+      // Joshua always keeps the santa-hat portrait, even if cloud data had a spare avatar.
+      if (isJoshuaCrewName(user.name) && avatarFiles.josh) {
+        avatarKey = "josh";
       }
       used.add(avatarKey);
       return {
@@ -994,14 +1021,14 @@
   }
 
   function nextAvatarKey(preferredName = "") {
-    const nameKey = String(preferredName || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "");
-    const preferred = NAME_AVATAR_ALIASES[nameKey];
+    const preferred = preferredAvatarForName(preferredName);
     const used = new Set(users.map((user) => user.avatar).filter(Boolean));
     if (preferred && preferred !== "scott" && avatarFiles[preferred] && !used.has(preferred)) {
       return preferred;
+    }
+    // Joshua keeps the santa-hat portrait even if another spare already claimed it.
+    if (isJoshuaCrewName(preferredName) && avatarFiles.josh) {
+      return "josh";
     }
     const unused = fallbackAvatars.filter((key) => !used.has(key));
     if (unused.length) return unused[0];
@@ -1020,10 +1047,11 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.38.0`;
+    return `${path}?v=1.39.8`;
   }
 
   function renderRobot(target, user) {
+    if (!target) return;
     if (user && user.active === false) {
       const stoneId = `stone_${Math.random().toString(36).slice(2, 8)}`;
       target.innerHTML = `
@@ -1044,7 +1072,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.38.0`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.39.8`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
