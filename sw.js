@@ -1,5 +1,5 @@
 /* PMH Team Manager — keeps phones on the latest build without reinstalling. */
-const APP_VERSION = "1.39.7";
+const APP_VERSION = "1.39.8";
 const CACHE_NAME = `pmh-team-${APP_VERSION}`;
 const PRECACHE = [
   "./",

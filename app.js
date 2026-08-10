@@ -143,16 +143,38 @@
     return REMOVED_CREW_NAMES.has(name);
   }
 
+  function crewNameKey(name) {
+    return String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "");
+  }
+
+  function crewFirstNameKey(name) {
+    const first = String(name || "").trim().toLowerCase().split(/\s+/)[0] || "";
+    return first.replace(/[^a-z0-9]+/g, "");
+  }
+
+  // Joshua’s portrait includes a santa hat — keep him on the josh avatar.
+  function isJoshuaCrewName(name) {
+    const first = crewFirstNameKey(name);
+    const full = crewNameKey(name);
+    return first === "josh" || first === "joshua" || full === "josh" || full === "joshua";
+  }
+
+  function preferredAvatarForName(name) {
+    if (isJoshuaCrewName(name)) return "josh";
+    const nameKey = crewNameKey(name);
+    const firstKey = crewFirstNameKey(name);
+    return NAME_AVATAR_ALIASES[nameKey] || NAME_AVATAR_ALIASES[firstKey] || "";
+  }
+
   function normalizeUsers(list) {
     const used = new Set();
     return (Array.isArray(list) ? list : [])
       .filter((user) => !isRemovedCrewMember(user))
       .map((user, index) => {
-      const nameKey = String(user.name || "")
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "");
-      const preferredByName = NAME_AVATAR_ALIASES[nameKey] || "";
+      const preferredByName = preferredAvatarForName(user.name);
       let avatarKey = "";
       if (user.id === "scott") {
         avatarKey = "scott";
@@ -170,6 +192,10 @@
       if (user.id !== "scott" && avatarKey === "scott") {
         const unused = fallbackAvatars.filter((key) => !used.has(key));
         avatarKey = unused[0] || fallbackAvatars[index % fallbackAvatars.length];
+      }
+      // Joshua always keeps the santa-hat portrait, even if cloud data had a spare avatar.
+      if (isJoshuaCrewName(user.name) && avatarFiles.josh) {
+        avatarKey = "josh";
       }
       used.add(avatarKey);
       return {
@@ -995,14 +1021,14 @@
   }
 
   function nextAvatarKey(preferredName = "") {
-    const nameKey = String(preferredName || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "");
-    const preferred = NAME_AVATAR_ALIASES[nameKey];
+    const preferred = preferredAvatarForName(preferredName);
     const used = new Set(users.map((user) => user.avatar).filter(Boolean));
     if (preferred && preferred !== "scott" && avatarFiles[preferred] && !used.has(preferred)) {
       return preferred;
+    }
+    // Joshua keeps the santa-hat portrait even if another spare already claimed it.
+    if (isJoshuaCrewName(preferredName) && avatarFiles.josh) {
+      return "josh";
     }
     const unused = fallbackAvatars.filter((key) => !used.has(key));
     if (unused.length) return unused[0];
@@ -1021,57 +1047,11 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.39.7`;
-  }
-
-  function wearsSantaHat(user) {
-    if (!user) return false;
-    if (typeof user === "string") {
-      const key = user.toLowerCase().replace(/[^a-z0-9]+/g, "");
-      return key === "josh" || key === "joshua";
-    }
-    const avatarKey = String(user.avatar || user.id || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "");
-    const nameKey = String(user.name || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "");
-    return avatarKey === "josh" || nameKey === "josh" || nameKey === "joshua";
-  }
-
-  function santaHatMarkup() {
-    const hatId = `santa_${Math.random().toString(36).slice(2, 8)}`;
-    const redId = `${hatId}_red`;
-    const furId = `${hatId}_fur`;
-    return `
-      <span class="santa-hat" aria-hidden="true">
-        <svg viewBox="0 0 80 70" focusable="false">
-          <defs>
-            <linearGradient id="${redId}" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#e23b3b"/>
-              <stop offset="55%" stop-color="#c41e1e"/>
-              <stop offset="100%" stop-color="#8f1212"/>
-            </linearGradient>
-            <linearGradient id="${furId}" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#ffffff"/>
-              <stop offset="100%" stop-color="#e8e8e8"/>
-            </linearGradient>
-          </defs>
-          <path d="M14 42 C18 18 38 8 52 14 C62 18 70 28 66 40 C48 34 30 36 14 42 Z" fill="url(#${redId})"/>
-          <path d="M52 14 C60 8 72 12 74 22 C76 30 70 36 64 34 C58 26 56 18 52 14 Z" fill="url(#${redId})"/>
-          <ellipse cx="72" cy="24" rx="7.5" ry="7" fill="url(#${furId})"/>
-          <ellipse cx="38" cy="46" rx="28" ry="10" fill="url(#${furId})"/>
-          <ellipse cx="22" cy="44" rx="3.2" ry="2.6" fill="#fff" opacity="0.85"/>
-          <ellipse cx="38" cy="48" rx="3.6" ry="2.8" fill="#fff" opacity="0.75"/>
-          <ellipse cx="54" cy="44" rx="3" ry="2.4" fill="#fff" opacity="0.8"/>
-        </svg>
-      </span>
-    `;
+    return `${path}?v=1.39.8`;
   }
 
   function renderRobot(target, user) {
     if (!target) return;
-    target.classList.remove("has-santa-hat");
     if (user && user.active === false) {
       const stoneId = `stone_${Math.random().toString(36).slice(2, 8)}`;
       target.innerHTML = `
@@ -1092,12 +1072,10 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.39.7`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.39.8`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
-    const withHat = wearsSantaHat(user);
-    target.classList.toggle("has-santa-hat", withHat);
-    target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">${withHat ? santaHatMarkup() : ""}`;
+    target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
   }
 
   function populateTimes() {
