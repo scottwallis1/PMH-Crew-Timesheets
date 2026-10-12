@@ -217,6 +217,44 @@
     return users.find((user) => user.id === userId && isUserActive(user)) || null;
   }
 
+  function clearUserPin(userId) {
+    if (!userId || !pins || !Object.prototype.hasOwnProperty.call(pins, userId)) return false;
+    delete pins[userId];
+    return true;
+  }
+
+  function stripInactiveUserPins() {
+    let changed = false;
+    Object.keys(pins || {}).forEach((userId) => {
+      const user = users.find((item) => item.id === userId);
+      if (!user || user.active === false) {
+        delete pins[userId];
+        changed = true;
+      }
+    });
+    return changed;
+  }
+
+  // Kick a retired signed-in person back to login and stop them using the app.
+  function lockOutRetiredSession({ notify = false } = {}) {
+    if (!sessionActorId) return false;
+    const actor = users.find((user) => user.id === sessionActorId);
+    if (!(actor && actor.active === false)) return false;
+
+    const name = actor.name || "This account";
+    sessionActorId = "";
+    currentUserId = "";
+    loginMode = "auth";
+    persistSession();
+    clearPinFields();
+    renderLogin();
+    showView("loginView");
+    if (notify) {
+      alert(`${name} has been retired and can no longer use the app. Contact Scott if access is needed again.`);
+    }
+    return true;
+  }
+
   function saveAll() {
     storageSet(STORAGE.users, JSON.stringify(users));
     storageSet(STORAGE.entries, JSON.stringify(entries));
@@ -264,14 +302,16 @@
       }
     });
 
+    // Drop PINs for retired / unknown users so they cannot sign back in.
+    stripInactiveUserPins();
+
     // Only force sign-out if this actor was explicitly retired — never on soft/empty sync.
+    let lockedOut = false;
     if (sessionActorId && users.length) {
       const actor = users.find((user) => user.id === sessionActorId);
       if (actor && actor.active === false) {
-        sessionActorId = "";
-        currentUserId = "";
-        persistSession();
-      } else if (actor && currentUserId && !users.some((user) => user.id === currentUserId)) {
+        lockedOut = lockOutRetiredSession({ notify: true });
+      } else if (actor && currentUserId && !users.some((user) => user.id === currentUserId && isUserActive(user))) {
         currentUserId = sessionActorId;
         persistSession();
       } else if (REMOVED_CREW_IDS.has(sessionActorId)) {
@@ -305,7 +345,7 @@
     }
 
     scheduleRenderAll();
-    if (!sessionActorId && !el("loginView")?.classList.contains("active")) {
+    if (!lockedOut && !sessionActorId && !el("loginView")?.classList.contains("active")) {
       showView("loginView");
     }
   }
@@ -853,11 +893,14 @@
     let changed = false;
     for (const userId of defaults) {
       if (hasPin(userId)) continue;
+      // Never seed a PIN for retired/missing users — that would unlock them again.
+      if (!findActiveUser(userId)) continue;
       const salt = randomSalt();
       const hash = await hashPin("0000", salt);
       pins[userId] = { hash, salt, updatedAt: Date.now() };
       changed = true;
     }
+    if (stripInactiveUserPins()) changed = true;
     Object.keys(pins).forEach((userId) => {
       if (!users.some((user) => user.id === userId)) {
         delete pins[userId];
@@ -874,6 +917,12 @@
   async function verifyOrCreatePin(userId) {
     const pin = (el("loginPin")?.value || "").trim();
     const confirm = (el("loginPinConfirm")?.value || "").trim();
+
+    if (!findActiveUser(userId)) {
+      setPinError("That account has been retired and can’t sign in.");
+      renderLogin();
+      return false;
+    }
 
     if (!isValidPin(pin)) {
       setPinError("Use a 4–6 digit PIN.");
@@ -1047,7 +1096,7 @@
   function avatarSrc(user) {
     const key = user?.avatar || user?.id;
     const path = avatarFiles[key] || avatarFiles.scott;
-    return `${path}?v=1.39.8`;
+    return `${path}?v=1.39.9`;
   }
 
   function renderRobot(target, user) {
@@ -1072,7 +1121,7 @@
       return;
     }
     const src = typeof user === "string"
-      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.39.8`
+      ? `${avatarFiles[user] || avatarFiles.scott}?v=1.39.9`
       : avatarSrc(user);
     const name = typeof user === "object" && user?.name ? user.name : "Crew";
     target.innerHTML = `<img class="robot-photo" src="${src}" alt="${escapeHtml(name)} robot avatar">`;
@@ -2654,8 +2703,24 @@
       alert("Scott can’t be retired.");
       return;
     }
-    if (!confirm(`Retire ${user.name}? They will stay on the crew list greyed out with a tombstone, and can be reinstated later.`)) return;
+    if (!confirm(`Retire ${user.name}? They will be locked out of the app immediately, stay on the crew list greyed out with a tombstone, and can be reinstated later.`)) return;
     user.active = false;
+    clearUserPin(user.id);
+
+    // If this device is signed in as the retired person, kick them to login.
+    if (sessionActorId === user.id) {
+      sessionActorId = "";
+      currentUserId = "";
+      loginMode = "auth";
+      persistSession();
+      saveAll();
+      clearPinFields();
+      renderAll();
+      showView("loginView");
+      alert(`${user.name} has been retired and locked out of the app.`);
+      return;
+    }
+
     if (currentUserId === user.id) {
       currentUserId = sessionActorId || "scott";
       persistSession();
@@ -2675,6 +2740,7 @@
     user.active = true;
     saveAll();
     renderAll();
+    alert(`${user.name} is active again. They’ll create a new PIN the first time they sign in.`);
   }
 
   async function initialize() {
@@ -2720,11 +2786,7 @@
       if (actor) {
         restoreSessionView();
       } else if (users.some((user) => user.id === sessionActorId && user.active === false)) {
-        sessionActorId = "";
-        currentUserId = "";
-        persistSession();
-        renderLogin();
-        showView("loginView");
+        lockOutRetiredSession({ notify: true });
       } else if (!restoredEarly) {
         // Session id exists but roster not ready — stay on login without wiping.
         renderLogin();
@@ -2742,6 +2804,11 @@
     el("continueButton").addEventListener("click", async () => {
       const selectedId = el("loginUser").value;
       if (!selectedId) return;
+      if (!findActiveUser(selectedId)) {
+        setPinError("That account has been retired and can’t sign in.");
+        renderLogin();
+        return;
+      }
       el("continueButton").disabled = true;
       try {
         if (loginMode === "switch") {
