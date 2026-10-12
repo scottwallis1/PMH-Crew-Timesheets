@@ -2727,7 +2727,7 @@
     }
     saveAll();
     renderAll();
-    showView("summaryView");
+    showView("crewView");
   }
 
   function reinstateUser(userId) {
